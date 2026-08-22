@@ -3,7 +3,6 @@ import os
 import csv
 import json
 import re
-import random
 from datetime import datetime
 from typing import Dict, List
 import pandas as pd
@@ -36,7 +35,7 @@ def log_event(event_type: str, username: str, rating: str = "N/A", details: str 
             details
         ])
 
-# --- Clean, Modern Sci-Fi Theme ---
+# --- Sci-Fi Styling ---
 st.markdown(
     """
 <style>
@@ -320,105 +319,134 @@ def api_chat_assistant(messages: List[Dict], resume_context: str = "") -> str:
     return ""
 
 # ============================================================
-# DYNAMIC ASSESSMENT & QUESTION GENERATORS
+# EXAMINATION ENGINE
 # ============================================================
 
-def build_dynamic_fallback_exam(role: str, count: int) -> List[Dict]:
-    pool = [
+def get_fallback_exam(role: str, count: int) -> List[Dict]:
+    bank = [
         {
-            "section": "Quantitative & Logical Aptitude",
-            "question": "A train running at 54 km/hr crosses a 240m platform in 36 seconds. What is the length of the train?",
-            "options": ["300 meters", "240 meters", "180 meters", "360 meters"],
-            "answer": "300 meters",
-            "explanation": "Speed = 54*(5/18) = 15 m/s. Total distance in 36s = 15*36 = 540m. Train length = 540 - 240 = 300m."
+            "id": 1,
+            "section": "Aptitude & Logical",
+            "question": "A train passes a station platform in 36 seconds and a man standing on the platform in 20 seconds. If the speed of the train is 54 km/hr, what is the length of the platform?",
+            "options": ["240 meters", "300 meters", "200 meters", "180 meters"],
+            "answer": "240 meters",
+            "explanation": "Speed = 54*(5/18) = 15 m/s. Train length = 15*20 = 300m. Total distance in 36s = 15*36 = 540m. Platform length = 540 - 300 = 240m."
         },
         {
-            "section": "Quantitative & Logical Aptitude",
-            "question": "If 12 workers finish a project in 14 days, how many days will 8 workers take to finish the same work at the same rate?",
-            "options": ["21 days", "18 days", "16 days", "24 days"],
-            "answer": "21 days",
-            "explanation": "Total work = 12 * 14 = 168 worker-days. Time for 8 workers = 168 / 8 = 21 days."
+            "id": 2,
+            "section": "Aptitude & Logical",
+            "question": "If 12 men or 18 women can do a work in 14 days, then in how many days can 8 men and 16 women do the same work?",
+            "options": ["9 days", "10 days", "12 days", "8 days"],
+            "answer": "9 days",
+            "explanation": "12 Men = 18 Women => 1 Man = 1.5 Women. Total work = 18*14 = 252 women-days. 8 Men + 16 Women = 8*1.5 + 16 = 28 women. Time = 252/28 = 9 days."
         },
         {
-            "section": "Quantitative & Logical Aptitude",
-            "question": "Complete the series: 4, 18, 48, 100, 180, ?",
+            "id": 3,
+            "section": "Aptitude & Logical",
+            "question": "Find the missing number in the sequence: 4, 18, 48, 100, 180, ?",
             "options": ["294", "280", "310", "256"],
             "answer": "294",
-            "explanation": "Pattern is n^3 - n^2. For n=7: 7^3 - 7^2 = 343 - 49 = 294."
+            "explanation": "Series pattern is (n^3 - n^2): 2^3-2^2=4, 3^3-3^2=18, 4^3-4^2=48, 5^3-5^2=100, 6^3-6^2=180, 7^3-7^2=343-49 = 294."
         },
         {
-            "section": "Core Technical & Architecture",
-            "question": f"When scaling infrastructure for a {role}, what is the primary purpose of introducing a reverse proxy?",
-            "options": ["Load balancing, SSL termination, and security caching", "Replacing primary SQL storage", "Automating frontend CSS builds", "Writing client unit tests"],
-            "answer": "Load balancing, SSL termination, and security caching",
-            "explanation": "Reverse proxies distribute network traffic, cache static assets, and terminate TLS certificates."
+            "id": 4,
+            "section": "Aptitude & Logical",
+            "question": "Pointing to a photograph, a person says, 'His mother is the only daughter of my mother.' Whose photograph is it?",
+            "options": ["His son's", "His nephew's", "His brother's", "His father's"],
+            "answer": "His nephew's",
+            "explanation": "The only daughter of the speaker's mother is the speaker's sister. Her son is the speaker's nephew."
         },
         {
-            "section": "Core Technical & Architecture",
-            "question": f"In {role} workflows, which data structure provides O(1) average lookup and insertion time?",
-            "options": ["Hash Table (Hash Map)", "Binary Search Tree", "Linked List", "Max Heap"],
-            "answer": "Hash Table (Hash Map)",
-            "explanation": "Hash tables compute array indices via key hashing, offering O(1) average time complexity."
+            "id": 5,
+            "section": "Core Technical",
+            "question": f"In designing systems for a {role}, what is the primary advantage of indexing a database column on a B-Tree structure?",
+            "options": [
+                "Reduces disk space required for table storage",
+                "Enables O(log N) lookup, insertion, and deletion speeds for range queries",
+                "Automatically encrypts sensitive column values",
+                "Eliminates the need for foreign key constraints"
+            ],
+            "answer": "Enables O(log N) lookup, insertion, and deletion speeds for range queries",
+            "explanation": "B-Tree indexes organize sorted key pointers, allowing logarithmic search complexity and efficient range scans."
         },
         {
-            "section": "Core Technical & Architecture",
-            "question": "Which HTTP status code signifies that the server understands the content type but is unable to process the contained instructions?",
-            "options": ["422 Unprocessable Entity", "400 Bad Request", "404 Not Found", "503 Service Unavailable"],
+            "id": 6,
+            "section": "Core Technical",
+            "question": "Which HTTP status code is most appropriate when an API client submits a request with syntactically correct data that fails domain validation rules?",
+            "options": ["400 Bad Request", "422 Unprocessable Entity", "403 Forbidden", "500 Internal Error"],
             "answer": "422 Unprocessable Entity",
-            "explanation": "422 indicates semantic validation errors despite syntactically valid payload format."
+            "explanation": "422 is standard for semantic validation failures when request syntax is correct but instructions cannot be processed."
         },
         {
-            "section": "System Problem Solving & Reliability",
-            "question": "Which design pattern stops repetitive failed requests from overwhelming an already degraded downstream dependency?",
+            "id": 7,
+            "section": "Core Technical",
+            "question": "What is the worst-case time complexity of QuickSort when an inappropriate pivot is repeatedly chosen?",
+            "options": ["O(N log N)", "O(N^2)", "O(N)", "O(log N)"],
+            "answer": "O(N^2)",
+            "explanation": "When unbalanced partitioning occurs repeatedly (e.g. sorted array with first element as pivot), depth reaches N, causing O(N^2) complexity."
+        },
+        {
+            "id": 8,
+            "section": "Core Technical",
+            "question": "Which principle of the ACID model ensures that transactions execute concurrently without seeing intermediate uncommitted states?",
+            "options": ["Atomicity", "Consistency", "Isolation", "Durability"],
+            "answer": "Isolation",
+            "explanation": "Isolation defines how transaction integrity is visible to other concurrent users and systems."
+        },
+        {
+            "id": 9,
+            "section": "Scenario & System Logic",
+            "question": "Your production service experiences sudden memory saturation leading to out-of-memory crashes. What is the most effective initial mitigation step?",
+            "options": [
+                "Immediately refactor database tables",
+                "Capture heap dumps and inspect unclosed database connections/leaks",
+                "Disable all API security tokens",
+                "Switch programming languages"
+            ],
+            "answer": "Capture heap dumps and inspect unclosed database connections/leaks",
+            "explanation": "Profiling memory heap allocation isolates circular references, leaky singleton caches, or unreleased network/DB streams."
+        },
+        {
+            "id": 10,
+            "section": "Scenario & System Logic",
+            "question": "In a microservices architecture, what pattern prevents an outage in one downstream service from cascading across the entire application?",
             "options": ["Circuit Breaker Pattern", "Singleton Pattern", "Factory Method", "Observer Pattern"],
             "answer": "Circuit Breaker Pattern",
-            "explanation": "Circuit Breakers trip open upon reaching error thresholds, preventing system-wide cascading failure."
-        },
-        {
-            "section": "System Problem Solving & Reliability",
-            "question": "If a high-throughput microservice starts experiencing unexpected latency spikes during traffic bursts, what should you inspect first?",
-            "options": ["Connection pool saturation and database query slow-logs", "Browser CSS cache", "Git commit history", "Client screen resolution"],
-            "answer": "Connection pool saturation and database query slow-logs",
-            "explanation": "Thread pool or connection pool exhaustion is the most frequent cause of queue backpressure under traffic spikes."
+            "explanation": "Circuit breakers detect failures and trip to prevent continuous calls to degraded services, providing fallback behavior."
         }
     ]
-
-    selected = []
-    idx = 1
-    while len(selected) < count:
-        for item in pool:
-            opts = list(item["options"])
-            random.shuffle(opts)
-            selected.append({
-                "id": idx,
-                "section": item["section"],
-                "question": item["question"],
-                "options": opts,
-                "answer": item["answer"],
-                "explanation": item["explanation"]
-            })
-            idx += 1
-            if len(selected) == count:
+    
+    extended_bank = []
+    while len(extended_bank) < count:
+        for item in bank:
+            new_item = item.copy()
+            new_item["id"] = len(extended_bank) + 1
+            extended_bank.append(new_item)
+            if len(extended_bank) == count:
                 break
-    return selected
+    return extended_bank
 
 def generate_examination_suite(role: str, num_questions: int, resume_context: str = "") -> List[Dict]:
     system_prompt = (
-        "You are an assessment director designing a corporate pre-interview qualifying examination. "
-        "Generate a strictly formatted JSON array of multiple choice questions. Do not reveal the answers in the options or questions."
+        "You are the Lead Technical Assessment Director designing a formal corporate pre-interview examination "
+        "(similar to TCS, Infosys, and FAANG national qualifying tests). Generate a strict JSON array of multiple-choice questions."
     )
     user_prompt = (
-        f"Generate {num_questions} multiple-choice exam questions for the role: '{role}'.\n"
-        f"Sections: 30% Aptitude/Logic, 50% Technical fundamentals for {role}, 20% Architecture/Problem Solving.\n"
-        "Output ONLY a raw JSON array matching this structure:\n"
+        f"Generate exactly {num_questions} multiple choice assessment questions for the role: '{role}'.\n"
+        f"Distribution:\n"
+        f"- 30% Aptitude, Quantitative, Logical Reasoning\n"
+        f"- 50% Core Technical and Coding Fundamentals for {role}\n"
+        f"- 20% Architecture, Problem Solving and Scenario Analysis\n\n"
+        f"Candidate Resume Context:\n{resume_context[:1000]}\n\n"
+        "Output ONLY a raw valid JSON array where each object has these exact keys:\n"
         "[\n"
         "  {\n"
         "    \"id\": 1,\n"
-        "    \"section\": \"Aptitude & Logic\" | \"Core Technical\" | \"Problem Solving\",\n"
-        "    \"question\": \"Question text\",\n"
-        "    \"options\": [\"Option 1\", \"Option 2\", \"Option 3\", \"Option 4\"],\n"
-        "    \"answer\": \"Exact text of correct option\",\n"
-        "    \"explanation\": \"One clear sentence explanation\"\n"
+        "    \"section\": \"Aptitude & Logical\" | \"Core Technical\" | \"Scenario Analysis\",\n"
+        "    \"question\": \"Question text here\",\n"
+        "    \"options\": [\"Option A\", \"Option B\", \"Option C\", \"Option D\"],\n"
+        "    \"answer\": \"Exact matching string of the correct option\",\n"
+        "    \"explanation\": \"One clear sentence explaining why\"\n"
         "  }\n"
         "]"
     )
@@ -432,82 +460,19 @@ def generate_examination_suite(role: str, num_questions: int, resume_context: st
         reply = api_chat_assistant(messages, resume_context=resume_context)
         json_match = re.search(r'\[\s*\{.*\}\s*\]', reply, re.DOTALL)
         if json_match:
-            parsed = json.loads(json_match.group(0))
-            if isinstance(parsed, list) and len(parsed) > 0:
-                clean_list = []
-                for idx, q in enumerate(parsed[:num_questions], 1):
-                    opts = q.get("options", ["Option A", "Option B", "Option C", "Option D"])
-                    if len(opts) < 4:
-                        opts = opts + [f"Option {chr(65+i)}" for i in range(len(opts), 4)]
-                    correct = q.get("answer", opts[0])
-                    if correct not in opts:
-                        opts[0] = correct
-                    random.shuffle(opts)
-                    clean_list.append({
-                        "id": idx,
-                        "section": q.get("section", "Technical Assessment"),
-                        "question": q.get("question", f"Question {idx} for {role}"),
-                        "options": opts,
-                        "answer": correct,
-                        "explanation": q.get("explanation", "Standard technical rationale.")
-                    })
-                return clean_list
+            parsed_questions = json.loads(json_match.group(0))
+            if isinstance(parsed_questions, list) and len(parsed_questions) > 0:
+                for idx, q in enumerate(parsed_questions):
+                    q["id"] = idx + 1
+                    if "options" not in q or len(q["options"]) != 4:
+                        q["options"] = ["Option A", "Option B", "Option C", "Option D"]
+                    if "answer" not in q or q["answer"] not in q["options"]:
+                        q["answer"] = q["options"][0]
+                return parsed_questions[:num_questions]
     except Exception:
         pass
         
-    return build_dynamic_fallback_exam(role, num_questions)
-
-def generate_interview_qa_bank(role: str, resume_context: str = "") -> str:
-    system_prompt = (
-        "You are an expert technical interviewer and hiring director. Provide structured, realistic interview questions with strong model answers."
-    )
-    user_prompt = (
-        f"Generate 5 comprehensive interview questions for the role '{role}'.\n"
-        "Format:\n"
-        "### 1. [Category] Question Title\n"
-        "**Question:** Specific technical or behavioral question.\n"
-        "**What Great Candidates Mention:** 2-3 key technical points or metrics.\n"
-        "**Sample Answer Framework:** A concise, model answer."
-    )
-    
-    messages = [
-        {"role": "system", "content": system_prompt},
-        {"role": "user", "content": user_prompt}
-    ]
-    
-    ans = api_chat_assistant(messages, resume_context=resume_context)
-    if ans and len(ans.strip()) > 50:
-        return ans
-
-    return f"""### 1. [Core Technical] System Architecture & Scaling
-**Question:** How would you design a scalable service for a {role} handling 50k+ requests per second?
-**What Great Candidates Mention:** Horizontal partitioning, Redis caching layers, stateless microservices, and asynchronous message queues.
-**Sample Answer Framework:** "I start by isolating read/write workloads using read-replicas, placing a distributed cache in front of relational tables, and using RabbitMQ/Kafka for non-blocking task processing."
-
----
-### 2. [Data Structures & Optimization] Performance Bottlenecks
-**Question:** Describe a time you identified and resolved an optimization bottleneck in your code.
-**What Great Candidates Mention:** Profiling heap allocation, reducing query complexity from O(N^2) to O(N), and index tuning.
-**Sample Answer Framework:** "I used APM profiling tools to locate an N+1 query problem, refactored the ORM calls to use eager loading, and reduced p95 response times by 40%."
-
----
-### 3. [Debugging & Production] Incident Resolution
-**Question:** How do you approach an intermittent, un-reproducible production failure?
-**What Great Candidates Mention:** Structured log correlation, distributed tracing, checking thread dumps, and metric monitoring.
-**Sample Answer Framework:** "I inspect unified telemetry logs for correlation IDs, analyze metrics across dependencies during the spike window, and reproduce the race condition in a staging sandbox."
-
----
-### 4. [Behavioral] Cross-Functional Communication
-**Question:** How do you handle disagreements on technical tradeoffs with stakeholders?
-**What Great Candidates Mention:** Focus on data-driven benchmarks, alignment on business requirements, and writing RFC documents.
-**Sample Answer Framework:** "I bring objective latency and cost benchmarks to the table, align on deliverable priorities, and document pros and cons in a concise architecture design document."
-
----
-### 5. [Domain Specific] Future Trends & Security
-**Question:** What security protocols do you mandate in {role} implementations?
-**What Great Candidates Mention:** Principle of least privilege, token-based authentication (OAuth2/JWT), rate limiting, and automated vulnerability scanning.
-**Sample Answer Framework:** "I enforce TLS in transit, encrypt database secrets at rest, implement strict API rate-limiting per tenant, and enforce CI/CD dependency audits."
-"""
+    return get_fallback_exam(role, num_questions)
 
 # ============================================================
 # STATE & HELPERS
@@ -981,15 +946,11 @@ if st.session_state.workspace == "Job Seeker":
     # 3. Salary Estimate
     with tabs[2]:
         st.subheader("Salary Estimate")
+        salary_role = st.text_input("Job Title", "Software Engineer", key="salary_role_input")
+        salary_exp = st.selectbox("Experience Level", ["Entry Level (0-2 yrs)", "Mid Level (3-5 yrs)", "Senior Level (6-8 yrs)", "Lead (9+ yrs)"], index=1)
         
-        c_sal1, c_sal2 = st.columns([2, 1])
-        with c_sal1:
-            salary_role_input = st.text_input("Search or Enter Any Target Role:", "Senior Full Stack Engineer", key="salary_role_free")
-        with c_sal2:
-            salary_exp = st.selectbox("Experience Level", ["Entry Level (0-2 yrs)", "Mid Level (3-5 yrs)", "Senior Level (6-8 yrs)", "Lead / Principal (9+ yrs)"], index=1)
-        
-        if st.button("Calculate Market Salary", use_container_width=True):
-            exp_multipliers = {"Entry Level (0-2 yrs)": (65, 85, 105), "Mid Level (3-5 yrs)": (95, 125, 155), "Senior Level (6-8 yrs)": (140, 175, 215), "Lead / Principal (9+ yrs)": (190, 240, 310)}
+        if st.button("Get Salary Estimate", use_container_width=True):
+            exp_multipliers = {"Entry Level (0-2 yrs)": (65, 85, 105), "Mid Level (3-5 yrs)": (95, 125, 155), "Senior Level (6-8 yrs)": (140, 175, 215), "Lead (9+ yrs)": (190, 240, 310)}
             low_k, med_k, high_k = exp_multipliers.get(salary_exp, (90, 120, 150))
             
             col_sal1, col_sal2, col_sal3 = st.columns(3)
@@ -1018,34 +979,27 @@ if st.session_state.workspace == "Job Seeker":
                 </div>
                 """, unsafe_allow_html=True)
 
-    # 4. Interview Questions (Freeform Role Search with Guaranteed Generation)
+    # 4. Interview Questions
     with tabs[3]:
         st.subheader("Interview Questions")
-        st.caption("Search or enter ANY job title to generate technical and behavioral interview Q&As with key answering frameworks.")
+        st.caption("Generate role-specific interview questions and key answering criteria.")
+        target_interview_role = st.text_input("Target Role", "Software Engineer", key="int_role")
         
-        target_role_search = st.text_input(
-            "Search or Enter Target Role:",
-            value="Full Stack Developer / AI Engineer",
-            key="interview_role_search",
-            placeholder="e.g. Flutter Developer, Cloud DevOps, Cybersecurity Analyst, Java Developer..."
-        )
-        
-        if st.button("Generate Interview Questions 🎤", use_container_width=True):
-            if not target_role_search.strip():
-                st.warning("Please enter a target role.")
-            else:
-                with st.spinner(f"Compiling strategic interview questions for {target_role_search}..."):
-                    generated_qa = generate_interview_qa_bank(target_role_search.strip(), st.session_state.resume_text)
-                    st.session_state["stored_interview_qa"] = generated_qa
-                    st.session_state["stored_interview_role"] = target_role_search.strip()
+        if st.button("Generate Interview Questions", use_container_width=True):
+            with st.spinner("Compiling strategic interview questions..."):
+                prompt = [
+                    {"role": "system", "content": "You are a senior technical hiring manager. Generate 5 core interview questions (2 Technical, 2 Coding Logic/Data Structure, 1 Behavioral) for the candidate role. Include what a top answer must include."},
+                    {"role": "user", "content": f"Target Role: {target_interview_role}\nResume: {st.session_state.resume_text[:2000]}"}
+                ]
+                st.session_state.interview_questions = api_chat_assistant(prompt, resume_context=st.session_state.resume_text)
 
-        if "stored_interview_qa" in st.session_state and st.session_state["stored_interview_qa"]:
-            st.markdown(f"""
-            <div class="panel" style="border: 1px solid rgba(139, 124, 255, 0.4); margin-top: 14px;">
-                <div style="font-weight: 800; color: #38bdf8; margin-bottom: 6px;">🎯 Strategic Interview Questions for: {st.session_state.get('stored_interview_role', 'Your Target Role')}</div>
+        if st.session_state.get("interview_questions"):
+            st.markdown("""
+            <div class="panel" style="border: 1px solid rgba(139, 124, 255, 0.4);">
+                <div style="font-weight: 800; color: #c084fc; margin-bottom: 6px;">Interview Questions & Key Criteria:</div>
             </div>
             """, unsafe_allow_html=True)
-            st.markdown(st.session_state["stored_interview_qa"])
+            st.markdown(st.session_state.interview_questions)
 
     # 5. Career Road Map
     with tabs[4]:
@@ -1103,7 +1057,7 @@ if st.session_state.workspace == "Job Seeker":
                         st.error(f"Error: {exc}")
 
 # ============================================================
-# 2. PRE-INTERVIEW ASSESSMENT (ZERO PRE-SELECTED ANSWERS)
+# 2. PRE-INTERVIEW ASSESSMENT
 # ============================================================
 
 elif st.session_state.workspace == "Assessment Exam":
@@ -1112,11 +1066,11 @@ elif st.session_state.workspace == "Assessment Exam":
         <section class="hero">
             <div class="kicker">STANDARDIZED QUALIFYING TEST</div>
             <h1>Pre-Interview Examination.<br><span>Quantitative, Logic & Domain Assessment.</span></h1>
-            <p>Corporate-grade qualifying examination (Aptitude, Quantitative Reasoning, Core Technical & Problem Solving) with unselected options and automatic scoring.</p>
+            <p>Corporate-grade qualifying examination (Aptitude, Quantitative Reasoning, Core Domain, and System Scenarios) with automated scoring.</p>
             <div style="margin-top: 14px;">
-                <span class="tag-bubble tag-cyan">✦ Unlimited Custom Roles</span>
-                <span class="tag-bubble tag-purple">✦ 10 to 50 Configurable Questions</span>
-                <span class="tag-bubble tag-emerald">✦ Unbiased Blank Choice Radio</span>
+                <span class="tag-bubble tag-cyan">✦ 10 to 50 Configurable Questions</span>
+                <span class="tag-bubble tag-purple">✦ Instant Executive Score</span>
+                <span class="tag-bubble tag-emerald">✦ Full Answer Analysis</span>
             </div>
         </section>
         """,
@@ -1124,51 +1078,52 @@ elif st.session_state.workspace == "Assessment Exam":
     )
 
     if not st.session_state.exam_active and not st.session_state.exam_submitted:
-        st.markdown("### ⚙️ Examination Configuration")
+        st.markdown("### ⚙️ Examination Setup")
         
-        c_e1, c_e2 = st.columns([2, 1])
+        c_e1, c_e2 = st.columns(2)
         with c_e1:
-            exam_role_choice = st.text_input(
-                "Search or Type ANY Role for the Examination:",
-                value="Full Stack Software Engineer",
-                placeholder="e.g. Data Scientist, DevOps Engineer, Android Developer, Cloud Architect, Java Developer..."
+            exam_role_choice = st.selectbox(
+                "Select Candidate Role:",
+                [
+                    "Software Engineer / Full Stack Developer",
+                    "Data Scientist / AI Engineer",
+                    "Cloud DevOps & SRE Engineer",
+                    "Frontend & UI/UX Engineer",
+                    "Backend Systems & Microservices Architect"
+                ]
             )
         with c_e2:
             num_q_choice = st.select_slider(
-                "Number of Questions:",
+                "Select Total Assessment Questions:",
                 options=[10, 15, 20, 30, 40, 50],
                 value=10
             )
 
         st.markdown(f"""
         <div class="panel">
-            <h4 style="margin: 0; color: #38bdf8;">📋 Examination Pattern:</h4>
+            <h4 style="margin: 0; color: #38bdf8;">📋 Examination Structure:</h4>
             <p style="margin: 6px 0 0 0; color: #cbd5e1; font-size: 0.92rem;">
-                • <b>Quantitative Aptitude:</b> Mathematical speed, work & time, speed-distance-time, series.<br>
-                • <b>Logical Reasoning:</b> Pattern analysis, deduction, critical problem solving.<br>
-                • <b>Core Technical Domain:</b> Architecture, algorithms, database operations, reliability.<br>
-                • <b>Blank Radio Options:</b> No options are pre-selected. You must choose your own answer for each question.
+                • <b>Section 1:</b> Quantitative Aptitude & Logical Reasoning (TCS/NQT Pattern)<br>
+                • <b>Section 2:</b> Core Technical, Data Structures & Domain Fundamentals<br>
+                • <b>Section 3:</b> System Architecture, Reliability & Debugging Scenarios
             </p>
         </div>
         """, unsafe_allow_html=True)
 
         if st.button("🚀 Start Examination", use_container_width=True):
-            if not exam_role_choice.strip():
-                st.warning("Please type a role name to generate your examination.")
-            else:
-                with st.spinner(f"Synthesizing {num_q_choice} questions for {exam_role_choice}..."):
-                    questions = generate_examination_suite(exam_role_choice.strip(), num_q_choice, st.session_state.resume_text)
-                    st.session_state.exam_questions = questions
-                    st.session_state.exam_answers = {}
-                    st.session_state.exam_role = exam_role_choice.strip()
-                    st.session_state.exam_active = True
-                    st.session_state.exam_submitted = False
-                    st.session_state.exam_results = None
-                    st.rerun()
+            with st.spinner("Synthesizing examination paper..."):
+                questions = generate_examination_suite(exam_role_choice, num_q_choice, st.session_state.resume_text)
+                st.session_state.exam_questions = questions
+                st.session_state.exam_answers = {}
+                st.session_state.exam_role = exam_role_choice
+                st.session_state.exam_active = True
+                st.session_state.exam_submitted = False
+                st.session_state.exam_results = None
+                st.rerun()
 
     elif st.session_state.exam_active and not st.session_state.exam_submitted:
         st.markdown(f"### 📝 Active Test: {st.session_state.exam_role}")
-        st.caption(f"Total Questions: {len(st.session_state.exam_questions)}. All radio options start completely unselected.")
+        st.caption(f"Answer all {len(st.session_state.exam_questions)} questions and click Submit Examination below.")
         
         with st.form("exam_form"):
             for q in st.session_state.exam_questions:
@@ -1176,7 +1131,7 @@ elif st.session_state.workspace == "Assessment Exam":
                 section_tag = q.get("section", "General Assessment")
                 st.markdown(f"""
                 <div style="margin-top: 18px; margin-bottom: 6px;">
-                    <span class="tag-bubble tag-cyan">Question {qid}</span>
+                    <span class="tag-bubble tag-cyan">Q{qid}</span>
                     <span class="tag-bubble tag-purple">{section_tag}</span>
                     <div style="font-size: 1.05rem; font-weight: 700; color: #f4f7fb; margin-top: 8px;">
                         {q['question']}
@@ -1184,18 +1139,16 @@ elif st.session_state.workspace == "Assessment Exam":
                 </div>
                 """, unsafe_allow_html=True)
                 
-                # index=None ensures no option is pre-selected
                 selected_opt = st.radio(
                     label=f"q_{qid}",
                     options=q["options"],
-                    index=None,
-                    key=f"exam_radio_{qid}",
+                    key=f"radio_q_{qid}",
                     label_visibility="collapsed"
                 )
                 st.session_state.exam_answers[qid] = selected_opt
                 st.markdown("<hr style='border-color: #1e293b; margin: 12px 0;'>", unsafe_allow_html=True)
 
-            submitted = st.form_submit_button("🏁 Submit Examination & View Score", use_container_width=True)
+            submitted = st.form_submit_button("🏁 Submit Examination & Calculate Score", use_container_width=True)
             if submitted:
                 correct_count = 0
                 section_breakdown = {}
@@ -1203,10 +1156,9 @@ elif st.session_state.workspace == "Assessment Exam":
 
                 for q in st.session_state.exam_questions:
                     qid = q["id"]
-                    user_ans = st.session_state.exam_answers.get(qid)
-                    user_ans_str = str(user_ans) if user_ans is not None else "Not Answered"
-                    correct_ans = str(q["answer"]).strip()
-                    is_correct = (user_ans is not None and user_ans.strip() == correct_ans)
+                    user_ans = st.session_state.exam_answers.get(qid, "")
+                    correct_ans = q["answer"]
+                    is_correct = (user_ans.strip() == correct_ans.strip())
                     
                     if is_correct:
                         correct_count += 1
@@ -1221,7 +1173,7 @@ elif st.session_state.workspace == "Assessment Exam":
                     detailed_eval.append({
                         "id": qid,
                         "question": q["question"],
-                        "user_answer": user_ans_str,
+                        "user_answer": user_ans,
                         "correct_answer": correct_ans,
                         "is_correct": is_correct,
                         "explanation": q.get("explanation", "Standard domain answer key.")
