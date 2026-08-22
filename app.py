@@ -623,7 +623,7 @@ if st.session_state.workspace == "Job Seeker":
             <div style="margin-top: 14px;">
                 <span class="tag-bubble tag-cyan">✦ Resume Scoring</span>
                 <span class="tag-bubble tag-purple">✦ Salary Benchmarks</span>
-                <span class="tag-bubble tag-emerald">✦ Mock Interviews</span>
+                <span class="tag-bubble tag-emerald">✦ Career Roadmaps</span>
             </div>
         </section>
         """,
@@ -692,64 +692,64 @@ if st.session_state.workspace == "Job Seeker":
     st.divider()
 
     tabs = st.tabs([
-        "📄 Resume Scanner",
+        "📄 Analyse Resume",
         "🎯 Job Match",
-        "💰 Salary Insights",
-        "🎤 Mock Interview",
-        "🗺️ Career Roadmap",
-        "🛡️ Job Scam Check"
+        "💰 Salary Estimate",
+        "🎤 Interview Questions",
+        "🗺️ Career Road Map",
+        "🛡️ Real Time Job Detection"
     ])
 
-    # 1. Resume Scanner
+    # 1. Analyse Resume
     with tabs[0]:
-        st.subheader("Resume Scanner")
+        st.subheader("Analyse Resume")
         resume_file = st.file_uploader(
-            "Upload Resume (PDF, DOCX, TXT)", type=["pdf", "docx", "txt"], key="resume_upload"
+            "Upload your resume", type=["pdf", "docx", "txt"], key="resume_upload"
         )
 
-        if resume_file and st.button("Scan Resume", use_container_width=True):
-            with st.spinner("Analyzing resume profile..."):
+        if resume_file and st.button("Analyse Resume", use_container_width=True):
+            with st.spinner("Analysing your resume..."):
                 try:
                     result = api_analyze_resume(resume_file)
                     st.session_state.resume_analysis = result
                     st.session_state.resume_text = result.get("extracted_text", "")
-                    log_event("RESUME_ANALYZED", st.session_state.username, "N/A", f"Skills Extracted: {len(result.get('skills', []))}")
-                    st.success("Resume scanned successfully!")
+                    log_event("RESUME_ANALYZED", st.session_state.username, "N/A", f"Skills: {len(result.get('skills', []))}")
+                    st.success("Resume analysed successfully!")
                     st.rerun()
                 except Exception as exc:
-                    st.error(f"Analysis error: {exc}")
+                    st.error(f"Error: {exc}")
 
         if st.session_state.resume_analysis:
             res = st.session_state.resume_analysis
             st.markdown(
                 f"""
                 <div class="panel">
-                    <h3 style="margin: 0; color: #38bdf8; font-weight: 800;">{res.get('name', 'Candidate Profile')}</h3>
-                    <p style="margin: 6px 0 0 0; color: #b8c6d8;">
-                        📧 <b>Email:</b> {res.get('email', 'Not detected')} &nbsp;|&nbsp; 
-                        📱 <b>Phone:</b> {res.get('phone', 'Not detected')} &nbsp;|&nbsp; 
-                        ⏳ <b>Experience:</b> <b>{res.get('experience', 'Identified')}</b>
+                    <h3 style="margin:0; color:#38bdf8; font-weight:800;">{res.get('name', 'Candidate Profile')}</h3>
+                    <p style="margin:6px 0 0 0; color:#b8c6d8;">
+                        📧 <b>Email:</b> {res.get('email', 'Not found')} &nbsp;|&nbsp; 
+                        📱 <b>Phone:</b> {res.get('phone', 'Not found')} &nbsp;|&nbsp; 
+                        ⏳ <b>Experience:</b> <b>{res.get('experience', 'Detected')}</b>
                     </p>
                 </div>
                 """,
                 unsafe_allow_html=True,
             )
 
-            st.markdown("#### Identified Skills")
+            st.markdown("#### Detected Skills")
             show_skills(res.get("skills", []), "tag-cyan")
 
-    # 2. Job Match & 1-Click ATS Bullet Rewriter
+    # 2. Job Match
     with tabs[1]:
-        st.subheader("Job Match & Optimization")
-        job_desc = st.text_area("Paste Target Job Description", height=180, key="jobmatch")
+        st.subheader("Job Match")
+        job_desc = st.text_area("Paste Job Description", height=180, key="jobmatch")
 
-        if st.button("Check Job Fit", use_container_width=True):
+        if st.button("Check Match", use_container_width=True):
             if not st.session_state.resume_text:
-                st.warning("Please upload and scan your resume first.")
+                st.warning("Please upload and analyse your resume first.")
             elif not job_desc.strip():
-                st.warning("Please enter a job description.")
+                st.warning("Please paste a job description.")
             else:
-                with st.spinner("Calculating role alignment..."):
+                with st.spinner("Checking job match..."):
                     try:
                         result = api_match_job(st.session_state.resume_text, job_desc)
                         st.session_state.current_job_match = result
@@ -757,29 +757,28 @@ if st.session_state.workspace == "Job Seeker":
                         
                         col_s1, col_s2 = st.columns([1, 2])
                         with col_s1:
-                            render_radial_gauge(overall_score, "Overall Fit", "Match Index", "#38bdf8")
+                            render_radial_gauge(overall_score, "Job Match", "Overall Score", "#38bdf8")
                         with col_s2:
-                            st.markdown("#### Matched Skills")
+                            st.markdown("#### Matching Skills")
                             show_skills(result.get("matched", []), "tag-cyan")
                             st.markdown("#### Missing Skills")
                             show_skills(result.get("missing", []), "tag-purple")
                     except Exception as exc:
-                        st.error(f"Matching error: {exc}")
+                        st.error(f"Error: {exc}")
 
-        # ATS Bullet Optimizer
+        # Bullet Rewriter
         if "current_job_match" in st.session_state:
             match_res = st.session_state.current_job_match
             missing_skills = match_res.get("missing", [])
             
             st.markdown("---")
-            st.markdown("#### ⚡ 1-Click ATS Resume Bullet Optimizer")
-            st.caption("Generate high-impact bullet points using the Google XYZ format (*Accomplished [X], measured by [Y], by doing [Z]*) incorporating your missing skills.")
+            st.markdown("#### ⚡ Improve Resume Bullet Points")
             
-            if st.button("✨ Rewrite My Bullet Points for this Job", use_container_width=True):
-                with st.spinner("Generating tailored bullet points..."):
+            if st.button("Generate Bullet Points for This Job", use_container_width=True):
+                with st.spinner("Writing bullet points..."):
                     prompt = [
-                        {"role": "system", "content": "You are an expert executive resume writer. Write 3 high-impact resume bullet points using the Google XYZ formula (Accomplished [X], as measured by [Y], by doing [Z]). Incorporate the following missing target skills naturally based on candidate experience."},
-                        {"role": "user", "content": f"Candidate Skills: {st.session_state.resume_analysis.get('skills', []) if st.session_state.resume_analysis else ''}\nMissing Target Skills: {missing_skills}\nTarget Job: {job_desc}"}
+                        {"role": "system", "content": "Write 3 high-impact resume bullet points using the format: Accomplished [X], measured by [Y], by doing [Z]. Incorporate missing skills naturally."},
+                        {"role": "user", "content": f"Candidate Skills: {st.session_state.resume_analysis.get('skills', []) if st.session_state.resume_analysis else ''}\nMissing Skills: {missing_skills}\nJob: {job_desc}"}
                     ]
                     rewritten = api_chat_assistant(prompt, resume_context=st.session_state.resume_text)
                     st.session_state.ats_generated_bullets = rewritten
@@ -787,26 +786,26 @@ if st.session_state.workspace == "Job Seeker":
             if st.session_state.ats_generated_bullets:
                 st.markdown("""
                 <div class="panel" style="border: 1px solid rgba(56, 189, 248, 0.4);">
-                    <div style="font-weight: 800; color: #38bdf8; margin-bottom: 8px;">🚀 Ready-to-Copy ATS Bullets:</div>
+                    <div style="font-weight: 800; color: #38bdf8; margin-bottom: 6px;">Suggested Bullet Points:</div>
                 </div>
                 """, unsafe_allow_html=True)
                 st.code(st.session_state.ats_generated_bullets, language="markdown")
 
-    # 3. Salary & Market Benchmarks
+    # 3. Salary Estimate
     with tabs[2]:
-        st.subheader("Salary & Compensation Insights")
-        salary_role = st.text_input("Enter Job Title / Role", "AI / Full Stack Engineer", key="salary_role_input")
-        salary_exp = st.selectbox("Experience Level:", ["Entry Level (0-2 yrs)", "Mid Level (3-5 yrs)", "Senior Level (6-8 yrs)", "Lead / Principal (9+ yrs)"], index=1)
+        st.subheader("Salary Estimate")
+        salary_role = st.text_input("Job Title", "Software Engineer", key="salary_role_input")
+        salary_exp = st.selectbox("Experience Level", ["Entry Level (0-2 yrs)", "Mid Level (3-5 yrs)", "Senior Level (6-8 yrs)", "Lead (9+ yrs)"], index=1)
         
-        if st.button("Calculate Salary Range", use_container_width=True):
-            exp_multipliers = {"Entry Level (0-2 yrs)": (65, 85, 105), "Mid Level (3-5 yrs)": (95, 125, 155), "Senior Level (6-8 yrs)": (140, 175, 215), "Lead / Principal (9+ yrs)": (190, 240, 310)}
+        if st.button("Get Salary Estimate", use_container_width=True):
+            exp_multipliers = {"Entry Level (0-2 yrs)": (65, 85, 105), "Mid Level (3-5 yrs)": (95, 125, 155), "Senior Level (6-8 yrs)": (140, 175, 215), "Lead (9+ yrs)": (190, 240, 310)}
             low_k, med_k, high_k = exp_multipliers.get(salary_exp, (90, 120, 150))
             
             col_sal1, col_sal2, col_sal3 = st.columns(3)
             with col_sal1:
                 st.markdown(f"""
                 <div class="gauge-box">
-                    <div class="gauge-label">Base Range</div>
+                    <div class="gauge-label">Starting</div>
                     <div style="font-size: 2.2rem; font-weight: 900; color: #94a3b8; margin: 8px 0;">${low_k}k</div>
                     <span class="tag-bubble tag-cyan">25th Percentile</span>
                 </div>
@@ -814,58 +813,48 @@ if st.session_state.workspace == "Job Seeker":
             with col_sal2:
                 st.markdown(f"""
                 <div class="gauge-box" style="border-color: #38bdf8;">
-                    <div class="gauge-label">Market Median</div>
+                    <div class="gauge-label">Average</div>
                     <div style="font-size: 2.4rem; font-weight: 900; color: #38bdf8; margin: 8px 0;">${med_k}k</div>
-                    <span class="tag-bubble tag-emerald">Estimated Average</span>
+                    <span class="tag-bubble tag-emerald">Market Median</span>
                 </div>
                 """, unsafe_allow_html=True)
             with col_sal3:
                 st.markdown(f"""
                 <div class="gauge-box">
-                    <div class="gauge-label">Top Tier Target</div>
+                    <div class="gauge-label">Top Pay</div>
                     <div style="font-size: 2.2rem; font-weight: 900; color: #c084fc; margin: 8px 0;">${high_k}k</div>
                     <span class="tag-bubble tag-purple">90th Percentile</span>
                 </div>
                 """, unsafe_allow_html=True)
 
-            st.markdown("<br>", unsafe_allow_html=True)
-            st.markdown(f"""
-            <div class="panel">
-                <h4 style="margin: 0; color: #38bdf8;">💡 Salary Growth Tip for {salary_role}</h4>
-                <p style="margin: 6px 0 0 0; color: #cbd5e1;">Adding cloud infrastructure, scalable backend microservices, or distributed computing skills increases compensation offers by an estimated <b>+14% to +22%</b>.</p>
-            </div>
-            """, unsafe_allow_html=True)
-
-    # 4. Mock Interview Generator
+    # 4. Interview Questions
     with tabs[3]:
-        st.subheader("AI Mock Interview Questions")
-        st.caption("Generate role-specific interview questions tailored to your resume background.")
+        st.subheader("Interview Questions")
+        target_interview_role = st.text_input("Target Role", "Software Engineer", key="int_role")
         
-        target_interview_role = st.text_input("Interview Role:", "Full Stack / AI Engineer", key="int_role")
-        
-        if st.button("Generate Interview Questions 🎤", use_container_width=True):
+        if st.button("Generate Questions", use_container_width=True):
             with st.spinner("Generating interview questions..."):
                 prompt = [
-                    {"role": "system", "content": "You are a senior hiring manager. Generate 4 realistic interview questions (2 technical, 1 scenario-based, 1 behavioral) for this candidate role based on their profile. Include a 1-sentence tip on what a good answer should mention for each."},
-                    {"role": "user", "content": f"Role: {target_interview_role}\nCandidate Resume Context: {st.session_state.resume_text[:2000]}"}
+                    {"role": "system", "content": "Generate 4 realistic interview questions (2 technical, 1 scenario, 1 behavioral) with a quick tip for answering each."},
+                    {"role": "user", "content": f"Role: {target_interview_role}\nResume: {st.session_state.resume_text[:2000]}"}
                 ]
                 st.session_state.interview_questions = api_chat_assistant(prompt, resume_context=st.session_state.resume_text)
 
         if st.session_state.interview_questions:
             st.markdown("""
             <div class="panel" style="border: 1px solid rgba(139, 124, 255, 0.4);">
-                <div style="font-weight: 800; color: #c084fc; margin-bottom: 8px;">🎯 Interview Questions & Answering Tips:</div>
+                <div style="font-weight: 800; color: #c084fc; margin-bottom: 6px;">Practice Questions:</div>
             </div>
             """, unsafe_allow_html=True)
             st.markdown(st.session_state.interview_questions)
 
-    # 5. Career Roadmap
+    # 5. Career Road Map
     with tabs[4]:
-        st.subheader("Career Growth Roadmap")
-        role = st.text_input("Aspirational Target Role", "Machine Learning Engineer", key="roadmap_target_input")
+        st.subheader("Career Road Map")
+        role = st.text_input("Target Dream Role", "Machine Learning Engineer", key="roadmap_target_input")
 
-        if st.button("Generate Career Roadmap", use_container_width=True):
-            with st.spinner("Building your career roadmap..."):
+        if st.button("Build Career Road Map", use_container_width=True):
+            with st.spinner("Creating your road map..."):
                 try:
                     res = api_career_roadmap(st.session_state.resume_text, role)
                     steps = res.get("steps", [])
@@ -874,24 +863,24 @@ if st.session_state.workspace == "Job Seeker":
                             f"""
                             <div class="panel">
                                 <span class="tag-bubble tag-cyan">STEP {idx:02d}</span>
-                                <div style="font-size: 1.1rem; font-weight: 800; color: #f4f7fb; margin-top: 8px;">{step}</div>
+                                <div style="font-size: 1.05rem; font-weight: 800; color: #f4f7fb; margin-top: 6px;">{step}</div>
                             </div>
                             """,
                             unsafe_allow_html=True,
                         )
                 except Exception as exc:
-                    st.error(f"Roadmap error: {exc}")
+                    st.error(f"Error: {exc}")
 
-    # 6. Job Scam Check
+    # 6. Real Time Job Detection
     with tabs[5]:
-        st.subheader("Job Safety & Fraud Risk Scanner")
-        jobrisk = st.text_area("Paste Job Advertisement / Offer Letter", height=180, key="risk")
+        st.subheader("Real Time Job Detection")
+        jobrisk = st.text_area("Paste Job Post or Offer to Check", height=180, key="risk")
 
-        if st.button("Scan for Scam Signals", use_container_width=True):
+        if st.button("Check Safety", use_container_width=True):
             if not jobrisk.strip():
-                st.warning("Enter a job advertisement to evaluate.")
+                st.warning("Please paste text to check.")
             else:
-                with st.spinner("Checking for scam indicators..."):
+                with st.spinner("Checking posting in real time..."):
                     try:
                         res = api_detect_fraud(jobrisk)
                         score_risk = res.get('score', 0)
@@ -899,32 +888,32 @@ if st.session_state.workspace == "Job Seeker":
                         
                         col_f1, col_f2 = st.columns([1, 2])
                         with col_f1:
-                            render_radial_gauge(score_risk, "Risk Index", level_risk, "#fbbf24" if level_risk == "HIGH RISK" else "#4ade80")
+                            render_radial_gauge(score_risk, "Risk Score", level_risk, "#fbbf24" if level_risk == "HIGH RISK" else "#4ade80")
                         with col_f2:
                             st.markdown(f"""
                             <div class="panel">
-                                <h4 style="margin: 0; color: {'#fbbf24' if level_risk == 'HIGH RISK' else '#4ade80'};">Verification Verdict: {level_risk}</h4>
-                                <p style="margin: 6px 0 0 0; color: #cbd5e1;">Signals Identified: <b>{res.get('signals', 0)}</b></p>
+                                <h4 style="margin: 0; color: {'#fbbf24' if level_risk == 'HIGH RISK' else '#4ade80'};">Verdict: {level_risk}</h4>
+                                <p style="margin: 6px 0 0 0; color: #cbd5e1;">Flags found: <b>{res.get('signals', 0)}</b></p>
                             </div>
                             """, unsafe_allow_html=True)
                             if level_risk == "HIGH RISK":
-                                st.warning("⚠️ High risk signals detected in this job posting.")
+                                st.warning("⚠️ Warning: Suspicious signs detected in this job post.")
                             else:
-                                st.success("✅ Low risk detected. Posting appears legitimate.")
+                                st.success("✅ Looks safe. No obvious red flags found.")
                     except Exception as exc:
-                        st.error(f"Risk evaluation error: {exc}")
+                        st.error(f"Error: {exc}")
 
 # ============================================================
-# 2. RESUME BUILDER WORKSPACE (TRENDING 2026 TEMPLATES & ATS FORMATIONS)
+# 2. RESUME BUILDER WORKSPACE
 # ============================================================
 
 elif st.session_state.workspace == "Resume Builder":
     st.markdown(
         """
         <section class="hero">
-            <div class="kicker">NEXT-GEN RESUME ARCHITECT</div>
-            <h1>Build Your Resume.<br><span>Trending 2026 Formations.</span></h1>
-            <p>Select modern ATS-engineered templates: Silicon Valley Tech, Ivy League Executive, Hybrid Skills-Led, or Nordic Minimalist.</p>
+            <div class="kicker">RESUME ARCHITECT</div>
+            <h1>Build Your Resume.<br><span>Professional & ATS-Ready.</span></h1>
+            <p>Design a job-winning resume with instant live previews and 1-click document download.</p>
             <div style="margin-top: 14px;">
                 <span class="tag-bubble tag-cyan">✦ Silicon Valley Modern</span>
                 <span class="tag-bubble tag-purple">✦ Ivy League Executive</span>
@@ -951,7 +940,7 @@ elif st.session_state.workspace == "Resume Builder":
             [
                 "🚀 Silicon Valley (Cyan & Tech Accents)",
                 "🏛️ Ivy League Executive (Classic Navy & Serif)",
-                "⚡ Hybrid Skills-First (Modern 2026 Tech & Startup)",
+                "⚡ Hybrid Skills-First (Modern Tech & Startup)",
                 "🌿 Nordic Minimalist (Emerald & Clean Whitespace)",
                 "🌑 Dark Cyberpunk Pro (Modern High-Contrast Slate)"
             ]
@@ -969,7 +958,7 @@ elif st.session_state.workspace == "Resume Builder":
             rb_links = st.text_input("GitHub / LinkedIn / Portfolio", value="github.com/alex-mercer | linkedin.com/in/alex-mercer", key="rb_links")
 
         rb_summary = st.text_area(
-            "Executive Summary (Impact-Oriented)",
+            "Executive Summary",
             value="High-impact engineer with 5+ years of experience designing scalable backend architectures, AI workflows, and distributed microservices. Proven track record of optimizing system throughput by 40% and deploying LLM inference pipelines to production.",
             height=100,
             key="rb_summary"
@@ -977,9 +966,8 @@ elif st.session_state.workspace == "Resume Builder":
         
         rb_skills = st.text_area("Core Skills (comma separated)", value=def_skills, height=75, key="rb_skills")
         
-        # Modern 2026 Section: Key Projects
         rb_projects = st.text_area(
-            "Featured Projects & Key Impact (2026 Trending)",
+            "Featured Projects & Key Impact",
             value="""• AI CareerLens Engine: Built scalable resume parsing microservice with 95%+ precision using FastAPI & Transformers.
 • Distributed Cache Layer: Designed low-latency Redis cluster handling 50k+ req/sec with sub-5ms latency.""",
             height=90,
@@ -987,7 +975,7 @@ elif st.session_state.workspace == "Resume Builder":
         )
 
         rb_exp = st.text_area(
-            "Work Experience (Google XYZ Format)",
+            "Work Experience",
             value="""Senior Software Engineer — TechCorp (2022 - Present)
 • Architected scalable FastAPI microservices handling 4M+ daily active API requests with 99.98% uptime.
 • Reduced database query latency by 42% through Redis caching and PostgreSQL indexing strategies.
@@ -1011,7 +999,6 @@ AWS Certified Solutions Architect — Associate (2024)""",
     with builder_col2:
         st.markdown("### 👁️ Live Resume Preview")
         
-        # Style Engine based on Modern 2026 Formations
         if "Silicon Valley" in template_style:
             primary_c = "#0284c7"
             accent_c = "#6366f1"
@@ -1065,13 +1052,11 @@ AWS Certified Solutions Architect — Associate (2024)""",
         proj_formatted = "<br>".join([f"<span style='display:block; margin-bottom:3px; font-size:11.5px;'>{line}</span>" for line in rb_projects.split("\n") if line.strip()])
         edu_formatted = "<br>".join([f"<span style='display:block; margin-bottom:3px; font-size:11.5px;'>{line}</span>" for line in rb_edu.split("\n") if line.strip()])
 
-        # Fully sanitized HTML block
         resume_preview_html = f"""<div style="background:{bg_c}; color:{text_c}; font-family:{font_family}; padding:30px; border-radius:12px; box-shadow:0 15px 40px rgba(0,0,0,0.45); line-height:1.45;"><div style="border-bottom:{border_header}; padding-bottom:10px; margin-bottom:12px;"><h1 style="color:{primary_c}; margin:0; font-size:24px; font-weight:900; letter-spacing:-0.5px;">{rb_name}</h1><div style="color:{accent_c}; font-size:13.5px; font-weight:700; margin-top:2px;">{rb_title}</div><div style="font-size:11px; color:#64748b; margin-top:6px; display:flex; flex-wrap:wrap; gap:10px;"><span>📧 {rb_email}</span><span>📱 {rb_phone}</span><span>📍 {rb_loc}</span><span>🔗 {rb_links}</span></div></div><div style="margin-bottom:12px;"><div style="font-size:11.5px; font-weight:800; text-transform:uppercase; color:{primary_c}; letter-spacing:1px; margin-bottom:3px;">Summary</div><p style="font-size:11.5px; color:{text_c}; opacity:0.9; margin:0;">{rb_summary}</p></div><div style="margin-bottom:12px;"><div style="font-size:11.5px; font-weight:800; text-transform:uppercase; color:{primary_c}; letter-spacing:1px; margin-bottom:5px;">Core Stack</div><div>{skills_html}</div></div><div style="margin-bottom:12px;"><div style="font-size:11.5px; font-weight:800; text-transform:uppercase; color:{primary_c}; letter-spacing:1px; margin-bottom:4px;">Featured Projects</div><div style="color:{text_c}; opacity:0.9;">{proj_formatted}</div></div><div style="margin-bottom:12px;"><div style="font-size:11.5px; font-weight:800; text-transform:uppercase; color:{primary_c}; letter-spacing:1px; margin-bottom:4px;">Experience</div><div style="line-height:1.45;">{exp_formatted}</div></div><div style="margin-bottom:4px;"><div style="font-size:11.5px; font-weight:800; text-transform:uppercase; color:{primary_c}; letter-spacing:1px; margin-bottom:4px;">Education</div><div style="color:{text_c}; opacity:0.9;">{edu_formatted}</div></div></div>"""
         
         st.markdown(resume_preview_html, unsafe_allow_html=True)
         st.markdown("<br>", unsafe_allow_html=True)
         
-        # 1-Click Instant Download Document
         full_download_doc = f"""<!DOCTYPE html>
 <html>
 <head>
