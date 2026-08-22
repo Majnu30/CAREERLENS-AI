@@ -35,7 +35,7 @@ def log_event(event_type: str, username: str, rating: str = "N/A", details: str 
             details
         ])
 
-# --- Clean, Modern Sci-Fi Theme (Zero Red, Cyan/Purple/Emerald Palette) ---
+# --- Sci-Fi Styling ---
 st.markdown(
     """
 <style>
@@ -78,7 +78,6 @@ p,label,.stMarkdown{
     color:#b8c6d8;
 }
 
-/* Brand Header */
 .brand-container {
     display: flex;
     align-items: center;
@@ -112,7 +111,6 @@ p,label,.stMarkdown{
     margin-top:2px;
 }
 
-/* Minimal Green Status Dot */
 .status-dot-container {
     display: flex;
     align-items: center;
@@ -132,7 +130,6 @@ p,label,.stMarkdown{
     display: inline-block;
 }
 
-/* Hero Card */
 .hero{
     background:
         linear-gradient(135deg,rgba(139,124,255,.12),rgba(56,189,248,.04)),
@@ -171,7 +168,6 @@ p,label,.stMarkdown{
     color:#a8b9cd;
 }
 
-/* SVG Radial Gauge Cards */
 .gauge-box {
     background: rgba(13, 26, 43, 0.9);
     border: 1px solid var(--border);
@@ -194,7 +190,6 @@ p,label,.stMarkdown{
     margin-bottom: 6px;
 }
 
-/* Bubble Bento Cards */
 .panel{
     background:rgba(13,26,43,.82);
     border:1px solid var(--border);
@@ -212,7 +207,6 @@ p,label,.stMarkdown{
     box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
 }
 
-/* Badges & Tags */
 .skill, .tag-bubble{
     display:inline-flex;
     align-items: center;
@@ -245,7 +239,6 @@ p,label,.stMarkdown{
     border: 1px solid rgba(74, 222, 128, 0.35);
 }
 
-/* Custom Buttons */
 .stButton > button {
     border-radius: 50px !important;
     background: linear-gradient(135deg, #0284c7 0%, #4f46e5 50%, #7c3aed 100%) !important;
@@ -326,12 +319,11 @@ def api_chat_assistant(messages: List[Dict], resume_context: str = "") -> str:
     return ""
 
 # ============================================================
-# EXAMINATION ENGINE (ROBUST GENERATOR + FALLBACK BANK)
+# EXAMINATION ENGINE
 # ============================================================
 
 def get_fallback_exam(role: str, count: int) -> List[Dict]:
     bank = [
-        # Aptitude & Reasoning (TCS/NQT Style)
         {
             "id": 1,
             "section": "Aptitude & Logical",
@@ -364,7 +356,6 @@ def get_fallback_exam(role: str, count: int) -> List[Dict]:
             "answer": "His nephew's",
             "explanation": "The only daughter of the speaker's mother is the speaker's sister. Her son is the speaker's nephew."
         },
-        # Technical & Core Domain
         {
             "id": 5,
             "section": "Core Technical",
@@ -402,7 +393,6 @@ def get_fallback_exam(role: str, count: int) -> List[Dict]:
             "answer": "Isolation",
             "explanation": "Isolation defines how transaction integrity is visible to other concurrent users and systems."
         },
-        # Scenario & Coding Logic
         {
             "id": 9,
             "section": "Scenario & System Logic",
@@ -426,7 +416,6 @@ def get_fallback_exam(role: str, count: int) -> List[Dict]:
         }
     ]
     
-    # Expand or slice to the requested count
     extended_bank = []
     while len(extended_bank) < count:
         for item in bank:
@@ -512,7 +501,6 @@ if "ats_generated_bullets" not in st.session_state:
 if "recruiter_outreach_email" not in st.session_state:
     st.session_state.recruiter_outreach_email = None
 
-# Assessment Exam State
 if "exam_active" not in st.session_state:
     st.session_state.exam_active = False
 if "exam_questions" not in st.session_state:
@@ -542,7 +530,7 @@ def render_radial_gauge(percentage: int, label: str, badge_text: str, color_hex:
     st.markdown(html, unsafe_allow_html=True)
 
 # ============================================================
-# DIALOGS (SIGNIN, REGISTER, LOGOUT RATING, IMPROVEMENT)
+# DIALOGS
 # ============================================================
 
 @st.dialog("🔐 Sign In")
@@ -721,7 +709,6 @@ with st.sidebar:
         unsafe_allow_html=True,
     )
     
-    # User Profile Pill
     st.markdown(
         f"""
         <div style="background: rgba(139, 124, 255, 0.12); border: 1px solid rgba(139, 124, 255, 0.3); border-radius: 14px; padding: 10px 14px; margin: 10px 0 14px 0; display: flex; justify-content: space-between; align-items: center;">
@@ -740,7 +727,6 @@ with st.sidebar:
 
     st.divider()
 
-    # Workspace Switchers
     col_w1, col_w2 = st.columns(2)
     with col_w1:
         if st.button("👨‍💻 Candidate", use_container_width=True):
@@ -751,18 +737,15 @@ with st.sidebar:
 
     st.markdown("<br>", unsafe_allow_html=True)
     
-    # Dedicated Sidebar Section: Live Pre-Interview Exam
     if st.button("📝 Pre-Interview Assessment", use_container_width=True):
         st.session_state.workspace = "Assessment Exam"
 
-    # Dedicated Sidebar Section: Resume Builder
     if st.button("📄 Resume Builder", use_container_width=True):
         st.session_state.workspace = "Resume Builder"
 
     if st.button("💼 Career Assistant", use_container_width=True):
         st.session_state.workspace = "Assistant"
 
-    # Admin Tab
     if st.session_state.is_admin_auth:
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("📊 Analytics & Telemetry", use_container_width=True):
@@ -770,7 +753,6 @@ with st.sidebar:
 
     st.markdown("<br><br>", unsafe_allow_html=True)
 
-    # Status Indicator
     st.markdown(
         """
         <div class="status-dot-container">
@@ -822,7 +804,6 @@ if st.session_state.workspace == "Job Seeker":
         </div>
         """, unsafe_allow_html=True)
 
-    # Score improvement trigger
     is_low_score = analysis and score_raw < 75
     is_low_skills = analysis and skills_count < 5
     
@@ -830,7 +811,7 @@ if st.session_state.workspace == "Job Seeker":
         st.markdown(
             f"""
             <div class="improve-card">
-                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: gap: 15px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
                     <div>
                         <div style="display: flex; align-items: center; gap: 8px;">
                             <span style="font-size: 1.4rem;">⚡</span>
@@ -938,7 +919,6 @@ if st.session_state.workspace == "Job Seeker":
                     except Exception as exc:
                         st.error(f"Error: {exc}")
 
-        # Bullet Rewriter
         if "current_job_match" in st.session_state:
             match_res = st.session_state.current_job_match
             missing_skills = match_res.get("missing", [])
@@ -999,10 +979,10 @@ if st.session_state.workspace == "Job Seeker":
                 </div>
                 """, unsafe_allow_html=True)
 
-    # 4. Interview Questions (Direct Role-Based Q&A Bank)
+    # 4. Interview Questions
     with tabs[3]:
         st.subheader("Interview Questions")
-        st.caption("Generate role-specific interview questions and recommended answers.")
+        st.caption("Generate role-specific interview questions and key answering criteria.")
         target_interview_role = st.text_input("Target Role", "Software Engineer", key="int_role")
         
         if st.button("Generate Interview Questions", use_container_width=True):
@@ -1013,7 +993,7 @@ if st.session_state.workspace == "Job Seeker":
                 ]
                 st.session_state.interview_questions = api_chat_assistant(prompt, resume_context=st.session_state.resume_text)
 
-        if st.session_state.interview_questions:
+        if st.session_state.get("interview_questions"):
             st.markdown("""
             <div class="panel" style="border: 1px solid rgba(139, 124, 255, 0.4);">
                 <div style="font-weight: 800; color: #c084fc; margin-bottom: 6px;">Interview Questions & Key Criteria:</div>
@@ -1077,7 +1057,7 @@ if st.session_state.workspace == "Job Seeker":
                         st.error(f"Error: {exc}")
 
 # ============================================================
-# 2. PRE-INTERVIEW ASSESSMENT (TCS/NQT STYLE EXAM WORKSPACE)
+# 2. PRE-INTERVIEW ASSESSMENT
 # ============================================================
 
 elif st.session_state.workspace == "Assessment Exam":
@@ -1145,7 +1125,6 @@ elif st.session_state.workspace == "Assessment Exam":
         st.markdown(f"### 📝 Active Test: {st.session_state.exam_role}")
         st.caption(f"Answer all {len(st.session_state.exam_questions)} questions and click Submit Examination below.")
         
-        # Examination Form
         with st.form("exam_form"):
             for q in st.session_state.exam_questions:
                 qid = q["id"]
@@ -1171,7 +1150,6 @@ elif st.session_state.workspace == "Assessment Exam":
 
             submitted = st.form_submit_button("🏁 Submit Examination & Calculate Score", use_container_width=True)
             if submitted:
-                # Evaluation Engine
                 correct_count = 0
                 section_breakdown = {}
                 detailed_eval = []
@@ -1251,7 +1229,6 @@ elif st.session_state.workspace == "Assessment Exam":
 
         st.markdown("<br>", unsafe_allow_html=True)
         
-        # Section Performance Breakdown
         st.markdown("### 📊 Section-Wise Performance")
         s_cols = st.columns(len(res["breakdown"]))
         for idx, (sec_name, sec_data) in enumerate(res["breakdown"].items()):
@@ -1267,7 +1244,6 @@ elif st.session_state.workspace == "Assessment Exam":
 
         st.markdown("<br>", unsafe_allow_html=True)
         
-        # Detailed Answer Key & Explanations
         st.markdown("### 🔍 Answer Key & Detailed Explanations")
         for item in res["details"]:
             status_badge = '<span class="tag-bubble tag-emerald">✓ Correct</span>' if item["is_correct"] else '<span class="tag-bubble tag-purple">✗ Incorrect</span>'
@@ -1426,7 +1402,7 @@ AWS Certified Solutions Architect — Associate (2024)""",
             tag_text = "#047857"
             border_header = "none"
             font_family = "'Helvetica Neue', Arial, sans-serif"
-        else: # Dark Cyberpunk Pro
+        else:
             primary_c = "#38bdf8"
             accent_c = "#a855f7"
             bg_c = "#0f172a"
@@ -1551,7 +1527,6 @@ elif st.session_state.workspace == "Recruiter":
         st.markdown("#### Candidate Shortlist")
         st.dataframe(df, use_container_width=True, hide_index=True)
         
-        # Candidate Deep-Dive Inspector
         st.markdown("---")
         st.markdown("#### 🔍 Candidate Deep-Dive Inspector")
         
@@ -1581,7 +1556,6 @@ elif st.session_state.workspace == "Recruiter":
                     skills_val = cand_row["skills"] if isinstance(cand_row["skills"], list) else str(cand_row["skills"]).split(",")
                     show_skills(skills_val, "tag-cyan")
 
-            # 1-Click Recruiter Outreach Email Generator
             st.markdown("#### ✉️ 1-Click Candidate Outreach Email Generator")
             if st.button(f"Generate Interview Invite for {selected_candidate_name}", use_container_width=True):
                 with st.spinner("Drafting personalized outreach email..."):
@@ -1702,7 +1676,6 @@ elif st.session_state.workspace == "Analytics":
 
         st.markdown("<br>", unsafe_allow_html=True)
         
-        # User Feedback and Ratings
         st.markdown("#### ⭐ User Exit Ratings & Comments")
         if not rated_entries.empty:
             st.dataframe(
@@ -1713,7 +1686,6 @@ elif st.session_state.workspace == "Analytics":
         else:
             st.info("No ratings recorded yet.")
 
-        # Full System Log
         st.markdown("#### 📜 Full System Audit Log")
         st.dataframe(logs_df.sort_values(by="Timestamp", ascending=False), use_container_width=True, hide_index=True)
 
