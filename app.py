@@ -915,20 +915,21 @@ if st.session_state.workspace == "Job Seeker":
                         st.error(f"Risk evaluation error: {exc}")
 
 # ============================================================
-# 2. RESUME BUILDER WORKSPACE (CLEAN HTML & 1-CLICK PDF DOWNLOAD)
+# 2. RESUME BUILDER WORKSPACE (TRENDING 2026 TEMPLATES & ATS FORMATIONS)
 # ============================================================
 
 elif st.session_state.workspace == "Resume Builder":
     st.markdown(
         """
         <section class="hero">
-            <div class="kicker">RESUME ARCHITECT</div>
-            <h1>Build Your Resume.<br><span>Professional & ATS-Ready.</span></h1>
-            <p>Design a job-winning resume with instant live previews and 1-click document download.</p>
+            <div class="kicker">NEXT-GEN RESUME ARCHITECT</div>
+            <h1>Build Your Resume.<br><span>Trending 2026 Formations.</span></h1>
+            <p>Select modern ATS-engineered templates: Silicon Valley Tech, Ivy League Executive, Hybrid Skills-Led, or Nordic Minimalist.</p>
             <div style="margin-top: 14px;">
-                <span class="tag-bubble tag-cyan">✦ Modern Tech</span>
-                <span class="tag-bubble tag-purple">✦ Executive Classic</span>
-                <span class="tag-bubble tag-emerald">✦ Minimalist Clean</span>
+                <span class="tag-bubble tag-cyan">✦ Silicon Valley Modern</span>
+                <span class="tag-bubble tag-purple">✦ Ivy League Executive</span>
+                <span class="tag-bubble tag-emerald">✦ Hybrid Skills-First</span>
+                <span class="tag-bubble tag-cyan">✦ Nordic Minimalist</span>
             </div>
         </section>
         """,
@@ -938,20 +939,26 @@ elif st.session_state.workspace == "Resume Builder":
     def_name = st.session_state.resume_analysis.get("name", "Alex Mercer") if st.session_state.resume_analysis else "Alex Mercer"
     def_email = st.session_state.resume_analysis.get("email", "alex.mercer@innovate.dev") if st.session_state.resume_analysis else "alex.mercer@innovate.dev"
     def_phone = st.session_state.resume_analysis.get("phone", "+1 (555) 019-2834") if st.session_state.resume_analysis else "+1 (555) 019-2834"
-    def_skills = ", ".join(st.session_state.resume_analysis.get("skills", ["Python", "FastAPI", "React", "Docker", "Machine Learning", "PostgreSQL", "AWS"])) if st.session_state.resume_analysis else "Python, FastAPI, React, Docker, Machine Learning, PostgreSQL, AWS"
+    def_skills = ", ".join(st.session_state.resume_analysis.get("skills", ["Python", "FastAPI", "React", "Docker", "Machine Learning", "PostgreSQL", "AWS", "Distributed Systems"])) if st.session_state.resume_analysis else "Python, FastAPI, React, Docker, Machine Learning, PostgreSQL, AWS, Distributed Systems"
 
     builder_col1, builder_col2 = st.columns([1.1, 1.3], gap="large")
 
     with builder_col1:
-        st.markdown("### ✏️ Profile Information")
+        st.markdown("### ⚙️ Template & Profile Editor")
         
         template_style = st.selectbox(
-            "Select Resume Template:",
-            ["✨ Modern Tech (Cyan & Indigo)", "👔 Executive Classic (Navy & Slate)", "🌿 Minimalist Clean (Emerald & Graphite)"]
+            "Select Resume Formation:",
+            [
+                "🚀 Silicon Valley (Cyan & Tech Accents)",
+                "🏛️ Ivy League Executive (Classic Navy & Serif)",
+                "⚡ Hybrid Skills-First (Modern 2026 Tech & Startup)",
+                "🌿 Nordic Minimalist (Emerald & Clean Whitespace)",
+                "🌑 Dark Cyberpunk Pro (Modern High-Contrast Slate)"
+            ]
         )
         
         rb_name = st.text_input("Full Name", value=def_name, key="rb_name")
-        rb_title = st.text_input("Professional Title", value="Senior Software & AI Engineer", key="rb_title")
+        rb_title = st.text_input("Target Role / Headline", value="Senior Software & AI Systems Engineer", key="rb_title")
         
         c_c1, c_c2 = st.columns(2)
         with c_c1:
@@ -959,95 +966,127 @@ elif st.session_state.workspace == "Resume Builder":
             rb_loc = st.text_input("Location", value="San Francisco, CA", key="rb_loc")
         with c_c2:
             rb_phone = st.text_input("Phone", value=def_phone, key="rb_phone")
-            rb_links = st.text_input("LinkedIn / Portfolio", value="linkedin.com/in/alex-mercer", key="rb_links")
+            rb_links = st.text_input("GitHub / LinkedIn / Portfolio", value="github.com/alex-mercer | linkedin.com/in/alex-mercer", key="rb_links")
 
         rb_summary = st.text_area(
-            "Professional Summary",
-            value="High-impact engineer with 4+ years of experience designing scalable backend architectures, AI workflows, and cloud microservices. Proven track record of optimizing system throughput by 35% and improving search relevancy.",
-            height=110,
+            "Executive Summary (Impact-Oriented)",
+            value="High-impact engineer with 5+ years of experience designing scalable backend architectures, AI workflows, and distributed microservices. Proven track record of optimizing system throughput by 40% and deploying LLM inference pipelines to production.",
+            height=100,
             key="rb_summary"
         )
         
-        rb_skills = st.text_area("Core Skills (comma separated)", value=def_skills, height=80, key="rb_skills")
+        rb_skills = st.text_area("Core Skills (comma separated)", value=def_skills, height=75, key="rb_skills")
         
+        # Modern 2026 Section: Key Projects
+        rb_projects = st.text_area(
+            "Featured Projects & Key Impact (2026 Trending)",
+            value="""• AI CareerLens Engine: Built scalable resume parsing microservice with 95%+ precision using FastAPI & Transformers.
+• Distributed Cache Layer: Designed low-latency Redis cluster handling 50k+ req/sec with sub-5ms latency.""",
+            height=90,
+            key="rb_projects"
+        )
+
         rb_exp = st.text_area(
-            "Work Experience",
+            "Work Experience (Google XYZ Format)",
             value="""Senior Software Engineer — TechCorp (2022 - Present)
 • Architected scalable FastAPI microservices handling 4M+ daily active API requests with 99.98% uptime.
 • Reduced database query latency by 42% through Redis caching and PostgreSQL indexing strategies.
 • Mentored a team of 6 engineers and standardized CI/CD automated deployment pipelines.
 
 Full Stack Developer — Nexus Labs (2020 - 2022)
-• Built interactive client-facing dashboards using React and TypeScript, boosting engagement by 28%.
+• Built interactive client-facing dashboards using React and TypeScript, boosting user engagement by 28%.
 • Integrated machine learning recommendation pipelines into core customer checkout workflows.""",
-            height=160,
+            height=150,
             key="rb_exp"
         )
         
         rb_edu = st.text_area(
-            "Education & Credentials",
+            "Education & Certifications",
             value="""B.S. in Computer Science — Stanford University (2016 - 2020)
-AWS Certified Solutions Architect — Associate (2023)""",
-            height=90,
+AWS Certified Solutions Architect — Associate (2024)""",
+            height=80,
             key="rb_edu"
         )
 
     with builder_col2:
         st.markdown("### 👁️ Live Resume Preview")
         
-        if "Modern Tech" in template_style:
+        # Style Engine based on Modern 2026 Formations
+        if "Silicon Valley" in template_style:
             primary_c = "#0284c7"
             accent_c = "#6366f1"
             bg_c = "#ffffff"
             text_c = "#0f172a"
             tag_bg = "#e0f2fe"
             tag_text = "#0369a1"
+            border_header = f"3px solid {primary_c}"
             font_family = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
-        elif "Executive Classic" in template_style:
+        elif "Ivy League" in template_style:
             primary_c = "#1e293b"
-            accent_c = "#334155"
+            accent_c = "#475569"
             bg_c = "#fdfdfd"
             text_c = "#1e293b"
             tag_bg = "#f1f5f9"
             tag_text = "#334155"
-            font_family = "Georgia, serif"
-        else:
+            border_header = "1px solid #94a3b8"
+            font_family = "Georgia, 'Times New Roman', serif"
+        elif "Hybrid Skills-First" in template_style:
+            primary_c = "#7c3aed"
+            accent_c = "#0284c7"
+            bg_c = "#ffffff"
+            text_c = "#111827"
+            tag_bg = "#ede9fe"
+            tag_text = "#6d28d9"
+            border_header = f"2px dashed {primary_c}"
+            font_family = "'Inter', -apple-system, sans-serif"
+        elif "Nordic Minimalist" in template_style:
             primary_c = "#059669"
             accent_c = "#10b981"
             bg_c = "#ffffff"
             text_c = "#18181b"
             tag_bg = "#ecfdf5"
             tag_text = "#047857"
+            border_header = "none"
             font_family = "'Helvetica Neue', Arial, sans-serif"
+        else: # Dark Cyberpunk Pro
+            primary_c = "#38bdf8"
+            accent_c = "#a855f7"
+            bg_c = "#0f172a"
+            text_c = "#f8fafc"
+            tag_bg = "#1e293b"
+            tag_text = "#38bdf8"
+            border_header = f"2px solid {primary_c}"
+            font_family = "'Segoe UI', Roboto, sans-serif"
 
         skills_list = [s.strip() for s in rb_skills.split(",") if s.strip()]
-        skills_html = "".join([f"""<span style="background:{tag_bg}; color:{tag_text}; padding:4px 9px; border-radius:4px; margin:2px 4px 2px 0; display:inline-block; font-size:11px; font-weight:700;">{s}</span>""" for s in skills_list])
+        skills_html = "".join([f"""<span style="background:{tag_bg}; color:{tag_text}; padding:3px 8px; border-radius:4px; margin:2px 4px 2px 0; display:inline-block; font-size:11px; font-weight:700;">{s}</span>""" for s in skills_list])
         
-        exp_formatted = "<br>".join([f"<span style='display:block; margin-bottom:4px;'>{line}</span>" if line.strip().startswith("•") else f"<strong style='display:block; margin-top:8px; color:{text_c};'>{line}</strong>" for line in rb_exp.split("\n") if line.strip()])
-        edu_formatted = "<br>".join([f"<span style='display:block; margin-bottom:3px;'>{line}</span>" for line in rb_edu.split("\n") if line.strip()])
+        exp_formatted = "<br>".join([f"<span style='display:block; margin-bottom:4px; font-size:11.5px;'>{line}</span>" if line.strip().startswith("•") else f"<strong style='display:block; margin-top:7px; color:{text_c}; font-size:12px;'>{line}</strong>" for line in rb_exp.split("\n") if line.strip()])
+        proj_formatted = "<br>".join([f"<span style='display:block; margin-bottom:3px; font-size:11.5px;'>{line}</span>" for line in rb_projects.split("\n") if line.strip()])
+        edu_formatted = "<br>".join([f"<span style='display:block; margin-bottom:3px; font-size:11.5px;'>{line}</span>" for line in rb_edu.split("\n") if line.strip()])
 
-        # Clean single-line formatted HTML to prevent Streamlit parser errors
-        resume_preview_html = f"""<div style="background:{bg_c}; color:{text_c}; font-family:{font_family}; padding:32px; border-radius:12px; box-shadow:0 15px 40px rgba(0,0,0,0.45); line-height:1.5;"><div style="border-bottom:2px solid {primary_c}; padding-bottom:12px; margin-bottom:14px;"><h1 style="color:{primary_c}; margin:0; font-size:26px; font-weight:900; letter-spacing:-0.5px;">{rb_name}</h1><div style="color:{accent_c}; font-size:14px; font-weight:700; margin-top:2px;">{rb_title}</div><div style="font-size:11.5px; color:#64748b; margin-top:8px; display:flex; flex-wrap:wrap; gap:12px;"><span>📧 {rb_email}</span><span>📱 {rb_phone}</span><span>📍 {rb_loc}</span><span>🔗 {rb_links}</span></div></div><div style="margin-bottom:14px;"><div style="font-size:12px; font-weight:800; text-transform:uppercase; color:{primary_c}; letter-spacing:1px; margin-bottom:4px;">Profile Summary</div><p style="font-size:12px; color:#334155; margin:0;">{rb_summary}</p></div><div style="margin-bottom:14px;"><div style="font-size:12px; font-weight:800; text-transform:uppercase; color:{primary_c}; letter-spacing:1px; margin-bottom:6px;">Core Competencies</div><div>{skills_html}</div></div><div style="margin-bottom:14px;"><div style="font-size:12px; font-weight:800; text-transform:uppercase; color:{primary_c}; letter-spacing:1px; margin-bottom:6px;">Work Experience</div><div style="font-size:12px; color:#334155; line-height:1.5;">{exp_formatted}</div></div><div style="margin-bottom:6px;"><div style="font-size:12px; font-weight:800; text-transform:uppercase; color:{primary_c}; letter-spacing:1px; margin-bottom:6px;">Education & Credentials</div><div style="font-size:12px; color:#334155; line-height:1.5;">{edu_formatted}</div></div></div>"""
+        # Fully sanitized HTML block
+        resume_preview_html = f"""<div style="background:{bg_c}; color:{text_c}; font-family:{font_family}; padding:30px; border-radius:12px; box-shadow:0 15px 40px rgba(0,0,0,0.45); line-height:1.45;"><div style="border-bottom:{border_header}; padding-bottom:10px; margin-bottom:12px;"><h1 style="color:{primary_c}; margin:0; font-size:24px; font-weight:900; letter-spacing:-0.5px;">{rb_name}</h1><div style="color:{accent_c}; font-size:13.5px; font-weight:700; margin-top:2px;">{rb_title}</div><div style="font-size:11px; color:#64748b; margin-top:6px; display:flex; flex-wrap:wrap; gap:10px;"><span>📧 {rb_email}</span><span>📱 {rb_phone}</span><span>📍 {rb_loc}</span><span>🔗 {rb_links}</span></div></div><div style="margin-bottom:12px;"><div style="font-size:11.5px; font-weight:800; text-transform:uppercase; color:{primary_c}; letter-spacing:1px; margin-bottom:3px;">Summary</div><p style="font-size:11.5px; color:{text_c}; opacity:0.9; margin:0;">{rb_summary}</p></div><div style="margin-bottom:12px;"><div style="font-size:11.5px; font-weight:800; text-transform:uppercase; color:{primary_c}; letter-spacing:1px; margin-bottom:5px;">Core Stack</div><div>{skills_html}</div></div><div style="margin-bottom:12px;"><div style="font-size:11.5px; font-weight:800; text-transform:uppercase; color:{primary_c}; letter-spacing:1px; margin-bottom:4px;">Featured Projects</div><div style="color:{text_c}; opacity:0.9;">{proj_formatted}</div></div><div style="margin-bottom:12px;"><div style="font-size:11.5px; font-weight:800; text-transform:uppercase; color:{primary_c}; letter-spacing:1px; margin-bottom:4px;">Experience</div><div style="line-height:1.45;">{exp_formatted}</div></div><div style="margin-bottom:4px;"><div style="font-size:11.5px; font-weight:800; text-transform:uppercase; color:{primary_c}; letter-spacing:1px; margin-bottom:4px;">Education</div><div style="color:{text_c}; opacity:0.9;">{edu_formatted}</div></div></div>"""
         
         st.markdown(resume_preview_html, unsafe_allow_html=True)
         st.markdown("<br>", unsafe_allow_html=True)
         
-        # Complete Standalone PDF-Ready Document
+        # 1-Click Instant Download Document
         full_download_doc = f"""<!DOCTYPE html>
 <html>
 <head>
 <meta charset="utf-8">
 <title>{rb_name} - Resume</title>
 <style>
-@page {{ size: A4; margin: 15mm; }}
-body {{ background: #ffffff; color: {text_c}; font-family: {font_family}; margin: 0; padding: 20px; }}
-h1 {{ color: {primary_c}; font-size: 26px; margin: 0; }}
-.header {{ border-bottom: 2px solid {primary_c}; padding-bottom: 12px; margin-bottom: 14px; }}
-.title {{ color: {accent_c}; font-size: 14px; font-weight: bold; margin-top: 2px; }}
-.contacts {{ font-size: 11.5px; color: #64748b; margin-top: 6px; }}
-.section-title {{ font-size: 12px; font-weight: 800; text-transform: uppercase; color: {primary_c}; letter-spacing: 1px; margin-top: 14px; margin-bottom: 6px; border-bottom: 1px solid #e2e8f0; padding-bottom: 3px; }}
-.tag {{ background: {tag_bg}; color: {tag_text}; padding: 3px 8px; border-radius: 4px; margin: 2px 4px 2px 0; display: inline-block; font-size: 11px; font-weight: 700; }}
-p, div {{ font-size: 12px; color: #334155; line-height: 1.5; }}
+@page {{ size: A4; margin: 12mm; }}
+body {{ background: #ffffff; color: {text_c if "Dark" not in template_style else "#0f172a"}; font-family: {font_family}; margin: 0; padding: 15px; }}
+h1 {{ color: {primary_c if "Dark" not in template_style else "#0284c7"}; font-size: 24px; margin: 0; }}
+.header {{ border-bottom: 2px solid {primary_c if "Dark" not in template_style else "#0284c7"}; padding-bottom: 10px; margin-bottom: 12px; }}
+.title {{ color: {accent_c if "Dark" not in template_style else "#6366f1"}; font-size: 13.5px; font-weight: bold; margin-top: 2px; }}
+.contacts {{ font-size: 11px; color: #64748b; margin-top: 6px; }}
+.section-title {{ font-size: 11.5px; font-weight: 800; text-transform: uppercase; color: {primary_c if "Dark" not in template_style else "#0284c7"}; letter-spacing: 1px; margin-top: 12px; margin-bottom: 5px; border-bottom: 1px solid #e2e8f0; padding-bottom: 2px; }}
+.tag {{ background: {tag_bg if "Dark" not in template_style else "#e0f2fe"}; color: {tag_text if "Dark" not in template_style else "#0369a1"}; padding: 2px 7px; border-radius: 4px; margin: 2px 3px 2px 0; display: inline-block; font-size: 10.5px; font-weight: 700; }}
+p, div {{ font-size: 11.5px; color: #334155; line-height: 1.45; }}
 </style>
 </head>
 <body onload="window.print()">
@@ -1056,11 +1095,13 @@ p, div {{ font-size: 12px; color: #334155; line-height: 1.5; }}
     <div class="title">{rb_title}</div>
     <div class="contacts">📧 {rb_email} | 📱 {rb_phone} | 📍 {rb_loc} | 🔗 {rb_links}</div>
 </div>
-<div class="section-title">Profile Summary</div>
+<div class="section-title">Summary</div>
 <p>{rb_summary}</p>
-<div class="section-title">Core Competencies</div>
+<div class="section-title">Core Stack</div>
 <div>{skills_html}</div>
-<div class="section-title">Work Experience</div>
+<div class="section-title">Featured Projects</div>
+<div>{proj_formatted}</div>
+<div class="section-title">Experience</div>
 <div>{exp_formatted}</div>
 <div class="section-title">Education & Credentials</div>
 <div>{edu_formatted}</div>
@@ -1079,7 +1120,7 @@ p, div {{ font-size: 12px; color: #334155; line-height: 1.5; }}
         with col_dl2:
             st.download_button(
                 "⬇️ Download Plain Text (.txt)",
-                data=f"{rb_name}\n{rb_title}\n{rb_email} | {rb_phone} | {rb_loc}\n\nSUMMARY\n{rb_summary}\n\nSKILLS\n{rb_skills}\n\nEXPERIENCE\n{rb_exp}\n\nEDUCATION\n{rb_edu}".encode("utf-8"),
+                data=f"{rb_name}\n{rb_title}\n{rb_email} | {rb_phone} | {rb_loc}\n\nSUMMARY\n{rb_summary}\n\nSKILLS\n{rb_skills}\n\nPROJECTS\n{rb_projects}\n\nEXPERIENCE\n{rb_exp}\n\nEDUCATION\n{rb_edu}".encode("utf-8"),
                 file_name=f"{rb_name.replace(' ', '_')}_Resume.txt",
                 mime="text/plain",
                 use_container_width=True
