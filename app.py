@@ -501,6 +501,22 @@ if "ats_generated_bullets" not in st.session_state:
 if "recruiter_outreach_email" not in st.session_state:
     st.session_state.recruiter_outreach_email = None
 
+# Interactive mock interview state
+if "interview_active" not in st.session_state:
+    st.session_state.interview_active = False
+if "interview_questions_live" not in st.session_state:
+    st.session_state.interview_questions_live = []
+if "interview_answers_live" not in st.session_state:
+    st.session_state.interview_answers_live = []
+if "interview_index" not in st.session_state:
+    st.session_state.interview_index = 0
+if "interview_result" not in st.session_state:
+    st.session_state.interview_result = None
+if "interview_role_live" not in st.session_state:
+    st.session_state.interview_role_live = ""
+if "interview_count_live" not in st.session_state:
+    st.session_state.interview_count_live = 10
+
 if "exam_active" not in st.session_state:
     st.session_state.exam_active = False
 if "exam_questions" not in st.session_state:
@@ -945,61 +961,334 @@ if st.session_state.workspace == "Job Seeker":
 
     # 3. Salary Estimate
     with tabs[2]:
-        st.subheader("Salary Estimate")
-        salary_role = st.text_input("Job Title", "Software Engineer", key="salary_role_input")
-        salary_exp = st.selectbox("Experience Level", ["Entry Level (0-2 yrs)", "Mid Level (3-5 yrs)", "Senior Level (6-8 yrs)", "Lead (9+ yrs)"], index=1)
-        
-        if st.button("Get Salary Estimate", use_container_width=True):
-            exp_multipliers = {"Entry Level (0-2 yrs)": (65, 85, 105), "Mid Level (3-5 yrs)": (95, 125, 155), "Senior Level (6-8 yrs)": (140, 175, 215), "Lead (9+ yrs)": (190, 240, 310)}
-            low_k, med_k, high_k = exp_multipliers.get(salary_exp, (90, 120, 150))
-            
+        st.subheader("2026 India Salary Benchmark")
+        st.caption("Role-specific indicative market ranges in ₹ LPA. These are benchmark ranges, not guaranteed offers; company, city, skills and experience can move compensation substantially.")
+
+        salary_role = st.text_input(
+            "Job Role / Target Position",
+            "Software Engineer",
+            key="salary_role_input",
+            placeholder="e.g. Data Scientist, DevOps Engineer, AI Engineer, UI/UX Designer"
+        )
+        salary_exp = st.selectbox(
+            "Experience Level",
+            [
+                "Entry Level (0-2 yrs)",
+                "Mid Level (3-5 yrs)",
+                "Senior Level (6-8 yrs)",
+                "Lead / Principal (9+ yrs)"
+            ],
+            index=0,
+            key="salary_exp_input"
+        )
+        salary_city = st.selectbox(
+            "Market / City",
+            ["India Overall", "Bengaluru", "Hyderabad", "Pune", "Mumbai", "Delhi NCR", "Chennai", "Tier-2 / Other Cities"],
+            key="salary_city_input"
+        )
+
+        # Indicative 2026 India benchmarks. Values are annual CTC in LPA.
+        SALARY_BENCHMARKS_2026 = {
+            "software engineer": {
+                "Entry Level (0-2 yrs)": (4.0, 6.5, 10.0), "Mid Level (3-5 yrs)": (10.0, 16.0, 25.0),
+                "Senior Level (6-8 yrs)": (20.0, 30.0, 45.0), "Lead / Principal (9+ yrs)": (30.0, 45.0, 65.0)},
+            "full stack developer": {
+                "Entry Level (0-2 yrs)": (4.0, 6.5, 10.0), "Mid Level (3-5 yrs)": (9.0, 15.0, 24.0),
+                "Senior Level (6-8 yrs)": (18.0, 28.0, 42.0), "Lead / Principal (9+ yrs)": (28.0, 42.0, 60.0)},
+            "frontend developer": {
+                "Entry Level (0-2 yrs)": (4.0, 6.0, 9.0), "Mid Level (3-5 yrs)": (8.0, 13.0, 20.0),
+                "Senior Level (6-8 yrs)": (16.0, 25.0, 38.0), "Lead / Principal (9+ yrs)": (25.0, 38.0, 55.0)},
+            "backend developer": {
+                "Entry Level (0-2 yrs)": (4.0, 7.0, 11.0), "Mid Level (3-5 yrs)": (9.0, 16.0, 25.0),
+                "Senior Level (6-8 yrs)": (18.0, 30.0, 45.0), "Lead / Principal (9+ yrs)": (30.0, 45.0, 65.0)},
+            "data scientist": {
+                "Entry Level (0-2 yrs)": (6.0, 9.0, 13.0), "Mid Level (3-5 yrs)": (12.0, 18.0, 28.0),
+                "Senior Level (6-8 yrs)": (22.0, 32.0, 48.0), "Lead / Principal (9+ yrs)": (35.0, 52.0, 75.0)},
+            "data analyst": {
+                "Entry Level (0-2 yrs)": (4.0, 6.0, 8.0), "Mid Level (3-5 yrs)": (7.0, 11.0, 16.0),
+                "Senior Level (6-8 yrs)": (13.0, 19.0, 28.0), "Lead / Principal (9+ yrs)": (20.0, 30.0, 42.0)},
+            "data engineer": {
+                "Entry Level (0-2 yrs)": (5.0, 8.0, 12.0), "Mid Level (3-5 yrs)": (10.0, 16.0, 25.0),
+                "Senior Level (6-8 yrs)": (20.0, 30.0, 45.0), "Lead / Principal (9+ yrs)": (30.0, 45.0, 65.0)},
+            "machine learning engineer": {
+                "Entry Level (0-2 yrs)": (6.0, 9.0, 14.0), "Mid Level (3-5 yrs)": (12.0, 20.0, 32.0),
+                "Senior Level (6-8 yrs)": (24.0, 36.0, 55.0), "Lead / Principal (9+ yrs)": (38.0, 55.0, 80.0)},
+            "ai engineer": {
+                "Entry Level (0-2 yrs)": (7.0, 10.0, 16.0), "Mid Level (3-5 yrs)": (14.0, 22.0, 35.0),
+                "Senior Level (6-8 yrs)": (26.0, 40.0, 60.0), "Lead / Principal (9+ yrs)": (40.0, 60.0, 90.0)},
+            "genai engineer": {
+                "Entry Level (0-2 yrs)": (8.0, 12.0, 18.0), "Mid Level (3-5 yrs)": (16.0, 25.0, 40.0),
+                "Senior Level (6-8 yrs)": (30.0, 45.0, 70.0), "Lead / Principal (9+ yrs)": (45.0, 70.0, 100.0)},
+            "devops engineer": {
+                "Entry Level (0-2 yrs)": (4.0, 7.0, 11.0), "Mid Level (3-5 yrs)": (10.0, 16.0, 25.0),
+                "Senior Level (6-8 yrs)": (20.0, 30.0, 45.0), "Lead / Principal (9+ yrs)": (30.0, 45.0, 65.0)},
+            "cloud engineer": {
+                "Entry Level (0-2 yrs)": (5.0, 8.0, 12.0), "Mid Level (3-5 yrs)": (11.0, 18.0, 28.0),
+                "Senior Level (6-8 yrs)": (22.0, 32.0, 48.0), "Lead / Principal (9+ yrs)": (32.0, 48.0, 70.0)},
+            "cybersecurity engineer": {
+                "Entry Level (0-2 yrs)": (4.5, 7.0, 11.0), "Mid Level (3-5 yrs)": (10.0, 16.0, 25.0),
+                "Senior Level (6-8 yrs)": (20.0, 30.0, 45.0), "Lead / Principal (9+ yrs)": (30.0, 45.0, 65.0)},
+            "cybersecurity": {
+                "Entry Level (0-2 yrs)": (4.0, 7.0, 11.0), "Mid Level (3-5 yrs)": (10.0, 16.0, 25.0),
+                "Senior Level (6-8 yrs)": (20.0, 30.0, 45.0), "Lead / Principal (9+ yrs)": (30.0, 45.0, 65.0)},
+            "qa engineer": {
+                "Entry Level (0-2 yrs)": (3.5, 5.5, 8.0), "Mid Level (3-5 yrs)": (7.0, 11.0, 16.0),
+                "Senior Level (6-8 yrs)": (13.0, 19.0, 28.0), "Lead / Principal (9+ yrs)": (20.0, 30.0, 42.0)},
+            "ui ux designer": {
+                "Entry Level (0-2 yrs)": (3.5, 5.5, 8.0), "Mid Level (3-5 yrs)": (7.0, 12.0, 18.0),
+                "Senior Level (6-8 yrs)": (14.0, 22.0, 32.0), "Lead / Principal (9+ yrs)": (22.0, 34.0, 48.0)},
+            "product manager": {
+                "Entry Level (0-2 yrs)": (6.0, 9.0, 14.0), "Mid Level (3-5 yrs)": (14.0, 22.0, 35.0),
+                "Senior Level (6-8 yrs)": (25.0, 40.0, 60.0), "Lead / Principal (9+ yrs)": (40.0, 60.0, 85.0)},
+            "android developer": {
+                "Entry Level (0-2 yrs)": (4.0, 6.5, 10.0), "Mid Level (3-5 yrs)": (9.0, 15.0, 24.0),
+                "Senior Level (6-8 yrs)": (18.0, 28.0, 42.0), "Lead / Principal (9+ yrs)": (28.0, 42.0, 60.0)},
+            "ios developer": {
+                "Entry Level (0-2 yrs)": (4.5, 7.0, 11.0), "Mid Level (3-5 yrs)": (10.0, 16.0, 25.0),
+                "Senior Level (6-8 yrs)": (20.0, 30.0, 45.0), "Lead / Principal (9+ yrs)": (30.0, 45.0, 65.0)},
+            "blockchain developer": {
+                "Entry Level (0-2 yrs)": (5.0, 8.0, 13.0), "Mid Level (3-5 yrs)": (12.0, 20.0, 32.0),
+                "Senior Level (6-8 yrs)": (24.0, 38.0, 58.0), "Lead / Principal (9+ yrs)": (38.0, 58.0, 85.0)},
+        }
+
+        def normalize_salary_role(role_text: str) -> str:
+            r = re.sub(r"[^a-z0-9+# ]", " ", role_text.lower())
+            r = re.sub(r"\s+", " ", r).strip()
+            aliases = [
+                ("full stack", "full stack developer"), ("fullstack", "full stack developer"),
+                ("software developer", "software engineer"), ("sde", "software engineer"),
+                ("ml engineer", "machine learning engineer"), ("machine learning", "machine learning engineer"),
+                ("artificial intelligence engineer", "ai engineer"), ("ai/ ml", "ai engineer"),
+                ("generative ai", "genai engineer"), ("llm engineer", "genai engineer"),
+                ("dev ops", "devops engineer"), ("cloud", "cloud engineer"),
+                ("security engineer", "cybersecurity engineer"), ("cyber security", "cybersecurity engineer"),
+                ("qa automation", "qa engineer"), ("test engineer", "qa engineer"),
+                ("ui/ux", "ui ux designer"), ("ux designer", "ui ux designer"),
+            ]
+            for alias, canonical in aliases:
+                if alias in r:
+                    return canonical
+            for key in SALARY_BENCHMARKS_2026:
+                if key in r or r in key:
+                    return key
+            return "software engineer"
+
+        if st.button("📊 Get Role-Specific Market Estimate", use_container_width=True, key="btn_salary_2026"):
+            canonical_role = normalize_salary_role(salary_role)
+            low, median, high = SALARY_BENCHMARKS_2026[canonical_role][salary_exp]
+
+            # Approximate city premium/discount for the same role and level.
+            city_factor = {
+                "India Overall": 1.00, "Bengaluru": 1.12, "Hyderabad": 1.08,
+                "Pune": 1.05, "Mumbai": 1.08, "Delhi NCR": 1.06,
+                "Chennai": 1.02, "Tier-2 / Other Cities": 0.85
+            }[salary_city]
+            low, median, high = [round(v * city_factor, 1) for v in (low, median, high)]
+
+            st.session_state.salary_result = {
+                "role": canonical_role.title(), "experience": salary_exp,
+                "city": salary_city, "low": low, "median": median, "high": high
+            }
+
+        if st.session_state.get("salary_result"):
+            sr = st.session_state.salary_result
+            st.success(f"Market estimate generated for **{sr['role']}** — {sr['experience']} — {sr['city']}")
             col_sal1, col_sal2, col_sal3 = st.columns(3)
             with col_sal1:
-                st.markdown(f"""
-                <div class="gauge-box">
-                    <div class="gauge-label">Starting</div>
-                    <div style="font-size: 2.2rem; font-weight: 900; color: #94a3b8; margin: 8px 0;">${low_k}k</div>
-                    <span class="tag-bubble tag-cyan">25th Percentile</span>
-                </div>
-                """, unsafe_allow_html=True)
+                st.metric("Lower Market", f"₹{sr['low']} LPA")
             with col_sal2:
-                st.markdown(f"""
-                <div class="gauge-box" style="border-color: #38bdf8;">
-                    <div class="gauge-label">Average</div>
-                    <div style="font-size: 2.4rem; font-weight: 900; color: #38bdf8; margin: 8px 0;">${med_k}k</div>
-                    <span class="tag-bubble tag-emerald">Market Median</span>
-                </div>
-                """, unsafe_allow_html=True)
+                st.metric("Typical Market", f"₹{sr['median']} LPA")
             with col_sal3:
-                st.markdown(f"""
-                <div class="gauge-box">
-                    <div class="gauge-label">Top Pay</div>
-                    <div style="font-size: 2.2rem; font-weight: 900; color: #c084fc; margin: 8px 0;">${high_k}k</div>
-                    <span class="tag-bubble tag-purple">90th Percentile</span>
-                </div>
-                """, unsafe_allow_html=True)
+                st.metric("Upper Market", f"₹{sr['high']} LPA")
+            st.info("💡 These are indicative 2026 benchmarks. Actual CTC depends on company tier, interview performance, location, stack, domain specialization, and fixed/variable compensation.")
 
-    # 4. Interview Questions
+    # 4. Interactive Interview Simulator
     with tabs[3]:
-        st.subheader("Interview Questions")
-        st.caption("Generate role-specific interview questions and key answering criteria.")
-        target_interview_role = st.text_input("Target Role", "Software Engineer", key="int_role")
-        
-        if st.button("Generate Interview Questions", use_container_width=True):
-            with st.spinner("Compiling strategic interview questions..."):
-                prompt = [
-                    {"role": "system", "content": "You are a senior technical hiring manager. Generate 5 core interview questions (2 Technical, 2 Coding Logic/Data Structure, 1 Behavioral) for the candidate role. Include what a top answer must include."},
-                    {"role": "user", "content": f"Target Role: {target_interview_role}\nResume: {st.session_state.resume_text[:2000]}"}
-                ]
-                st.session_state.interview_questions = api_chat_assistant(prompt, resume_context=st.session_state.resume_text)
+        st.subheader("🎤 Interactive Mock Interview")
+        st.caption("Choose 10–50 questions. The interviewer asks one question at a time. Type your answer, continue until the end, and receive your final score and feedback.")
 
-        if st.session_state.get("interview_questions"):
-            st.markdown("""
-            <div class="panel" style="border: 1px solid rgba(139, 124, 255, 0.4);">
-                <div style="font-weight: 800; color: #c084fc; margin-bottom: 6px;">Interview Questions & Key Criteria:</div>
-            </div>
-            """, unsafe_allow_html=True)
-            st.markdown(st.session_state.interview_questions)
+        if not st.session_state.interview_active and st.session_state.interview_result is None:
+            target_interview_role = st.text_input(
+                "Target Role",
+                "Software Engineer",
+                key="int_role"
+            )
+            interview_count = st.select_slider(
+                "Number of Interview Questions",
+                options=[10, 15, 20, 25, 30, 40, 50],
+                value=10,
+                key="int_count"
+            )
+            st.markdown(f"**Interview format:** {interview_count} questions • Technical • Role-specific • Scenario-based • Behavioral • Final score")
+
+            if st.button("🚀 Start Interview", use_container_width=True, key="btn_start_interview"):
+                if not target_interview_role.strip():
+                    st.warning("Please enter a target role.")
+                else:
+                    with st.spinner(f"Preparing {interview_count} questions for {target_interview_role}..."):
+                        system_prompt = (
+                            "You are a senior hiring manager. Create an interactive interview question bank. "
+                            "Return ONLY valid JSON: an array of objects with keys id, type, question, "
+                            "ideal_points, and keywords. Generate exactly the requested number of questions. "
+                            "Mix role-specific technical questions, practical scenarios, problem solving, and behavioral questions. "
+                            "Do not include answers in the question text. Keep ideal_points concise (3-5 points)."
+                        )
+                        user_prompt = (
+                            f"Role: {target_interview_role}\nQuestions: {interview_count}\n"
+                            f"Candidate resume context: {st.session_state.resume_text[:5000]}"
+                        )
+                        questions = []
+                        try:
+                            raw = api_chat_assistant(
+                                [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}],
+                                resume_context=st.session_state.resume_text
+                            )
+                            cleaned = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw.strip(), flags=re.I | re.S)
+                            parsed = json.loads(cleaned)
+                            if isinstance(parsed, list):
+                                for i, q in enumerate(parsed[:interview_count], 1):
+                                    if isinstance(q, dict) and q.get("question"):
+                                        questions.append({
+                                            "id": i,
+                                            "type": q.get("type", "Technical"),
+                                            "question": str(q["question"]),
+                                            "ideal_points": q.get("ideal_points", []),
+                                            "keywords": q.get("keywords", [])
+                                        })
+                        except Exception:
+                            questions = []
+
+                        # Reliable fallback if the AI endpoint is unavailable or returns invalid JSON.
+                        fallback = [
+                            ("Technical", f"Explain the most important concepts, tools and best practices you would use as a {target_interview_role}.", ["fundamentals", "tools", "best practices"]),
+                            ("Technical", f"Walk me through how you would design a production-ready solution for a typical {target_interview_role} problem.", ["architecture", "scalability", "trade-offs"]),
+                            ("Scenario", "Tell me how you would debug a production issue that users are reporting but that you cannot reproduce locally.", ["logs", "monitoring", "isolation", "root cause"]),
+                            ("Problem Solving", "Describe a difficult technical problem you solved. What was your approach and what was the result?", ["problem", "approach", "result"]),
+                            ("Behavioral", "Tell me about a time you disagreed with a teammate or technical decision. How did you handle it?", ["communication", "trade-off", "resolution"]),
+                            ("Behavioral", "What is one technical skill you are currently improving, and how are you improving it?", ["specific skill", "learning plan", "evidence"]),
+                        ]
+                        while len(questions) < interview_count:
+                            base = fallback[len(questions) % len(fallback)]
+                            questions.append({"id": len(questions) + 1, "type": base[0], "question": base[1], "ideal_points": base[2], "keywords": base[2]})
+                        questions = questions[:interview_count]
+
+                        st.session_state.interview_active = True
+                        st.session_state.interview_questions_live = questions
+                        st.session_state.interview_answers_live = []
+                        st.session_state.interview_index = 0
+                        st.session_state.interview_result = None
+                        st.session_state.interview_role_live = target_interview_role.strip()
+                        st.session_state.interview_count_live = interview_count
+                        st.rerun()
+
+        elif st.session_state.interview_active:
+            idx = st.session_state.interview_index
+            questions = st.session_state.interview_questions_live
+            total = len(questions)
+            q = questions[idx]
+            st.progress((idx + 1) / total, text=f"Question {idx + 1} of {total}")
+            st.markdown(f"**{q.get('type', 'Interview')}**")
+            st.markdown(f"### Q{idx + 1}. {q['question']}")
+
+            answer = st.text_area(
+                "Your Answer",
+                height=220,
+                placeholder="Type your answer here...",
+                key=f"interview_answer_{idx}"
+            )
+            st.caption("Take your time. The answer is evaluated after the interview is completed.")
+
+            if st.button("➡️ Submit Answer & Continue", use_container_width=True, key=f"btn_submit_interview_{idx}"):
+                if not answer.strip():
+                    st.warning("Please type an answer before continuing.")
+                else:
+                    st.session_state.interview_answers_live.append({
+                        "question": q["question"],
+                        "type": q.get("type", "Interview"),
+                        "answer": answer.strip(),
+                        "ideal_points": q.get("ideal_points", []),
+                        "keywords": q.get("keywords", [])
+                    })
+                    if idx + 1 >= total:
+                        with st.spinner("Evaluating your complete interview..."):
+                            answers = st.session_state.interview_answers_live
+                            score = None
+                            feedback = []
+                            try:
+                                scoring_prompt = (
+                                    "You are a strict but fair senior interviewer. Score the candidate's complete interview. "
+                                    "Return ONLY valid JSON with keys overall_score (0-100), strengths (array), weaknesses (array), "
+                                    "recommendation (string), and question_scores (array of objects with score and feedback). "
+                                    "Evaluate relevance, correctness, depth, communication, practical thinking and role fit. "
+                                    "Do not reward empty or generic answers."
+                                )
+                                scoring_user = json.dumps({
+                                    "role": st.session_state.interview_role_live,
+                                    "answers": answers
+                                }, ensure_ascii=False)
+                                raw_score = api_chat_assistant(
+                                    [{"role": "system", "content": scoring_prompt}, {"role": "user", "content": scoring_user}],
+                                    resume_context=st.session_state.resume_text
+                                )
+                                cleaned_score = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw_score.strip(), flags=re.I | re.S)
+                                parsed_score = json.loads(cleaned_score)
+                                score = max(0, min(100, int(float(parsed_score.get("overall_score", 0)))))
+                                feedback = parsed_score
+                            except Exception:
+                                # Offline-safe fallback scoring: answer completeness + role-relevant detail.
+                                vals = []
+                                for a in answers:
+                                    words = len(a["answer"].split())
+                                    keyword_hits = sum(1 for k in a.get("keywords", []) if str(k).lower() in a["answer"].lower())
+                                    vals.append(min(100, 25 + min(50, words * 2) + min(25, keyword_hits * 8)))
+                                score = round(sum(vals) / max(1, len(vals)))
+                                feedback = {
+                                    "overall_score": score,
+                                    "strengths": ["Completed the interview", "Provided written responses"],
+                                    "weaknesses": ["AI detailed evaluation was unavailable for this attempt"],
+                                    "recommendation": "Review the questions and strengthen answers with concrete examples, technical depth and measurable outcomes.",
+                                    "question_scores": [{"score": v, "feedback": "Answer completeness and relevance checked."} for v in vals]
+                                }
+                            st.session_state.interview_result = feedback
+                            st.session_state.interview_result["overall_score"] = score
+                            st.session_state.interview_active = False
+                            st.rerun()
+                    else:
+                        st.session_state.interview_index += 1
+                        st.rerun()
+
+        elif st.session_state.interview_result is not None:
+            result = st.session_state.interview_result
+            score = int(result.get("overall_score", 0))
+            st.markdown("### 🏁 Interview Completed")
+            render_radial_gauge(score, "Interview Score", "Final Result", "#4ade80" if score >= 75 else ("#38bdf8" if score >= 50 else "#fbbf24"))
+
+            if score >= 80:
+                st.success("Excellent interview performance. You appear highly interview-ready for this role.")
+            elif score >= 60:
+                st.info("Good foundation. A little more depth and structured answering can improve your performance.")
+            else:
+                st.warning("Keep practicing. Focus on technical depth, examples and clearer explanations.")
+
+            c1, c2 = st.columns(2)
+            with c1:
+                st.markdown("#### 💪 Strengths")
+                for item in result.get("strengths", []):
+                    st.markdown(f"- {item}")
+            with c2:
+                st.markdown("#### 🎯 Improve Next")
+                for item in result.get("weaknesses", []):
+                    st.markdown(f"- {item}")
+            st.markdown("#### 📋 Interviewer Recommendation")
+            st.info(result.get("recommendation", "Continue practicing role-specific questions."))
+
+            if st.button("🔄 Start New Interview", use_container_width=True, key="btn_new_interview"):
+                st.session_state.interview_active = False
+                st.session_state.interview_questions_live = []
+                st.session_state.interview_answers_live = []
+                st.session_state.interview_index = 0
+                st.session_state.interview_result = None
+                st.rerun()
 
     # 5. Career Road Map
     with tabs[4]:
