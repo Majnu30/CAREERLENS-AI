@@ -647,7 +647,7 @@ if not st.session_state.is_logged_in:
                 <span class="tag-bubble tag-cyan" style="font-size: 0.85rem; padding: 6px 18px; margin-bottom: 12px;">✦ YOUR CAREER LAUNCHPAD ✦</span>
                 <h3 style="margin: 8px 0 0 0; color: #f4f7fb;">Analyze. Create. Accelerate.</h3>
                 <p style="color: #94a3b8; font-size: 0.92rem; margin-top: 6px; margin-bottom: 22px;">
-                    Review your resume, take live pre-interview assessment exams, and explore salary benchmarks.
+                    Review your resume, take live pre-interview assessment exams, and generate customized career roadmaps.
                 </p>
             </div>
             """,
@@ -757,10 +757,10 @@ if st.session_state.workspace == "Job Seeker":
         <section class="hero">
             <div class="kicker">CANDIDATE INTELLIGENCE</div>
             <h1>Understand Your Profile.<br><span>Build Your Career.</span></h1>
-            <p>Automated resume parsing, job match scores, salary estimates, and step-by-step career roadmaps.</p>
+            <p>Automated resume parsing, job match scores, and step-by-step career roadmaps.</p>
             <div style="margin-top: 14px;">
                 <span class="tag-bubble tag-cyan">✦ Resume Scoring</span>
-                <span class="tag-bubble tag-purple">✦ Salary Benchmarks</span>
+                <span class="tag-bubble tag-purple">✦ Profile Diagnostics</span>
                 <span class="tag-bubble tag-emerald">✦ Career Roadmaps</span>
             </div>
         </section>
@@ -831,7 +831,6 @@ if st.session_state.workspace == "Job Seeker":
     tabs = st.tabs([
         "📄 Analyse Resume",
         "🎯 Job Match",
-        "💰 Salary Estimate",
         "🗺️ Career Road Map",
         "🛡️ Real Time Job Detection"
     ])
@@ -926,48 +925,8 @@ if st.session_state.workspace == "Job Seeker":
                 """, unsafe_allow_html=True)
                 st.code(st.session_state.ats_generated_bullets, language="markdown")
 
-    # 3. Salary Estimate
+    # 3. Career Road Map
     with tabs[2]:
-        st.subheader("Salary Estimate")
-        
-        c_sal1, c_sal2 = st.columns([2, 1])
-        with c_sal1:
-            salary_role_input = st.text_input("Search or Enter Any Target Role:", "Senior Full Stack Engineer", key="salary_role_free")
-        with c_sal2:
-            salary_exp = st.selectbox("Experience Level", ["Entry Level (0-2 yrs)", "Mid Level (3-5 yrs)", "Senior Level (6-8 yrs)", "Lead / Principal (9+ yrs)"], index=1)
-        
-        if st.button("Calculate Market Salary", use_container_width=True):
-            exp_multipliers = {"Entry Level (0-2 yrs)": (65, 85, 105), "Mid Level (3-5 yrs)": (95, 125, 155), "Senior Level (6-8 yrs)": (140, 175, 215), "Lead / Principal (9+ yrs)": (190, 240, 310)}
-            low_k, med_k, high_k = exp_multipliers.get(salary_exp, (90, 120, 150))
-            
-            col_sal1, col_sal2, col_sal3 = st.columns(3)
-            with col_sal1:
-                st.markdown(f"""
-                <div class="gauge-box">
-                    <div class="gauge-label">Starting</div>
-                    <div style="font-size: 2.2rem; font-weight: 900; color: #94a3b8; margin: 8px 0;">${low_k}k</div>
-                    <span class="tag-bubble tag-cyan">25th Percentile</span>
-                </div>
-                """, unsafe_allow_html=True)
-            with col_sal2:
-                st.markdown(f"""
-                <div class="gauge-box" style="border-color: #38bdf8;">
-                    <div class="gauge-label">Average</div>
-                    <div style="font-size: 2.4rem; font-weight: 900; color: #38bdf8; margin: 8px 0;">${med_k}k</div>
-                    <span class="tag-bubble tag-emerald">Market Median</span>
-                </div>
-                """, unsafe_allow_html=True)
-            with col_sal3:
-                st.markdown(f"""
-                <div class="gauge-box">
-                    <div class="gauge-label">Top Pay</div>
-                    <div style="font-size: 2.2rem; font-weight: 900; color: #c084fc; margin: 8px 0;">${high_k}k</div>
-                    <span class="tag-bubble tag-purple">90th Percentile</span>
-                </div>
-                """, unsafe_allow_html=True)
-
-    # 4. Career Road Map
-    with tabs[3]:
         st.subheader("Career Road Map")
         role = st.text_input("Target Dream Role", "Machine Learning Engineer", key="roadmap_target_input")
 
@@ -989,8 +948,8 @@ if st.session_state.workspace == "Job Seeker":
                 except Exception as exc:
                     st.error(f"Error: {exc}")
 
-    # 5. Real Time Job Detection
-    with tabs[4]:
+    # 4. Real Time Job Detection
+    with tabs[3]:
         st.subheader("Real Time Job Detection")
         jobrisk = st.text_area("Paste Job Post or Offer to Check", height=180, key="risk")
 
