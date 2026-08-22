@@ -36,7 +36,7 @@ def log_event(event_type: str, username: str, rating: str = "N/A", details: str 
             details
         ])
 
-# --- Clean, Modern Sci-Fi Theme ---
+# --- Clean Sci-Fi Styling ---
 st.markdown(
     """
 <style>
@@ -320,7 +320,7 @@ def api_chat_assistant(messages: List[Dict], resume_context: str = "") -> str:
     return ""
 
 # ============================================================
-# LIVE INTERVIEW Q&A ENGINE (ASK -> TYPE ANSWER -> SCORE)
+# LIVE INTERVIEW Q&A ENGINE (TYPE ANSWER -> EXECUTIVE SCORE)
 # ============================================================
 
 def build_interview_questions_pool(role: str, count: int) -> List[Dict]:
@@ -333,7 +333,7 @@ def build_interview_questions_pool(role: str, count: int) -> List[Dict]:
         },
         {
             "category": "Performance & Debugging",
-            "question": "Describe your step-by-step methodology for isolating and fixing a severe performance degradation in production.",
+            "question": f"Describe your step-by-step methodology for isolating and fixing a severe performance degradation in a {role} environment.",
             "keywords": ["logs", "profiling", "latency", "metrics", "memory", "queries", "bottleneck", "reproduce"],
             "model_answer": "Top candidates mention inspecting APM monitoring dashboards, capturing thread/heap dumps for memory saturation, reviewing database slow-query logs, tracking distributed correlation IDs, and rolling out targeted zero-downtime hotfixes."
         },
@@ -344,8 +344,8 @@ def build_interview_questions_pool(role: str, count: int) -> List[Dict]:
             "model_answer": "The response should cover principle of least privilege, token-based authentication (OAuth2/JWT), data encryption at rest and in transit (TLS 1.3), parameterized query sanitization, and API gateway rate-limiting."
         },
         {
-            "category": "Problem Solving & Algorithms",
-            "question": "How do you evaluate time and space complexity tradeoffs when selecting data structures for high-frequency data processing?",
+            "category": "Problem Solving & Tradeoffs",
+            "question": f"How do you evaluate time and space complexity tradeoffs when selecting algorithms and data structures for {role} workloads?",
             "keywords": ["complexity", "big o", "hash table", "trees", "memory", "tradeoff", "latency", "lookups"],
             "model_answer": "Candidates explain balancing O(1) hash map operations against memory footprints, utilizing B-Trees for disk-based range scans, and minimizing redundant object allocations during continuous high-throughput streams."
         },
@@ -427,7 +427,7 @@ def evaluate_interview_response(user_ans: str, keywords: List[str]) -> Dict:
     if word_count == 0:
         return {
             "score": 0,
-            "feedback": "No answer provided. Candidate skipped this question.",
+            "feedback": "No answer provided. Question was skipped.",
             "matched_keywords": []
         }
 
@@ -632,7 +632,7 @@ if "exam_results" not in st.session_state:
 if "exam_role" not in st.session_state:
     st.session_state.exam_role = ""
 
-# Interactive Interview Q&A State
+# Live Interview Practice State
 if "interview_active" not in st.session_state:
     st.session_state.interview_active = False
 if "interview_questions_list" not in st.session_state:
@@ -795,7 +795,7 @@ if not st.session_state.is_logged_in:
                 <span class="tag-bubble tag-cyan" style="font-size: 0.85rem; padding: 6px 18px; margin-bottom: 12px;">✦ YOUR CAREER LAUNCHPAD ✦</span>
                 <h3 style="margin: 8px 0 0 0; color: #f4f7fb;">Analyze. Create. Accelerate.</h3>
                 <p style="color: #94a3b8; font-size: 0.92rem; margin-top: 6px; margin-bottom: 22px;">
-                    Review your resume, take interactive Q&A mock interviews, participate in qualifying assessments, and explore salary benchmarks.
+                    Review your resume, take live pre-interview assessment exams, and explore salary benchmarks.
                 </p>
             </div>
             """,
@@ -1115,10 +1115,10 @@ if st.session_state.workspace == "Job Seeker":
                 </div>
                 """, unsafe_allow_html=True)
 
-    # 4. Interactive Interview Practice (Interactive Q&A with Evaluation)
+    # 4. Interactive Interview Practice
     with tabs[3]:
         st.subheader("Interactive Interview Practice")
-        st.caption("Enter any target role and sort between 10 to 50 questions. Answer in your own words to receive a detailed evaluation and score.")
+        st.caption("Search ANY job role and select from 10 to 50 questions. Type your answers to receive instant scoring and model answer breakdowns.")
 
         if not st.session_state.interview_active and not st.session_state.interview_submitted:
             c_int1, c_int2 = st.columns([2, 1])
@@ -1414,6 +1414,7 @@ elif st.session_state.workspace == "Assessment Exam":
                 </div>
                 """, unsafe_allow_html=True)
                 
+                # index=None ensures no option is pre-selected
                 selected_opt = st.radio(
                     label=f"q_{qid}",
                     options=q["options"],
@@ -1983,7 +1984,7 @@ st.divider()
 st.markdown(
     """
     <div class="footer">
-        <b>CareerLens AI by Batch 2</b>
+        <b>CareerLens AI by #Batch 2</b>
     </div>
     """,
     unsafe_allow_html=True,
