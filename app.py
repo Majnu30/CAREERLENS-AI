@@ -3,6 +3,8 @@ import os
 import csv
 import json
 import re
+import random
+import uuid
 import secrets
 from datetime import datetime
 from typing import Dict, List
@@ -374,12 +376,6 @@ def get_exam_blueprint(role: str):
     return ROLE_EXAM_BLUEPRINTS.get(role, ROLE_EXAM_BLUEPRINTS["Software Engineer / Full Stack Developer"])
 
 def generate_examination_suite(role: str, attempt_id: str, resume_context: str = "") -> List[Dict]:
-    """
-    Generates one fresh 50-question corporate-style IT assessment.
-    The section blueprint is role-specific. Questions and option order are
-    regenerated for every attempt. Correct answers are retained internally
-    only for scoring and are never rendered during the candidate exam.
-    """
     blueprint = get_exam_blueprint(role)
     distribution_text = "\n".join(
         f"- {section}: exactly {count} questions" for section, count in blueprint
@@ -391,10 +387,8 @@ def generate_examination_suite(role: str, attempt_id: str, resume_context: str =
         "Create a rigorous 50-question pre-interview qualifying examination for the selected IT role. "
         "The examination must resemble corporate hiring assessments: aptitude/reasoning plus role-specific "
         "technical fundamentals, practical engineering knowledge, and realistic scenarios. "
-        "Do not make every role use the same technical syllabus. Follow the supplied section blueprint exactly. "
-        "Every question must be a genuine MCQ with exactly four plausible options and exactly one correct answer. "
-        "Avoid trivial or repeated questions. Vary concepts, numbers, code snippets, and scenarios. "
-        "For every new attempt, produce a fresh paper; do not reuse questions from the attempt id."
+        "Follow the supplied section blueprint exactly. "
+        "Every question must be a genuine MCQ with exactly four plausible options and exactly one correct answer."
     )
 
     user_prompt = f"""
@@ -410,21 +404,6 @@ EXAM BLUEPRINT — FOLLOW EXACTLY:
 TOTAL:
 Exactly {total_questions} questions.
 
-QUALITY RULES:
-1. Keep questions appropriate for an IT-sector pre-interview examination.
-2. Respect each section's technical scope.
-3. Do not use generic "Core Technical" sections when a specific section is supplied.
-4. Do not repeat the same question or near-duplicate within this paper.
-5. Randomize the correct option position across A/B/C/D.
-6. Do not reveal the answer in the question wording.
-7. Do not use "All of the above" or "None of the above".
-8. Include a mixture of conceptual, code/logic, debugging, and practical questions where appropriate.
-9. For aptitude, use varied numerical/logical problems rather than the same classic question repeatedly.
-10. The attempt ID is deliberately unique; generate a new paper even when the same role is selected again.
-
-CANDIDATE CONTEXT (use only to calibrate difficulty; do not ask personal questions):
-{resume_context[:1200]}
-
 RETURN ONLY VALID JSON:
 [
   {{
@@ -435,8 +414,6 @@ RETURN ONLY VALID JSON:
     "answer": "Exact text of the correct option"
   }}
 ]
-
-Do not return explanations, answer keys outside the JSON, markdown fences, or commentary.
 """
 
     try:
@@ -453,64 +430,29 @@ Do not return explanations, answer keys outside the JSON, markdown fences, or co
             raise ValueError("Assessment API did not return valid JSON.")
 
         parsed = json.loads(json_match.group(0))
-        if not isinstance(parsed, list) or len(parsed) != total_questions:
-            raise ValueError(
-                f"Assessment API returned {len(parsed) if isinstance(parsed, list) else 0} "
-                f"questions; expected {total_questions}."
-            )
-
-        required_sections = [name for name, _ in blueprint]
-        expected_counts = {name: count for name, count in blueprint}
-        section_counts = {name: 0 for name in required_sections}
         cleaned = []
 
         for idx, q in enumerate(parsed, start=1):
-            section = str(q.get("section", "")).strip()
-            question = str(q.get("question", "")).strip()
-            options = q.get("options", [])
-            answer = str(q.get("answer", "")).strip()
-
-            if section not in expected_counts:
-                raise ValueError(f"Invalid section returned: {section}")
-            if not question or not isinstance(options, list) or len(options) != 4:
-                raise ValueError(f"Invalid question structure at Q{idx}.")
-            options = [str(opt).strip() for opt in options]
-            if len(set(options)) != 4:
-                raise ValueError(f"Duplicate options at Q{idx}.")
-            if answer not in options:
-                raise ValueError(f"Invalid answer at Q{idx}.")
-
-            section_counts[section] += 1
             cleaned.append({
                 "id": idx,
-                "section": section,
-                "question": question,
-                "options": options,
-                "answer": answer,
+                "section": str(q.get("section", "")).strip(),
+                "question": str(q.get("question", "")).strip(),
+                "options": [str(opt).strip() for opt in q.get("options", [])],
+                "answer": str(q.get("answer", "")).strip(),
             })
 
-        if section_counts != expected_counts:
-            raise ValueError(
-                f"Section distribution mismatch. Got {section_counts}, expected {expected_counts}."
-            )
-
-        # Shuffle question order inside the paper while retaining section tags.
-        # This keeps the exam fresh while the final report remains section-wise.
         rng = random.Random(attempt_id)
         rng.shuffle(cleaned)
 
-        # Re-number after shuffle.
         for idx, q in enumerate(cleaned, start=1):
             q["id"] = idx
 
         return cleaned
 
     except Exception as exc:
-        # Do not silently repeat a tiny predefined bank. A repeated 10-question
-        # bank is not a valid 50-question examination.
         raise RuntimeError(
             "A fresh role-specific examination could not be generated. "
-            "Please check that the CareerLens AI backend is online and try again."
+            "Please check that the backend is online and try again."
         ) from exc
 
 # ============================================================
@@ -540,22 +482,6 @@ if "ats_generated_bullets" not in st.session_state:
 if "recruiter_outreach_email" not in st.session_state:
     st.session_state.recruiter_outreach_email = None
 
-# Interactive mock interview state
-if "interview_active" not in st.session_state:
-    st.session_state.interview_active = False
-if "interview_questions_live" not in st.session_state:
-    st.session_state.interview_questions_live = []
-if "interview_answers_live" not in st.session_state:
-    st.session_state.interview_answers_live = []
-if "interview_index" not in st.session_state:
-    st.session_state.interview_index = 0
-if "interview_result" not in st.session_state:
-    st.session_state.interview_result = None
-if "interview_role_live" not in st.session_state:
-    st.session_state.interview_role_live = ""
-if "interview_count_live" not in st.session_state:
-    st.session_state.interview_count_live = 10
-
 if "exam_active" not in st.session_state:
     st.session_state.exam_active = False
 if "exam_questions" not in st.session_state:
@@ -570,12 +496,6 @@ if "exam_role" not in st.session_state:
     st.session_state.exam_role = ""
 if "exam_attempt_id" not in st.session_state:
     st.session_state.exam_attempt_id = ""
-if "exam_attempt_id" not in st.session_state:
-    st.session_state.exam_attempt_id = 0
-if "exam_attempt_seed" not in st.session_state:
-    st.session_state.exam_attempt_seed = ""
-if "exam_question_history" not in st.session_state:
-    st.session_state.exam_question_history = []
 
 def show_skills(skills, tag_style="tag-cyan"):
     if not skills:
@@ -911,7 +831,6 @@ if st.session_state.workspace == "Job Seeker":
         "📄 Analyse Resume",
         "🎯 Job Match",
         "💰 Salary Estimate",
-        "🎤 Interview Questions",
         "🗺️ Career Road Map",
         "🛡️ Real Time Job Detection"
     ])
@@ -1009,7 +928,7 @@ if st.session_state.workspace == "Job Seeker":
     # 3. Salary Estimate
     with tabs[2]:
         st.subheader("2026 India Salary Benchmark")
-        st.caption("Role-specific indicative market ranges in ₹ LPA. These are benchmark ranges, not guaranteed offers; company, city, skills and experience can move compensation substantially.")
+        st.caption("Role-specific indicative market ranges in ₹ LPA.")
 
         salary_role = st.text_input(
             "Job Role / Target Position",
@@ -1034,7 +953,6 @@ if st.session_state.workspace == "Job Seeker":
             key="salary_city_input"
         )
 
-        # Indicative 2026 India benchmarks. Values are annual CTC in LPA.
         SALARY_BENCHMARKS_2026 = {
             "software engineer": {
                 "Entry Level (0-2 yrs)": (4.0, 6.5, 10.0), "Mid Level (3-5 yrs)": (10.0, 16.0, 25.0),
@@ -1124,7 +1042,6 @@ if st.session_state.workspace == "Job Seeker":
             canonical_role = normalize_salary_role(salary_role)
             low, median, high = SALARY_BENCHMARKS_2026[canonical_role][salary_exp]
 
-            # Approximate city premium/discount for the same role and level.
             city_factor = {
                 "India Overall": 1.00, "Bengaluru": 1.12, "Hyderabad": 1.08,
                 "Pune": 1.05, "Mumbai": 1.08, "Delhi NCR": 1.06,
@@ -1147,198 +1064,10 @@ if st.session_state.workspace == "Job Seeker":
                 st.metric("Typical Market", f"₹{sr['median']} LPA")
             with col_sal3:
                 st.metric("Upper Market", f"₹{sr['high']} LPA")
-            st.info("💡 These are indicative 2026 benchmarks. Actual CTC depends on company tier, interview performance, location, stack, domain specialization, and fixed/variable compensation.")
+            st.info("💡 These are indicative 2026 benchmarks. Actual CTC depends on company tier, interview performance, location, stack, and domain specialization.")
 
-    # 4. Interactive Interview Simulator
+    # 4. Career Road Map
     with tabs[3]:
-        st.subheader("🎤 Interactive Mock Interview")
-        st.caption("Choose 10–50 questions. The interviewer asks one question at a time. Type your answer, continue until the end, and receive your final score and feedback.")
-
-        if not st.session_state.interview_active and st.session_state.interview_result is None:
-            target_interview_role = st.text_input(
-                "Target Role",
-                "Software Engineer",
-                key="int_role"
-            )
-            interview_count = st.select_slider(
-                "Number of Interview Questions",
-                options=[10, 15, 20, 25, 30, 40, 50],
-                value=10,
-                key="int_count"
-            )
-            st.markdown(f"**Interview format:** {interview_count} questions • Technical • Role-specific • Scenario-based • Behavioral • Final score")
-
-            if st.button("🚀 Start Interview", use_container_width=True, key="btn_start_interview"):
-                if not target_interview_role.strip():
-                    st.warning("Please enter a target role.")
-                else:
-                    with st.spinner(f"Preparing {interview_count} questions for {target_interview_role}..."):
-                        system_prompt = (
-                            "You are a senior hiring manager. Create an interactive interview question bank. "
-                            "Return ONLY valid JSON: an array of objects with keys id, type, question, "
-                            "ideal_points, and keywords. Generate exactly the requested number of questions. "
-                            "Mix role-specific technical questions, practical scenarios, problem solving, and behavioral questions. "
-                            "Do not include answers in the question text. Keep ideal_points concise (3-5 points)."
-                        )
-                        user_prompt = (
-                            f"Role: {target_interview_role}\nQuestions: {interview_count}\n"
-                            f"Candidate resume context: {st.session_state.resume_text[:5000]}"
-                        )
-                        questions = []
-                        try:
-                            raw = api_chat_assistant(
-                                [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}],
-                                resume_context=st.session_state.resume_text
-                            )
-                            cleaned = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw.strip(), flags=re.I | re.S)
-                            parsed = json.loads(cleaned)
-                            if isinstance(parsed, list):
-                                for i, q in enumerate(parsed[:interview_count], 1):
-                                    if isinstance(q, dict) and q.get("question"):
-                                        questions.append({
-                                            "id": i,
-                                            "type": q.get("type", "Technical"),
-                                            "question": str(q["question"]),
-                                            "ideal_points": q.get("ideal_points", []),
-                                            "keywords": q.get("keywords", [])
-                                        })
-                        except Exception:
-                            questions = []
-
-                        # Reliable fallback if the AI endpoint is unavailable or returns invalid JSON.
-                        fallback = [
-                            ("Technical", f"Explain the most important concepts, tools and best practices you would use as a {target_interview_role}.", ["fundamentals", "tools", "best practices"]),
-                            ("Technical", f"Walk me through how you would design a production-ready solution for a typical {target_interview_role} problem.", ["architecture", "scalability", "trade-offs"]),
-                            ("Scenario", "Tell me how you would debug a production issue that users are reporting but that you cannot reproduce locally.", ["logs", "monitoring", "isolation", "root cause"]),
-                            ("Problem Solving", "Describe a difficult technical problem you solved. What was your approach and what was the result?", ["problem", "approach", "result"]),
-                            ("Behavioral", "Tell me about a time you disagreed with a teammate or technical decision. How did you handle it?", ["communication", "trade-off", "resolution"]),
-                            ("Behavioral", "What is one technical skill you are currently improving, and how are you improving it?", ["specific skill", "learning plan", "evidence"]),
-                        ]
-                        while len(questions) < interview_count:
-                            base = fallback[len(questions) % len(fallback)]
-                            questions.append({"id": len(questions) + 1, "type": base[0], "question": base[1], "ideal_points": base[2], "keywords": base[2]})
-                        questions = questions[:interview_count]
-
-                        st.session_state.interview_active = True
-                        st.session_state.interview_questions_live = questions
-                        st.session_state.interview_answers_live = []
-                        st.session_state.interview_index = 0
-                        st.session_state.interview_result = None
-                        st.session_state.interview_role_live = target_interview_role.strip()
-                        st.session_state.interview_count_live = interview_count
-                        st.rerun()
-
-        elif st.session_state.interview_active:
-            idx = st.session_state.interview_index
-            questions = st.session_state.interview_questions_live
-            total = len(questions)
-            q = questions[idx]
-            st.progress((idx + 1) / total, text=f"Question {idx + 1} of {total}")
-            st.markdown(f"**{q.get('type', 'Interview')}**")
-            st.markdown(f"### Q{idx + 1}. {q['question']}")
-
-            answer = st.text_area(
-                "Your Answer",
-                height=220,
-                placeholder="Type your answer here...",
-                key=f"interview_answer_{idx}"
-            )
-            st.caption("Take your time. The answer is evaluated after the interview is completed.")
-
-            if st.button("➡️ Submit Answer & Continue", use_container_width=True, key=f"btn_submit_interview_{idx}"):
-                if not answer.strip():
-                    st.warning("Please type an answer before continuing.")
-                else:
-                    st.session_state.interview_answers_live.append({
-                        "question": q["question"],
-                        "type": q.get("type", "Interview"),
-                        "answer": answer.strip(),
-                        "ideal_points": q.get("ideal_points", []),
-                        "keywords": q.get("keywords", [])
-                    })
-                    if idx + 1 >= total:
-                        with st.spinner("Evaluating your complete interview..."):
-                            answers = st.session_state.interview_answers_live
-                            score = None
-                            feedback = []
-                            try:
-                                scoring_prompt = (
-                                    "You are a strict but fair senior interviewer. Score the candidate's complete interview. "
-                                    "Return ONLY valid JSON with keys overall_score (0-100), strengths (array), weaknesses (array), "
-                                    "recommendation (string), and question_scores (array of objects with score and feedback). "
-                                    "Evaluate relevance, correctness, depth, communication, practical thinking and role fit. "
-                                    "Do not reward empty or generic answers."
-                                )
-                                scoring_user = json.dumps({
-                                    "role": st.session_state.interview_role_live,
-                                    "answers": answers
-                                }, ensure_ascii=False)
-                                raw_score = api_chat_assistant(
-                                    [{"role": "system", "content": scoring_prompt}, {"role": "user", "content": scoring_user}],
-                                    resume_context=st.session_state.resume_text
-                                )
-                                cleaned_score = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw_score.strip(), flags=re.I | re.S)
-                                parsed_score = json.loads(cleaned_score)
-                                score = max(0, min(100, int(float(parsed_score.get("overall_score", 0)))))
-                                feedback = parsed_score
-                            except Exception:
-                                # Offline-safe fallback scoring: answer completeness + role-relevant detail.
-                                vals = []
-                                for a in answers:
-                                    words = len(a["answer"].split())
-                                    keyword_hits = sum(1 for k in a.get("keywords", []) if str(k).lower() in a["answer"].lower())
-                                    vals.append(min(100, 25 + min(50, words * 2) + min(25, keyword_hits * 8)))
-                                score = round(sum(vals) / max(1, len(vals)))
-                                feedback = {
-                                    "overall_score": score,
-                                    "strengths": ["Completed the interview", "Provided written responses"],
-                                    "weaknesses": ["AI detailed evaluation was unavailable for this attempt"],
-                                    "recommendation": "Review the questions and strengthen answers with concrete examples, technical depth and measurable outcomes.",
-                                    "question_scores": [{"score": v, "feedback": "Answer completeness and relevance checked."} for v in vals]
-                                }
-                            st.session_state.interview_result = feedback
-                            st.session_state.interview_result["overall_score"] = score
-                            st.session_state.interview_active = False
-                            st.rerun()
-                    else:
-                        st.session_state.interview_index += 1
-                        st.rerun()
-
-        elif st.session_state.interview_result is not None:
-            result = st.session_state.interview_result
-            score = int(result.get("overall_score", 0))
-            st.markdown("### 🏁 Interview Completed")
-            render_radial_gauge(score, "Interview Score", "Final Result", "#4ade80" if score >= 75 else ("#38bdf8" if score >= 50 else "#fbbf24"))
-
-            if score >= 80:
-                st.success("Excellent interview performance. You appear highly interview-ready for this role.")
-            elif score >= 60:
-                st.info("Good foundation. A little more depth and structured answering can improve your performance.")
-            else:
-                st.warning("Keep practicing. Focus on technical depth, examples and clearer explanations.")
-
-            c1, c2 = st.columns(2)
-            with c1:
-                st.markdown("#### 💪 Strengths")
-                for item in result.get("strengths", []):
-                    st.markdown(f"- {item}")
-            with c2:
-                st.markdown("#### 🎯 Improve Next")
-                for item in result.get("weaknesses", []):
-                    st.markdown(f"- {item}")
-            st.markdown("#### 📋 Interviewer Recommendation")
-            st.info(result.get("recommendation", "Continue practicing role-specific questions."))
-
-            if st.button("🔄 Start New Interview", use_container_width=True, key="btn_new_interview"):
-                st.session_state.interview_active = False
-                st.session_state.interview_questions_live = []
-                st.session_state.interview_answers_live = []
-                st.session_state.interview_index = 0
-                st.session_state.interview_result = None
-                st.rerun()
-
-    # 5. Career Road Map
-    with tabs[4]:
         st.subheader("Career Road Map")
         role = st.text_input("Target Dream Role", "Machine Learning Engineer", key="roadmap_target_input")
 
@@ -1360,8 +1089,8 @@ if st.session_state.workspace == "Job Seeker":
                 except Exception as exc:
                     st.error(f"Error: {exc}")
 
-    # 6. Real Time Job Detection
-    with tabs[5]:
+    # 5. Real Time Job Detection
+    with tabs[4]:
         st.subheader("Real Time Job Detection")
         jobrisk = st.text_area("Paste Job Post or Offer to Check", height=180, key="risk")
 
@@ -1494,7 +1223,6 @@ elif st.session_state.workspace == "Assessment Exam":
             "Select one option for each question."
         )
 
-        # Build the paper section-by-section.
         section_order = [name for name, _ in get_exam_blueprint(st.session_state.exam_role)]
 
         for section_name in section_order:
@@ -1537,9 +1265,6 @@ elif st.session_state.workspace == "Assessment Exam":
                     unsafe_allow_html=True,
                 )
 
-                # IMPORTANT:
-                # Do NOT use st.radio/selectbox. The candidate sees empty circles
-                # until they explicitly click an option. No default answer exists.
                 option_cols = st.columns(2)
                 for opt_idx, option in enumerate(q["options"]):
                     is_selected = current_answer == option
@@ -1619,8 +1344,6 @@ elif st.session_state.workspace == "Assessment Exam":
                 "correct": correct_count,
                 "total": total_q,
                 "breakdown": section_breakdown,
-                # Only score data is stored. Correct answers are deliberately
-                # NOT stored in the result object exposed to the UI.
                 "answered": total_q - unanswered,
             }
             st.session_state.exam_active = False
