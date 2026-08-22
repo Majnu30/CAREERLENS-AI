@@ -1526,7 +1526,7 @@ elif st.session_state.workspace == "Assistant":
     if "chat_messages" not in st.session_state:
         st.session_state.chat_messages = [{
             "role": "assistant",
-            "content": "Hi! Ask me anything about optimizing your resume, interview preparation, or career roadmaps."
+            "content": "Hi! Ask me anything about optimizing your resume, career trajectories, or ATS keywords."
         }]
 
     st.markdown("#### Popular Questions")
