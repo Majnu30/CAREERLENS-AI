@@ -3,47 +3,72 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CareerLens AI - AI Career Analysis</title>
+  <title>CareerLens AI - Intelligent Career & Resume Analyzer</title>
   
-  <meta name="google-site-verification" content="PBPGnmMg6P2Lcb4Jix8shoOIFXfBC7-grtzm6DTPiL8" />
-  <meta name="description" content="CareerLens AI helps analyze career paths, optimize resumes, and explore tech skills using intelligent AI tools.">
+  <!-- Search Engine Metadata -->
+  <meta name="description" content="CareerLens AI is an AI-powered career assistant designed to analyze resumes, map career growth, and match relevant skills.">
   <meta name="robots" content="index, follow">
 
+  <!-- Google Search Console Verification Tag -->
+  <meta name="google-site-verification" content="PBPGnmMg6P2Lcb4Jix8shoOIFXfBC7-grtzm6DTPiL8" />
+
   <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: #f1f5f9;
       display: flex;
       justify-content: center;
       align-items: center;
       min-height: 100vh;
-      margin: 0;
-      background-color: #f8fafc;
+      padding: 20px;
+    }
+    .card {
+      background: #ffffff;
+      max-width: 480px;
+      width: 100%;
+      padding: 40px 30px;
+      border-radius: 12px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
       text-align: center;
     }
-    .container {
-      background: white;
-      padding: 40px;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-      max-width: 480px;
+    h1 {
+      font-size: 26px;
+      color: #0f172a;
+      margin-bottom: 12px;
     }
-    a.button {
+    p {
+      color: #475569;
+      font-size: 15px;
+      line-height: 1.6;
+      margin-bottom: 24px;
+    }
+    .launch-btn {
       display: inline-block;
-      margin-top: 20px;
-      padding: 12px 24px;
-      background: #ff4b4b;
-      color: white;
+      width: 100%;
+      padding: 14px;
+      background-color: #ff4b4b;
+      color: #ffffff;
+      font-weight: 600;
+      font-size: 16px;
       text-decoration: none;
-      font-weight: bold;
-      border-radius: 6px;
+      border-radius: 8px;
+      transition: background-color 0.2s ease;
+    }
+    .launch-btn:hover {
+      background-color: #e03a3a;
     }
   </style>
 </head>
 <body>
-  <div class="container">
+  <div class="card">
     <h1>CareerLens AI</h1>
-    <p>AI-driven career insights, resume reviews, and role recommendation engine.</p>
-    <a class="button" href="https://career-lens-ai.streamlit.app/">Launch Application</a>
+    <p>Optimize your resume, get deep career path insights, and discover skill recommendations tailored to your goals.</p>
+    <a class="launch-btn" href="https://career-lens-ai.streamlit.app/">Launch CareerLens AI App</a>
   </div>
 </body>
 </html>
