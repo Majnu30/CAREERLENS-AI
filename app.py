@@ -4,8 +4,6 @@ import csv
 import json
 import re
 import random
-import uuid
-import secrets
 from datetime import datetime
 from typing import Dict, List
 import pandas as pd
@@ -38,7 +36,7 @@ def log_event(event_type: str, username: str, rating: str = "N/A", details: str 
             details
         ])
 
-# --- Custom Styling (Including Highlighted Selected Buttons) ---
+# --- Clean Sci-Fi Styling ---
 st.markdown(
     """
 <style>
@@ -242,7 +240,6 @@ p,label,.stMarkdown{
     border: 1px solid rgba(74, 222, 128, 0.35);
 }
 
-/* Default Action Buttons */
 .stButton > button {
     border-radius: 50px !important;
     background: linear-gradient(135deg, #0284c7 0%, #4f46e5 50%, #7c3aed 100%) !important;
@@ -259,16 +256,6 @@ p,label,.stMarkdown{
     transform: translateY(-2px) scale(1.02) !important;
     box-shadow: 0 8px 25px rgba(56, 189, 248, 0.55) !important;
     border-color: rgba(255, 255, 255, 0.35) !important;
-}
-
-/* Selected Exam Option Highlight (Solid White Accent) */
-.stButton > button[kind="primary"] {
-    background: #ffffff !important;
-    color: #07111f !important;
-    font-weight: 900 !important;
-    border: 2px solid #38bdf8 !important;
-    box-shadow: 0 0 20px rgba(255, 255, 255, 0.8) !important;
-    transform: scale(1.02) !important;
 }
 
 .footer{
@@ -333,262 +320,128 @@ def api_chat_assistant(messages: List[Dict], resume_context: str = "") -> str:
     return ""
 
 # ============================================================
-# ACCURATE DYNAMIC SALARY ENGINE
+# DYNAMIC ASSESSMENT & GENERATORS
 # ============================================================
 
-SALARY_TIER_DATABASE = {
-    "data analyst": {"fresher": (3.5, 5.5, 7.5), "mid": (7.0, 11.0, 16.0), "senior": (14.0, 20.0, 28.0), "lead": (22.0, 32.0, 45.0)},
-    "data scientist": {"fresher": (6.5, 9.5, 14.0), "mid": (13.0, 19.0, 28.0), "senior": (24.0, 35.0, 52.0), "lead": (38.0, 55.0, 80.0)},
-    "data engineer": {"fresher": (5.0, 8.0, 12.0), "mid": (11.0, 17.0, 25.0), "senior": (22.0, 32.0, 46.0), "lead": (34.0, 48.0, 70.0)},
-    "ai engineer": {"fresher": (7.5, 11.0, 16.5), "mid": (15.0, 24.0, 36.0), "senior": (28.0, 42.0, 65.0), "lead": (45.0, 68.0, 100.0)},
-    "machine learning engineer": {"fresher": (7.0, 10.5, 15.5), "mid": (14.0, 22.0, 34.0), "senior": (26.0, 38.0, 60.0), "lead": (42.0, 62.0, 90.0)},
-    "genai engineer": {"fresher": (8.5, 13.0, 19.0), "mid": (18.0, 28.0, 44.0), "senior": (32.0, 50.0, 75.0), "lead": (50.0, 75.0, 120.0)},
-    "software engineer": {"fresher": (4.0, 6.5, 10.0), "mid": (10.0, 16.0, 24.0), "senior": (20.0, 30.0, 45.0), "lead": (32.0, 48.0, 68.0)},
-    "frontend developer": {"fresher": (3.8, 5.8, 8.5), "mid": (8.5, 13.5, 20.0), "senior": (17.0, 26.0, 38.0), "lead": (26.0, 40.0, 58.0)},
-    "backend developer": {"fresher": (4.5, 7.0, 11.0), "mid": (10.5, 16.5, 25.0), "senior": (21.0, 32.0, 48.0), "lead": (33.0, 50.0, 72.0)},
-    "full stack developer": {"fresher": (4.2, 6.8, 10.5), "mid": (9.5, 15.5, 24.0), "senior": (19.0, 29.0, 44.0), "lead": (30.0, 46.0, 66.0)},
-    "devops engineer": {"fresher": (5.0, 7.5, 11.5), "mid": (11.0, 17.5, 26.0), "senior": (22.0, 34.0, 50.0), "lead": (35.0, 52.0, 75.0)},
-    "cloud architect": {"fresher": (6.0, 9.0, 14.0), "mid": (14.0, 22.0, 32.0), "senior": (26.0, 40.0, 60.0), "lead": (42.0, 65.0, 95.0)},
-    "cybersecurity analyst": {"fresher": (4.5, 6.8, 10.0), "mid": (9.5, 15.0, 23.0), "senior": (19.0, 29.0, 42.0), "lead": (30.0, 45.0, 65.0)},
-    "ui ux designer": {"fresher": (3.5, 5.2, 8.0), "mid": (7.5, 12.0, 18.0), "senior": (15.0, 23.0, 34.0), "lead": (24.0, 36.0, 50.0)},
-    "product manager": {"fresher": (6.5, 9.5, 14.5), "mid": (14.5, 22.5, 35.0), "senior": (26.0, 40.0, 62.0), "lead": (42.0, 65.0, 95.0)},
-}
+def build_dynamic_fallback_exam(role: str, count: int) -> List[Dict]:
+    pool = [
+        {
+            "section": "Quantitative & Logical Aptitude",
+            "question": "A train running at 54 km/hr crosses a 240m platform in 36 seconds. What is the length of the train?",
+            "options": ["300 meters", "240 meters", "180 meters", "360 meters"],
+            "answer": "300 meters",
+            "explanation": "Speed = 54*(5/18) = 15 m/s. Total distance in 36s = 15*36 = 540m. Train length = 540 - 240 = 300m."
+        },
+        {
+            "section": "Quantitative & Logical Aptitude",
+            "question": "If 12 workers finish a project in 14 days, how many days will 8 workers take to finish the same work at the same rate?",
+            "options": ["21 days", "18 days", "16 days", "24 days"],
+            "answer": "21 days",
+            "explanation": "Total work = 12 * 14 = 168 worker-days. Time for 8 workers = 168 / 8 = 21 days."
+        },
+        {
+            "section": "Core Technical & Architecture",
+            "question": f"When scaling infrastructure for a {role}, what is the primary purpose of introducing a reverse proxy?",
+            "options": ["Load balancing, SSL termination, and security caching", "Replacing primary SQL storage", "Automating frontend CSS builds", "Writing client unit tests"],
+            "answer": "Load balancing, SSL termination, and security caching",
+            "explanation": "Reverse proxies distribute network traffic, cache static assets, and terminate TLS certificates."
+        },
+        {
+            "section": "Core Technical & Architecture",
+            "question": f"In {role} workflows, which data structure provides O(1) average lookup and insertion time?",
+            "options": ["Hash Table (Hash Map)", "Binary Search Tree", "Linked List", "Max Heap"],
+            "answer": "Hash Table (Hash Map)",
+            "explanation": "Hash tables compute array indices via key hashing, offering O(1) average time complexity."
+        },
+        {
+            "section": "System Problem Solving & Reliability",
+            "question": "Which design pattern stops repetitive failed requests from overwhelming an already degraded downstream dependency?",
+            "options": ["Circuit Breaker Pattern", "Singleton Pattern", "Factory Method", "Observer Pattern"],
+            "answer": "Circuit Breaker Pattern",
+            "explanation": "Circuit Breakers trip open upon reaching error thresholds, preventing system-wide cascading failure."
+        }
+    ]
 
-def get_accurate_salary_estimate(role_query: str, exp_level: str, city: str) -> Dict:
-    q = role_query.lower().strip()
-    
-    if "0-2" in exp_level or "entry" in exp_level.lower() or "fresher" in exp_level.lower():
-        exp_key = "fresher"
-    elif "3-5" in exp_level or "mid" in exp_level.lower():
-        exp_key = "mid"
-    elif "6-8" in exp_level or "senior" in exp_level.lower():
-        exp_key = "senior"
-    else:
-        exp_key = "lead"
-
-    matched_role = None
-    if "genai" in q or "generative ai" in q or "llm" in q:
-        matched_role = "genai engineer"
-    elif "ai" in q.split() or "artificial intelligence" in q:
-        matched_role = "ai engineer"
-    elif "machine learning" in q or "ml" in q.split():
-        matched_role = "machine learning engineer"
-    elif "data analyst" in q or "analytics" in q:
-        matched_role = "data analyst"
-    elif "data scientist" in q:
-        matched_role = "data scientist"
-    elif "data engineer" in q:
-        matched_role = "data engineer"
-    elif "frontend" in q or "react" in q or "angular" in q:
-        matched_role = "frontend developer"
-    elif "backend" in q or "node" in q or "django" in q or "java" in q or "golang" in q:
-        matched_role = "backend developer"
-    elif "full stack" in q or "fullstack" in q:
-        matched_role = "full stack developer"
-    elif "devops" in q or "sre" in q or "kubernetes" in q:
-        matched_role = "devops engineer"
-    elif "cloud" in q or "aws" in q or "azure" in q:
-        matched_role = "cloud architect"
-    elif "security" in q or "cyber" in q:
-        matched_role = "cybersecurity analyst"
-    elif "ui" in q or "ux" in q or "design" in q:
-        matched_role = "ui ux designer"
-    elif "product manager" in q or "pm" in q.split():
-        matched_role = "product manager"
-    elif "software" in q or "sde" in q or "developer" in q or "engineer" in q:
-        matched_role = "software engineer"
-
-    if matched_role and matched_role in SALARY_TIER_DATABASE:
-        low, med, high = SALARY_TIER_DATABASE[matched_role][exp_key]
-        display_role = matched_role.title()
-    else:
-        low, med, high = (4.5, 7.0, 11.0) if exp_key == "fresher" else ((10.0, 16.0, 24.0) if exp_key == "mid" else ((20.0, 30.0, 44.0) if exp_key == "senior" else (32.0, 48.0, 68.0)))
-        display_role = role_query.title()
-
-    city_factor = {
-        "India Overall": 1.00,
-        "Bengaluru": 1.15,
-        "Hyderabad": 1.10,
-        "Pune": 1.06,
-        "Mumbai": 1.10,
-        "Delhi NCR": 1.08,
-        "Chennai": 1.04,
-        "Tier-2 / Other Cities": 0.85
-    }.get(city, 1.0)
-
-    return {
-        "role": display_role,
-        "experience": exp_level,
-        "city": city,
-        "low": round(low * city_factor, 1),
-        "median": round(med * city_factor, 1),
-        "high": round(high * city_factor, 1)
-    }
-
-# ============================================================
-# EXAMINATION ENGINE
-# ============================================================
-
-ROLE_EXAM_BLUEPRINTS = {
-    "Software Engineer / Full Stack Developer": [
-        ("Aptitude & Logical Reasoning", 8),
-        ("Programming & Data Structures", 10),
-        ("Web & Full Stack Engineering", 10),
-        ("Databases & SQL", 7),
-        ("Software Engineering & Testing", 7),
-        ("System Design & Real-World Scenarios", 8),
-    ],
-    "Data Scientist / AI Engineer": [
-        ("Aptitude & Logical Reasoning", 7),
-        ("Mathematics & Statistics", 7),
-        ("Python & Data Programming", 7),
-        ("Machine Learning", 10),
-        ("Deep Learning & Generative AI", 8),
-        ("Data & SQL", 5),
-        ("AI Engineering & Real-World Scenarios", 6),
-    ],
-    "Cloud DevOps & SRE Engineer": [
-        ("Aptitude & Logical Reasoning", 7),
-        ("Linux, Networking & Systems", 8),
-        ("Cloud Platforms & Infrastructure", 9),
-        ("DevOps & CI/CD", 9),
-        ("Containers & Infrastructure as Code", 6),
-        ("Monitoring, Reliability & SRE", 6),
-        ("Security & Real-World Scenarios", 5),
-    ],
-    "Frontend & UI/UX Engineer": [
-        ("Aptitude & Logical Reasoning", 7),
-        ("HTML, CSS & Web Fundamentals", 8),
-        ("JavaScript & TypeScript", 10),
-        ("Frontend Frameworks & Architecture", 9),
-        ("UI/UX & Accessibility", 6),
-        ("Performance, Testing & Tooling", 5),
-        ("Frontend Real-World Scenarios", 5),
-    ],
-    "Backend Systems & Microservices Architect": [
-        ("Aptitude & Logical Reasoning", 7),
-        ("Programming & Data Structures", 8),
-        ("Backend APIs & Services", 9),
-        ("Databases, SQL & Caching", 8),
-        ("Distributed Systems & Microservices", 9),
-        ("System Design & Architecture", 5),
-        ("Reliability & Security Scenarios", 4),
-    ],
-}
-
-def get_exam_blueprint(role: str):
-    return ROLE_EXAM_BLUEPRINTS.get(role, ROLE_EXAM_BLUEPRINTS["Software Engineer / Full Stack Developer"])
-
-def synthesize_dynamic_questions(role: str, blueprint: List, attempt_seed: str) -> List[Dict]:
-    rng = random.Random(attempt_seed)
-    exam_paper = []
-    
-    question_generators = {
-        "Aptitude & Logical Reasoning": [
-            lambda r: {
-                "q": f"A train travelling at {r.choice([54, 72, 90])} km/h crosses a platform of length {r.choice([200, 240, 300])}m in {r.choice([24, 30, 36])} seconds. What is the length of the train?",
-                "opts": ["240 meters", "300 meters", "180 meters", "210 meters"], "ans": "240 meters"
-            },
-            lambda r: {
-                "q": f"If {r.choice([8, 12, 16])} workers complete a task in {r.choice([14, 21, 28])} days, in how many days can {r.choice([6, 14, 18])} workers complete the same task working at the same pace?",
-                "opts": ["16 days", "18 days", "21 days", "24 days"], "ans": "16 days"
-            },
-            lambda r: {
-                "q": f"Identify the missing number in the progression: {r.choice(['4, 18, 48, 100, 180, ?', '2, 12, 36, 80, 150, ?'])}",
-                "opts": ["294", "252", "310", "280"], "ans": "294"
-            },
-            lambda r: {
-                "q": "Pointing to a photograph, a person says, 'His mother is the only daughter of my mother.' Whose photograph is it?",
-                "opts": ["Nephew's", "Brother's", "Son's", "Cousin's"], "ans": "Nephew's"
-            },
-        ],
-        "default": [
-            lambda r, s, role: {
-                "q": f"In {s} for a {role}, which design strategy delivers the highest resilience against cascading failure during traffic surges?",
-                "opts": ["Circuit Breaker pattern with health probes", "Synchronous blocking RPC calls", "Shared stateful in-memory singletons", "Unbounded thread pool queues"],
-                "ans": "Circuit Breaker pattern with health probes"
-            },
-            lambda r, s, role: {
-                "q": f"When optimizing computational latency in {s}, which complexity class represents the optimal search in a balanced B-Tree index?",
-                "opts": ["O(log N)", "O(N^2)", "O(N log N)", "O(1) worst-case"],
-                "ans": "O(log N)"
-            },
-            lambda r, s, role: {
-                "q": f"What is the primary architectural trade-off when implementing optimistic concurrency control in high-throughput {role} databases?",
-                "opts": ["Minimizes lock overhead but requires retry logic upon conflict", "Guarantees zero aborts at the cost of global table locks", "Eliminates need for indexes", "Forces serial execution"],
-                "ans": "Minimizes lock overhead but requires retry logic upon conflict"
-            }
-        ]
-    }
-    
-    qid = 1
-    for section_name, count in blueprint:
-        gens = question_generators.get(section_name, question_generators["default"])
-        for _ in range(count):
-            g = rng.choice(gens)
-            data = g(rng) if section_name in question_generators else g(rng, section_name, role)
-            opts = list(data["opts"])
-            rng.shuffle(opts)
-            exam_paper.append({
-                "id": qid,
-                "section": section_name,
-                "question": data["q"],
+    selected = []
+    idx = 1
+    while len(selected) < count:
+        for item in pool:
+            opts = list(item["options"])
+            random.shuffle(opts)
+            selected.append({
+                "id": idx,
+                "section": item["section"],
+                "question": item["question"],
                 "options": opts,
-                "answer": data["ans"]
+                "answer": item["answer"],
+                "explanation": item["explanation"]
             })
-            qid += 1
-            
-    rng.shuffle(exam_paper)
-    for idx, item in enumerate(exam_paper, start=1):
-        item["id"] = idx
-    return exam_paper
+            idx += 1
+            if len(selected) == count:
+                break
+    return selected
 
-def generate_examination_suite(role: str, attempt_id: str, resume_context: str = "") -> List[Dict]:
-    blueprint = get_exam_blueprint(role)
+def generate_examination_suite(role: str, num_questions: int, resume_context: str = "") -> List[Dict]:
     system_prompt = (
-        "You are the Lead Assessment Director for IT hiring. Generate a JSON array of multiple choice questions. "
-        "Each question must have keys: id, section, question, options (array of 4 strings), answer (exact match of correct option)."
+        "You are an assessment director designing a corporate pre-interview qualifying examination. "
+        "Generate a strictly formatted JSON array of multiple choice questions. Do not reveal the answers in the options or questions."
     )
-
-    user_prompt = f"""
-ROLE: {role}
-Generate 50 IT examination questions matching this section breakdown:
-{chr(10).join([f"- {s}: {c} questions" for s, c in blueprint])}
-
-Format as raw JSON:
-[
-  {{"id": 1, "section": "{blueprint[0][0]}", "question": "Question text?", "options": ["A", "B", "C", "D"], "answer": "A"}}
-]
-"""
-
+    user_prompt = (
+        f"Generate {num_questions} multiple-choice exam questions for the role: '{role}'.\n"
+        f"Sections: 30% Aptitude/Logic, 50% Technical fundamentals for {role}, 20% Architecture/Problem Solving.\n"
+        "Output ONLY a raw JSON array matching this structure:\n"
+        "[\n"
+        "  {\n"
+        "    \"id\": 1,\n"
+        "    \"section\": \"Aptitude & Logic\" | \"Core Technical\" | \"Problem Solving\",\n"
+        "    \"question\": \"Question text\",\n"
+        "    \"options\": [\"Option 1\", \"Option 2\", \"Option 3\", \"Option 4\"],\n"
+        "    \"answer\": \"Exact text of correct option\",\n"
+        "    \"explanation\": \"One clear sentence explanation\"\n"
+        "  }\n"
+        "]"
+    )
+    
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_prompt}
+    ]
+    
     try:
-        reply = api_chat_assistant(
-            [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}],
-            resume_context=resume_context
-        )
-        json_match = re.search(r"\[\s*\{.*\}\s*\]", reply or "", re.DOTALL)
+        reply = api_chat_assistant(messages, resume_context=resume_context)
+        json_match = re.search(r'\[\s*\{.*\}\s*\]', reply, re.DOTALL)
         if json_match:
             parsed = json.loads(json_match.group(0))
-            if isinstance(parsed, list) and len(parsed) >= 20:
-                cleaned = []
-                for idx, q in enumerate(parsed[:50], start=1):
-                    opts = [str(o).strip() for o in q.get("options", ["A", "B", "C", "D"])]
-                    ans = str(q.get("answer", opts[0])).strip()
-                    if ans not in opts:
-                        opts[0] = ans
+            if isinstance(parsed, list) and len(parsed) > 0:
+                clean_list = []
+                for idx, q in enumerate(parsed[:num_questions], 1):
+                    opts = q.get("options", ["Option A", "Option B", "Option C", "Option D"])
+                    if len(opts) < 4:
+                        opts = opts + [f"Option {chr(65+i)}" for i in range(len(opts), 4)]
+                    correct = q.get("answer", opts[0])
+                    if correct not in opts:
+                        opts[0] = correct
                     random.shuffle(opts)
-                    cleaned.append({
+                    clean_list.append({
                         "id": idx,
-                        "section": str(q.get("section", "Technical Assessment")).strip(),
-                        "question": str(q.get("question", f"Question {idx}")).strip(),
+                        "section": q.get("section", "Technical Assessment"),
+                        "question": q.get("question", f"Question {idx} for {role}"),
                         "options": opts,
-                        "answer": ans
+                        "answer": correct,
+                        "explanation": q.get("explanation", "Standard technical rationale.")
                     })
-                return cleaned
+                return clean_list
     except Exception:
         pass
+        
+    return build_dynamic_fallback_exam(role, num_questions)
 
-    return synthesize_dynamic_questions(role, blueprint, attempt_id)
+def generate_interview_prep(role: str, category: str, resume_context: str = "") -> str:
+    prompt = [
+        {"role": "system", "content": "You are a Principal Tech Interviewer at a FAANG company. Provide 5 challenging, highly realistic interview questions tailored to the candidate's experience and target role. For each question, provide: 1) What the interviewer looks for, and 2) A STAR-framework or technical model answer framework."},
+        {"role": "user", "content": f"Role: {role}\nInterview Track: {category}\nCandidate Resume Background:\n{resume_context[:1200]}"}
+    ]
+    return api_chat_assistant(prompt, resume_context=resume_context)
 
 # ============================================================
 # STATE & HELPERS
@@ -616,7 +469,10 @@ if "ats_generated_bullets" not in st.session_state:
     st.session_state.ats_generated_bullets = None
 if "recruiter_outreach_email" not in st.session_state:
     st.session_state.recruiter_outreach_email = None
+if "generated_interview_q" not in st.session_state:
+    st.session_state.generated_interview_q = None
 
+# Assessment Exam State
 if "exam_active" not in st.session_state:
     st.session_state.exam_active = False
 if "exam_questions" not in st.session_state:
@@ -629,8 +485,6 @@ if "exam_results" not in st.session_state:
     st.session_state.exam_results = None
 if "exam_role" not in st.session_state:
     st.session_state.exam_role = ""
-if "exam_attempt_id" not in st.session_state:
-    st.session_state.exam_attempt_id = ""
 
 def show_skills(skills, tag_style="tag-cyan"):
     if not skills:
@@ -781,7 +635,7 @@ if not st.session_state.is_logged_in:
                 <span class="tag-bubble tag-cyan" style="font-size: 0.85rem; padding: 6px 18px; margin-bottom: 12px;">✦ YOUR CAREER LAUNCHPAD ✦</span>
                 <h3 style="margin: 8px 0 0 0; color: #f4f7fb;">Analyze. Create. Accelerate.</h3>
                 <p style="color: #94a3b8; font-size: 0.92rem; margin-top: 6px; margin-bottom: 22px;">
-                    Review your resume, take live pre-interview assessment exams, and explore salary benchmarks.
+                    Review your resume, take live pre-interview assessment exams, simulate mock interviews, and benchmark market compensation.
                 </p>
             </div>
             """,
@@ -858,6 +712,12 @@ with st.sidebar:
     if st.button("📝 Pre-Interview Assessment", use_container_width=True):
         st.session_state.workspace = "Assessment Exam"
 
+    if st.button("🎤 AI Interview Prep", use_container_width=True):
+        st.session_state.workspace = "Interview Prep"
+
+    if st.button("💰 Salary Estimator", use_container_width=True):
+        st.session_state.workspace = "Salary Estimator"
+
     if st.button("📄 Resume Builder", use_container_width=True):
         st.session_state.workspace = "Resume Builder"
 
@@ -891,10 +751,10 @@ if st.session_state.workspace == "Job Seeker":
         <section class="hero">
             <div class="kicker">CANDIDATE INTELLIGENCE</div>
             <h1>Understand Your Profile.<br><span>Build Your Career.</span></h1>
-            <p>Automated resume parsing, job match scores, compensation insights, and step-by-step career roadmaps.</p>
+            <p>Automated resume parsing, job match scores, and step-by-step career roadmaps.</p>
             <div style="margin-top: 14px;">
                 <span class="tag-bubble tag-cyan">✦ Resume Scoring</span>
-                <span class="tag-bubble tag-purple">✦ Salary Benchmarks</span>
+                <span class="tag-bubble tag-purple">✦ Profile Diagnostics</span>
                 <span class="tag-bubble tag-emerald">✦ Career Roadmaps</span>
             </div>
         </section>
@@ -965,7 +825,6 @@ if st.session_state.workspace == "Job Seeker":
     tabs = st.tabs([
         "📄 Analyse Resume",
         "🎯 Job Match",
-        "💰 Salary Estimate",
         "🗺️ Career Road Map",
         "🛡️ Real Time Job Detection"
     ])
@@ -1060,84 +919,8 @@ if st.session_state.workspace == "Job Seeker":
                 """, unsafe_allow_html=True)
                 st.code(st.session_state.ats_generated_bullets, language="markdown")
 
-    # 3. Accurate Dynamic Salary Estimate
+    # 3. Career Road Map
     with tabs[2]:
-        st.subheader("2026 India Market Salary Benchmarks")
-        st.caption("Accurate salary benchmarks tailored to specific domains (AI, Data Analyst, Cloud, Software, etc.) based on experience level and location.")
-
-        col_in1, col_in2 = st.columns([2, 1])
-        with col_in1:
-            salary_role_text = st.text_input(
-                "Search or Type ANY Role:",
-                value="Data Analyst",
-                key="salary_role_input_v2",
-                placeholder="e.g. AI Engineer, Data Analyst, Machine Learning, DevOps, Java Backend"
-            )
-        with col_in2:
-            salary_exp_select = st.selectbox(
-                "Experience Level:",
-                [
-                    "Entry Level / Fresher (0-2 yrs)",
-                    "Mid Level (3-5 yrs)",
-                    "Senior Level (6-8 yrs)",
-                    "Lead / Principal (9+ yrs)"
-                ],
-                index=0,
-                key="salary_exp_input_v2"
-            )
-
-        salary_city_select = st.selectbox(
-            "Market / City:",
-            ["India Overall", "Bengaluru", "Hyderabad", "Pune", "Mumbai", "Delhi NCR", "Chennai", "Tier-2 / Other Cities"],
-            key="salary_city_input_v2"
-        )
-
-        if st.button("📊 Calculate Accurate Market Salary", use_container_width=True, key="btn_calc_salary_accurate"):
-            if not salary_role_text.strip():
-                st.warning("Please enter a role title.")
-            else:
-                sal_res = get_accurate_salary_estimate(salary_role_text, salary_exp_select, salary_city_select)
-                st.session_state.salary_result = sal_res
-
-        if st.session_state.get("salary_result"):
-            sr = st.session_state.salary_result
-            st.markdown(f"""
-            <div class="panel" style="border-color: rgba(56, 189, 248, 0.4); margin-top: 14px;">
-                <h4 style="margin: 0; color: #38bdf8;">💼 Compensation Benchmark for: {sr['role']}</h4>
-                <p style="margin: 4px 0 0 0; color: #cbd5e1; font-size: 0.9rem;">
-                    Level: <b>{sr['experience']}</b> &nbsp;|&nbsp; Region: <b>{sr['city']}</b>
-                </p>
-            </div>
-            """, unsafe_allow_html=True)
-
-            col_sal1, col_sal2, col_sal3 = st.columns(3)
-            with col_sal1:
-                st.markdown(f"""
-                <div class="gauge-box">
-                    <div class="gauge-label">Starting Range</div>
-                    <div style="font-size: 2.2rem; font-weight: 900; color: #94a3b8; margin: 6px 0;">₹{sr['low']} LPA</div>
-                    <span class="tag-bubble tag-cyan">25th Percentile</span>
-                </div>
-                """, unsafe_allow_html=True)
-            with col_sal2:
-                st.markdown(f"""
-                <div class="gauge-box" style="border-color: #38bdf8;">
-                    <div class="gauge-label">Market Median</div>
-                    <div style="font-size: 2.4rem; font-weight: 900; color: #38bdf8; margin: 6px 0;">₹{sr['median']} LPA</div>
-                    <span class="tag-bubble tag-emerald">Typical Package</span>
-                </div>
-                """, unsafe_allow_html=True)
-            with col_sal3:
-                st.markdown(f"""
-                <div class="gauge-box">
-                    <div class="gauge-label">Top Tier Target</div>
-                    <div style="font-size: 2.2rem; font-weight: 900; color: #c084fc; margin: 6px 0;">₹{sr['high']} LPA</div>
-                    <span class="tag-bubble tag-purple">90th Percentile</span>
-                </div>
-                """, unsafe_allow_html=True)
-
-    # 4. Career Road Map
-    with tabs[3]:
         st.subheader("Career Road Map")
         role = st.text_input("Target Dream Role", "Machine Learning Engineer", key="roadmap_target_input")
 
@@ -1159,8 +942,8 @@ if st.session_state.workspace == "Job Seeker":
                 except Exception as exc:
                     st.error(f"Error: {exc}")
 
-    # 5. Real Time Job Detection
-    with tabs[4]:
+    # 4. Real Time Job Detection
+    with tabs[3]:
         st.subheader("Real Time Job Detection")
         jobrisk = st.text_area("Paste Job Post or Offer to Check", height=180, key="risk")
 
@@ -1192,23 +975,20 @@ if st.session_state.workspace == "Job Seeker":
                         st.error(f"Error: {exc}")
 
 # ============================================================
-# 2. PRE-INTERVIEW ASSESSMENT (SOLID WHITE BUTTON HIGHLIGHT)
+# 2. PRE-INTERVIEW ASSESSMENT
 # ============================================================
 
 elif st.session_state.workspace == "Assessment Exam":
     st.markdown(
         """
         <section class="hero">
-            <div class="kicker">ROLE-BASED IT SECTOR EXAMINATION</div>
-            <h1>Pre-Interview Examination.<br><span>Role-Specific. Section-Wise. 50 Questions.</span></h1>
-            <p>
-                A professional IT hiring assessment. Every role has its own examination blueprint,
-                technical sections and practical scenarios. Each new attempt receives a fresh paper.
-            </p>
+            <div class="kicker">STANDARDIZED QUALIFYING TEST</div>
+            <h1>Pre-Interview Examination.<br><span>Quantitative, Logic & Domain Assessment.</span></h1>
+            <p>Corporate-grade qualifying examination (Aptitude, Quantitative Reasoning, Core Technical & Problem Solving) with unselected options and automatic scoring.</p>
             <div style="margin-top: 14px;">
-                <span class="tag-bubble tag-cyan">✦ 50 Questions</span>
-                <span class="tag-bubble tag-purple">✦ Role-Specific Sections</span>
-                <span class="tag-bubble tag-emerald">✦ Fresh Paper Every Attempt</span>
+                <span class="tag-bubble tag-cyan">✦ Unlimited Custom Roles</span>
+                <span class="tag-bubble tag-purple">✦ 10 to 50 Configurable Questions</span>
+                <span class="tag-bubble tag-emerald">✦ Unbiased Blank Choice Radio</span>
             </div>
         </section>
         """,
@@ -1216,320 +996,382 @@ elif st.session_state.workspace == "Assessment Exam":
     )
 
     if not st.session_state.exam_active and not st.session_state.exam_submitted:
-        st.markdown("### ⚙️ Examination Setup")
+        st.markdown("### ⚙️ Examination Configuration")
+        
+        c_e1, c_e2 = st.columns([2, 1])
+        with c_e1:
+            exam_role_choice = st.text_input(
+                "Search or Type ANY Role for the Examination:",
+                value="Full Stack Software Engineer",
+                placeholder="e.g. Data Scientist, DevOps Engineer, Android Developer, Cloud Architect, Java Developer..."
+            )
+        with c_e2:
+            num_q_choice = st.select_slider(
+                "Number of Questions:",
+                options=[10, 15, 20, 30, 40, 50],
+                value=10
+            )
 
-        exam_role_choice = st.selectbox(
-            "Select Candidate Role:",
-            list(ROLE_EXAM_BLUEPRINTS.keys()),
-            key="exam_role_selector",
-        )
+        st.markdown(f"""
+        <div class="panel">
+            <h4 style="margin: 0; color: #38bdf8;">📋 Examination Pattern:</h4>
+            <p style="margin: 6px 0 0 0; color: #cbd5e1; font-size: 0.92rem;">
+                • <b>Quantitative Aptitude:</b> Mathematical speed, work & time, speed-distance-time, series.<br>
+                • <b>Logical Reasoning:</b> Pattern analysis, deduction, critical problem solving.<br>
+                • <b>Core Technical Domain:</b> Architecture, algorithms, database operations, reliability.<br>
+                • <b>Blank Radio Options:</b> No options are pre-selected. You must choose your own answer for each question.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
 
-        blueprint = get_exam_blueprint(exam_role_choice)
-
-        st.markdown(
-            """
-            <div class="panel">
-                <h4 style="margin:0;color:#38bdf8;">📋 Examination Pattern</h4>
-                <p style="margin:6px 0 0;color:#cbd5e1;">
-                    This is a fixed 50-question IT-sector assessment. The section distribution changes
-                    according to the selected role. Questions are generated fresh for every attempt.
-                </p>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-        cols = st.columns(2)
-        for idx, (section_name, section_count) in enumerate(blueprint):
-            with cols[idx % 2]:
-                st.markdown(
-                    f"""
-                    <div class="panel" style="padding:15px;">
-                        <div style="font-size:.78rem;color:#94a3b8;font-weight:800;">SECTION {idx+1:02d}</div>
-                        <div style="font-size:1rem;color:#f4f7fb;font-weight:800;margin-top:4px;">{section_name}</div>
-                        <div style="font-size:.85rem;color:#38bdf8;margin-top:5px;">{section_count} Questions</div>
-                    </div>
-                    """,
-                    unsafe_allow_html=True,
-                )
-
-        st.markdown("")
-
-        if st.button("🚀 Start Fresh 50-Question Examination", use_container_width=True, key="btn_start_exam"):
-            attempt_id = f"{st.session_state.username}-{uuid.uuid4().hex}"
-            with st.spinner("Generating a fresh role-specific examination paper..."):
-                try:
-                    questions = generate_examination_suite(
-                        exam_role_choice,
-                        attempt_id,
-                        st.session_state.resume_text,
-                    )
-
+        if st.button("🚀 Start Examination", use_container_width=True):
+            if not exam_role_choice.strip():
+                st.warning("Please type a role name to generate your examination.")
+            else:
+                with st.spinner(f"Synthesizing {num_q_choice} questions for {exam_role_choice}..."):
+                    questions = generate_examination_suite(exam_role_choice.strip(), num_q_choice, st.session_state.resume_text)
                     st.session_state.exam_questions = questions
                     st.session_state.exam_answers = {}
-                    st.session_state.exam_role = exam_role_choice
-                    st.session_state.exam_attempt_id = attempt_id
+                    st.session_state.exam_role = exam_role_choice.strip()
                     st.session_state.exam_active = True
                     st.session_state.exam_submitted = False
                     st.session_state.exam_results = None
                     st.rerun()
 
-                except Exception as exc:
-                    st.error(str(exc))
-
     elif st.session_state.exam_active and not st.session_state.exam_submitted:
-        questions = st.session_state.exam_questions
-        answered_count = len(
-            [v for v in st.session_state.exam_answers.values() if str(v).strip()]
-        )
-
-        st.markdown(f"### 📝 {st.session_state.exam_role}")
-        st.caption(
-            f"50-question examination • {answered_count}/50 answered • "
-            "Selected options turn bright white."
-        )
-
-        section_order = [name for name, _ in get_exam_blueprint(st.session_state.exam_role)]
-
-        for section_name in section_order:
-            section_questions = [
-                q for q in questions if q.get("section") == section_name
-            ]
-            if not section_questions:
-                continue
-
-            st.markdown(
-                f"""
-                <div class="panel" style="margin-top:24px;border-color:rgba(56,189,248,.35);">
-                    <div style="font-size:.75rem;color:#38bdf8;font-weight:900;letter-spacing:1.5px;">
-                        EXAMINATION SECTION
-                    </div>
-                    <div style="font-size:1.25rem;color:#f4f7fb;font-weight:900;margin-top:4px;">
-                        {section_name}
-                    </div>
-                    <div style="font-size:.82rem;color:#94a3b8;margin-top:4px;">
-                        {len(section_questions)} questions
+        st.markdown(f"### 📝 Active Test: {st.session_state.exam_role}")
+        st.caption(f"Total Questions: {len(st.session_state.exam_questions)}. All radio options start completely unselected.")
+        
+        with st.form("exam_form"):
+            for q in st.session_state.exam_questions:
+                qid = q["id"]
+                section_tag = q.get("section", "General Assessment")
+                st.markdown(f"""
+                <div style="margin-top: 18px; margin-bottom: 6px;">
+                    <span class="tag-bubble tag-cyan">Question {qid}</span>
+                    <span class="tag-bubble tag-purple">{section_tag}</span>
+                    <div style="font-size: 1.05rem; font-weight: 700; color: #f4f7fb; margin-top: 8px;">
+                        {q['question']}
                     </div>
                 </div>
-                """,
-                unsafe_allow_html=True,
-            )
-
-            for q in section_questions:
-                qid = q["id"]
-                current_answer = st.session_state.exam_answers.get(qid, "")
-
-                st.markdown(
-                    f"""
-                    <div style="margin-top:18px;margin-bottom:8px;">
-                        <span class="tag-bubble tag-cyan">Q{qid}</span>
-                        <div style="font-size:1.05rem;font-weight:750;color:#f4f7fb;margin-top:8px;line-height:1.55;">
-                            {q['question']}
-                        </div>
-                    </div>
-                    """,
-                    unsafe_allow_html=True,
+                """, unsafe_allow_html=True)
+                
+                selected_opt = st.radio(
+                    label=f"q_{qid}",
+                    options=q["options"],
+                    index=None,
+                    key=f"exam_radio_{qid}",
+                    label_visibility="collapsed"
                 )
+                st.session_state.exam_answers[qid] = selected_opt
+                st.markdown("<hr style='border-color: #1e293b; margin: 12px 0;'>", unsafe_allow_html=True)
 
-                # Renders active option as a Solid White button (type="primary")
-                option_cols = st.columns(2)
-                for opt_idx, option in enumerate(q["options"]):
-                    is_selected = (current_answer == option)
-                    btn_type = "primary" if is_selected else "secondary"
-                    marker = "✓" if is_selected else "○"
+            submitted = st.form_submit_button("🏁 Submit Examination & View Score", use_container_width=True)
+            if submitted:
+                correct_count = 0
+                section_breakdown = {}
+                detailed_eval = []
 
-                    with option_cols[opt_idx % 2]:
-                        if st.button(
-                            f"{marker}  {option}",
-                            key=f"exam_{st.session_state.exam_attempt_id}_{qid}_{opt_idx}",
-                            type=btn_type,
-                            use_container_width=True,
-                        ):
-                            st.session_state.exam_answers[qid] = option
-                            st.rerun()
+                for q in st.session_state.exam_questions:
+                    qid = q["id"]
+                    user_ans = st.session_state.exam_answers.get(qid)
+                    user_ans_str = str(user_ans) if user_ans is not None else "Not Answered"
+                    correct_ans = str(q["answer"]).strip()
+                    is_correct = (user_ans is not None and user_ans.strip() == correct_ans)
+                    
+                    if is_correct:
+                        correct_count += 1
+                        
+                    sec = q.get("section", "General")
+                    if sec not in section_breakdown:
+                        section_breakdown[sec] = {"correct": 0, "total": 0}
+                    section_breakdown[sec]["total"] += 1
+                    if is_correct:
+                        section_breakdown[sec]["correct"] += 1
 
-                if current_answer:
-                    if st.button(
-                        "Clear this answer",
-                        key=f"clear_{st.session_state.exam_attempt_id}_{qid}",
-                    ):
-                        st.session_state.exam_answers.pop(qid, None)
-                        st.rerun()
+                    detailed_eval.append({
+                        "id": qid,
+                        "question": q["question"],
+                        "user_answer": user_ans_str,
+                        "correct_answer": correct_ans,
+                        "is_correct": is_correct,
+                        "explanation": q.get("explanation", "Standard domain answer key.")
+                    })
 
-                st.markdown(
-                    "<hr style='border-color:#1e293b;margin:14px 0;'>",
-                    unsafe_allow_html=True,
-                )
-
-        unanswered = len(questions) - len(
-            [v for v in st.session_state.exam_answers.values() if str(v).strip()]
-        )
-
-        st.warning(
-            f"⚠️ {unanswered} question(s) are unanswered."
-            if unanswered
-            else "✅ All 50 questions have been answered."
-        )
-
-        if st.button(
-            "🏁 Submit Examination & Calculate Score",
-            use_container_width=True,
-            key=f"submit_exam_{st.session_state.exam_attempt_id}",
-        ):
-            correct_count = 0
-            section_breakdown = {}
-
-            for q in questions:
-                qid = q["id"]
-                user_ans = str(st.session_state.exam_answers.get(qid, "")).strip()
-                correct_ans = str(q["answer"]).strip()
-                is_correct = bool(user_ans) and (user_ans == correct_ans)
-
-                if is_correct:
-                    correct_count += 1
-
-                sec = q.get("section", "General")
-                if sec not in section_breakdown:
-                    section_breakdown[sec] = {"correct": 0, "total": 0}
-
-                section_breakdown[sec]["total"] += 1
-                if is_correct:
-                    section_breakdown[sec]["correct"] += 1
-
-            total_q = len(questions)
-            percentage = int((correct_count / total_q) * 100) if total_q else 0
-
-            st.session_state.exam_results = {
-                "score": percentage,
-                "correct": correct_count,
-                "total": total_q,
-                "breakdown": section_breakdown,
-                "answered": total_q - unanswered,
-            }
-            st.session_state.exam_active = False
-            st.session_state.exam_submitted = True
-
-            log_event(
-                "EXAM_COMPLETED",
-                st.session_state.username,
-                "N/A",
-                f"Role: {st.session_state.exam_role}, Score: {percentage}% ({correct_count}/{total_q})",
-            )
-            st.rerun()
+                total_q = len(st.session_state.exam_questions)
+                percentage = int((correct_count / total_q) * 100) if total_q > 0 else 0
+                
+                st.session_state.exam_results = {
+                    "score": percentage,
+                    "correct": correct_count,
+                    "total": total_q,
+                    "breakdown": section_breakdown,
+                    "details": detailed_eval
+                }
+                st.session_state.exam_active = False
+                st.session_state.exam_submitted = True
+                log_event("EXAM_COMPLETED", st.session_state.username, "N/A", f"Role: {st.session_state.exam_role}, Score: {percentage}% ({correct_count}/{total_q})")
+                st.rerun()
 
     elif st.session_state.exam_submitted and st.session_state.exam_results:
         res = st.session_state.exam_results
         score_pct = res["score"]
-
+        
         st.markdown("## 🏆 Assessment Score & Performance Report")
-
+        
         col_res1, col_res2, col_res3 = st.columns(3)
-
         with col_res1:
-            gauge_c = (
-                "#4ade80"
-                if score_pct >= 75
-                else ("#38bdf8" if score_pct >= 50 else "#fbbf24")
-            )
-            render_radial_gauge(
-                score_pct,
-                "Overall Score",
-                "50-Question Assessment",
-                gauge_c,
-            )
-
+            gauge_c = "#4ade80" if score_pct >= 75 else ("#38bdf8" if score_pct >= 50 else "#fbbf24")
+            render_radial_gauge(score_pct, "Executive Score", "Qualifying Metric", gauge_c)
         with col_res2:
-            st.markdown(
-                f"""
-                <div class="gauge-box">
-                    <div class="gauge-label">Questions Correct</div>
-                    <div style="font-size:2.5rem;font-weight:900;color:#38bdf8;margin:8px 0;">
-                        {res['correct']} / {res['total']}
-                    </div>
-                    <span class="tag-bubble tag-cyan">Accuracy Index</span>
+            st.markdown(f"""
+            <div class="gauge-box">
+                <div class="gauge-label">Questions Correct</div>
+                <div style="font-size: 2.5rem; font-weight: 900; color: #38bdf8; margin: 8px 0;">
+                    {res['correct']} / {res['total']}
                 </div>
-                """,
-                unsafe_allow_html=True,
-            )
-
+                <span class="tag-bubble tag-cyan">Accuracy Index</span>
+            </div>
+            """, unsafe_allow_html=True)
         with col_res3:
-            verdict_text = (
-                "QUALIFIED"
-                if score_pct >= 75
-                else ("INTERVIEW READY" if score_pct >= 50 else "IMPROVEMENT NEEDED")
-            )
-            verdict_color = (
-                "#4ade80"
-                if score_pct >= 75
-                else ("#38bdf8" if score_pct >= 50 else "#fbbf24")
-            )
-
-            st.markdown(
-                f"""
-                <div class="gauge-box">
-                    <div class="gauge-label">Assessment Status</div>
-                    <div style="font-size:1.35rem;font-weight:900;color:{verdict_color};margin:18px 0;">
-                        {verdict_text}
-                    </div>
-                    <span class="tag-bubble tag-purple">{st.session_state.exam_role}</span>
+            verdict_text = "QUALIFIED (Top Tier)" if score_pct >= 75 else ("INTERVIEW READY" if score_pct >= 50 else "IMPROVEMENT NEEDED")
+            verdict_color = "#4ade80" if score_pct >= 75 else ("#38bdf8" if score_pct >= 50 else "#fbbf24")
+            st.markdown(f"""
+            <div class="gauge-box">
+                <div class="gauge-label">Corporate Assessment</div>
+                <div style="font-size: 1.35rem; font-weight: 900; color: {verdict_color}; margin: 18px 0;">
+                    {verdict_text}
                 </div>
-                """,
-                unsafe_allow_html=True,
-            )
+                <span class="tag-bubble tag-purple">Benchmark Status</span>
+            </div>
+            """, unsafe_allow_html=True)
 
         st.markdown("<br>", unsafe_allow_html=True)
-
+        
         st.markdown("### 📊 Section-Wise Performance")
-
-        breakdown_items = list(res["breakdown"].items())
-        s_cols = st.columns(min(3, len(breakdown_items)))
-
-        for idx, (sec_name, sec_data) in enumerate(breakdown_items):
-            sec_pct = (
-                int((sec_data["correct"] / sec_data["total"]) * 100)
-                if sec_data["total"]
-                else 0
-            )
-
-            with s_cols[idx % len(s_cols)]:
-                st.markdown(
-                    f"""
-                    <div class="panel" style="text-align:center;">
-                        <div style="font-size:.82rem;font-weight:800;color:#94a3b8;text-transform:uppercase;">
-                            {sec_name}
-                        </div>
-                        <div style="font-size:1.8rem;font-weight:900;color:#38bdf8;margin:6px 0;">
-                            {sec_pct}%
-                        </div>
-                        <span class="tag-bubble tag-emerald">
-                            {sec_data['correct']} / {sec_data['total']} Correct
-                        </span>
-                    </div>
-                    """,
-                    unsafe_allow_html=True,
-                )
+        s_cols = st.columns(len(res["breakdown"]))
+        for idx, (sec_name, sec_data) in enumerate(res["breakdown"].items()):
+            sec_pct = int((sec_data["correct"] / sec_data["total"]) * 100) if sec_data["total"] > 0 else 0
+            with s_cols[idx]:
+                st.markdown(f"""
+                <div class="panel" style="text-align: center;">
+                    <div style="font-size: 0.82rem; font-weight: 800; color: #94a3b8; text-transform: uppercase;">{sec_name}</div>
+                    <div style="font-size: 1.8rem; font-weight: 900; color: #38bdf8; margin: 6px 0;">{sec_pct}%</div>
+                    <span class="tag-bubble tag-emerald">{sec_data['correct']} / {sec_data['total']} Correct</span>
+                </div>
+                """, unsafe_allow_html=True)
 
         st.markdown("<br>", unsafe_allow_html=True)
-        st.success(
-            "Examination completed. The answer key is hidden from the candidate."
-        )
+        
+        st.markdown("### 🔍 Answer Key & Detailed Explanations")
+        for item in res["details"]:
+            status_badge = '<span class="tag-bubble tag-emerald">✓ Correct</span>' if item["is_correct"] else '<span class="tag-bubble tag-purple">✗ Incorrect</span>'
+            st.markdown(f"""
+            <div class="panel" style="border-color: {'rgba(74, 222, 128, 0.3)' if item['is_correct'] else 'rgba(139, 124, 255, 0.3)'};">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <span style="font-weight: 800; color: #38bdf8;">Question {item['id']}</span>
+                    {status_badge}
+                </div>
+                <div style="font-size: 1rem; font-weight: 700; color: #f4f7fb; margin-bottom: 8px;">{item['question']}</div>
+                <div style="font-size: 0.92rem; color: #cbd5e1; margin-bottom: 4px;">• <b>Your Answer:</b> {item['user_answer']}</div>
+                <div style="font-size: 0.92rem; color: #4ade80; margin-bottom: 6px;">• <b>Correct Answer:</b> {item['correct_answer']}</div>
+                <div style="font-size: 0.85rem; color: #94a3b8; background: rgba(15, 23, 42, 0.6); padding: 8px 12px; border-radius: 8px;">
+                    💡 <b>Explanation:</b> {item['explanation']}
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
 
-        if st.button(
-            "🔄 Retake Examination — Generate a New Paper",
-            use_container_width=True,
-            key="btn_retake_exam",
-        ):
+        if st.button("🔄 Retake Examination / Choose New Role", use_container_width=True):
             st.session_state.exam_active = False
             st.session_state.exam_submitted = False
             st.session_state.exam_questions = []
             st.session_state.exam_answers = {}
             st.session_state.exam_results = None
-            st.session_state.exam_role = ""
-            st.session_state.exam_attempt_id = ""
             st.rerun()
 
 # ============================================================
-# 3. RESUME BUILDER WORKSPACE
+# 3. AI INTERVIEW QUESTIONS & PREPARATION WORKSPACE
+# ============================================================
+
+elif st.session_state.workspace == "Interview Prep":
+    st.markdown(
+        """
+        <section class="hero">
+            <div class="kicker">INTERVIEW INTELLIGENCE</div>
+            <h1>Simulate & Prepare.<br><span>AI-Powered Interview Question Suites.</span></h1>
+            <p>Generate high-yield Technical, System Design, and Behavioral interview questions tailored specifically to your resume background and target role.</p>
+            <div style="margin-top: 14px;">
+                <span class="tag-bubble tag-cyan">✦ Live Technical Deep Dives</span>
+                <span class="tag-bubble tag-purple">✦ System Architecture & Design</span>
+                <span class="tag-bubble tag-emerald">✦ Behavioral (STAR Framework)</span>
+            </div>
+        </section>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    c_iq1, c_iq2 = st.columns([1.5, 1])
+    with c_iq1:
+        interview_role = st.text_input(
+            "Target Job Role:",
+            value="Senior Full Stack Engineer",
+            placeholder="e.g. AI Engineer, Product Manager, Cloud DevOps Architect..."
+        )
+    with c_iq2:
+        interview_track = st.selectbox(
+            "Select Interview Track:",
+            [
+                "💻 Core Technical & Coding Fundamentals",
+                "🏗️ Distributed Systems & System Architecture",
+                "🤝 Behavioral, Leadership & STAR Method",
+                "🧠 Complex Algorithmic & Problem Solving",
+                "🎯 Comprehensive 360° Mock Interview Suite"
+            ]
+        )
+
+    if st.button("🚀 Generate Tailored Interview Questions", use_container_width=True):
+        with st.spinner(f"Architecting tailored interview questions for {interview_role}..."):
+            qa_res = generate_interview_prep(interview_role, interview_track, st.session_state.resume_text)
+            st.session_state.generated_interview_q = qa_res
+            log_event("INTERVIEW_QUESTIONS_GEN", st.session_state.username, "N/A", f"Track: {interview_track} | Role: {interview_role}")
+
+    if st.session_state.generated_interview_q:
+        st.markdown(f"""
+        <div class="panel" style="border: 1px solid rgba(56, 189, 248, 0.4); margin-top: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <h3 style="margin: 0; color: #38bdf8;">📋 Interview Preparation: {interview_role}</h3>
+                <span class="tag-bubble tag-purple">{interview_track.split(' ')[1]}</span>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        st.markdown(st.session_state.generated_interview_q)
+
+# ============================================================
+# 4. SALARY & COMPENSATION ESTIMATION WORKSPACE
+# ============================================================
+
+elif st.session_state.workspace == "Salary Estimator":
+    st.markdown(
+        """
+        <section class="hero">
+            <div class="kicker">COMPENSATION BENCHMARKING</div>
+            <h1>Market Value & Salary Intelligence.<br><span>Real-Time Tech Compensation.</span></h1>
+            <p>Benchmark your expected compensation across Tier-1 tech hubs, seniority bands, and tech stacks with clear percentiles and equity insights.</p>
+            <div style="margin-top: 14px;">
+                <span class="tag-bubble tag-cyan">✦ Base Salary Percentiles (25th - 90th)</span>
+                <span class="tag-bubble tag-purple">✦ Equity & Stock Grids</span>
+                <span class="tag-bubble tag-emerald">✦ Location Cost Adjustment</span>
+            </div>
+        </section>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    c_s1, c_s2, c_s3 = st.columns(3)
+    with c_s1:
+        sal_role = st.selectbox(
+            "Job Title / Role:",
+            [
+                "Software Engineer / Backend Developer",
+                "Full Stack Developer",
+                "Machine Learning / AI Engineer",
+                "DevOps / Cloud Platform Architect",
+                "Data Scientist / Analytics Lead",
+                "Product Manager (Tech)",
+                "Cybersecurity / InfoSec Engineer"
+            ]
+        )
+    with c_s2:
+        sal_exp = st.selectbox(
+            "Seniority & Experience Level:",
+            [
+                "Junior / Entry-Level (0-2 Yrs)",
+                "Mid-Level (3-5 Yrs)",
+                "Senior (5-8 Yrs)",
+                "Staff / Lead Engineer (8-12 Yrs)",
+                "Principal / Engineering Director (12+ Yrs)"
+            ]
+        )
+    with c_s3:
+        sal_loc = st.selectbox(
+            "Location / Market Region:",
+            [
+                "United States - San Francisco / Bay Area",
+                "United States - New York / Seattle / Remote",
+                "Europe - London / Berlin / Amsterdam",
+                "India - Bengaluru / Hyderabad / NCR",
+                "Remote - Global (Tier 1 Benchmarked)"
+            ]
+        )
+
+    # Deterministic salary calculation engine
+    base_salaries = {
+        "Software Engineer / Backend Developer": 115000,
+        "Full Stack Developer": 110000,
+        "Machine Learning / AI Engineer": 135000,
+        "DevOps / Cloud Platform Architect": 130000,
+        "Data Scientist / Analytics Lead": 125000,
+        "Product Manager (Tech)": 128000,
+        "Cybersecurity / InfoSec Engineer": 122000
+    }
+    exp_multipliers = {
+        "Junior / Entry-Level (0-2 Yrs)": 0.8,
+        "Mid-Level (3-5 Yrs)": 1.15,
+        "Senior (5-8 Yrs)": 1.55,
+        "Staff / Lead Engineer (8-12 Yrs)": 1.95,
+        "Principal / Engineering Director (12+ Yrs)": 2.45
+    }
+    loc_multipliers = {
+        "United States - San Francisco / Bay Area": 1.25,
+        "United States - New York / Seattle / Remote": 1.12,
+        "Europe - London / Berlin / Amsterdam": 0.85,
+        "India - Bengaluru / Hyderabad / NCR": 0.38,
+        "Remote - Global (Tier 1 Benchmarked)": 0.95
+    }
+
+    median_calc = int(base_salaries[sal_role] * exp_multipliers[sal_exp] * loc_multipliers[sal_loc])
+    p25_calc = int(median_calc * 0.85)
+    p75_calc = int(median_calc * 1.20)
+    p90_calc = int(median_calc * 1.45)
+    currency_symbol = "₹" if "India" in sal_loc else ("£" if "London" in sal_loc else "$")
+    
+    if "India" in sal_loc:
+        # Convert to Lakhs (INR) approximation
+        fmt_25 = f"₹{(p25_calc * 83) / 100000:.1f} LPA"
+        fmt_med = f"₹{(median_calc * 83) / 100000:.1f} LPA"
+        fmt_75 = f"₹{(p75_calc * 83) / 100000:.1f} LPA"
+        fmt_90 = f"₹{(p90_calc * 83) / 100000:.1f} LPA"
+    else:
+        fmt_25 = f"{currency_symbol}{p25_calc:,.0f}"
+        fmt_med = f"{currency_symbol}{median_calc:,.0f}"
+        fmt_75 = f"{currency_symbol}{p75_calc:,.0f}"
+        fmt_90 = f"{currency_symbol}{p90_calc:,.0f}"
+
+    st.markdown("### 📊 Market Compensation Distribution")
+    col_sal1, col_sal2, col_sal3, col_sal4 = st.columns(4)
+    with col_sal1:
+        st.markdown(f"""<div class="panel" style="text-align:center;"><div class="gauge-label">25th Percentile</div><h2 style="color:#94a3b8; margin:6px 0;">{fmt_25}</h2><span class="tag-bubble">Entry Range</span></div>""", unsafe_allow_html=True)
+    with col_sal2:
+        st.markdown(f"""<div class="panel" style="text-align:center; border-color:#38bdf8;"><div class="gauge-label" style="color:#38bdf8;">Median (50th)</div><h2 style="color:#38bdf8; margin:6px 0;">{fmt_med}</h2><span class="tag-bubble tag-cyan">Target Median</span></div>""", unsafe_allow_html=True)
+    with col_sal3:
+        st.markdown(f"""<div class="panel" style="text-align:center;"><div class="gauge-label">75th Percentile</div><h2 style="color:#c084fc; margin:6px 0;">{fmt_75}</h2><span class="tag-bubble tag-purple">High Performer</span></div>""", unsafe_allow_html=True)
+    with col_sal4:
+        st.markdown(f"""<div class="panel" style="text-align:center;"><div class="gauge-label">90th Percentile</div><h2 style="color:#4ade80; margin:6px 0;">{fmt_90}</h2><span class="tag-bubble tag-emerald">Top 10% Bracket</span></div>""", unsafe_allow_html=True)
+
+    st.markdown("### 💡 Negotiation Insights & Tech Equity Trends")
+    st.markdown(f"""
+    <div class="panel">
+        <h4 style="margin: 0; color: #38bdf8;">Negotiation Strategy for {sal_role} ({sal_exp}):</h4>
+        <p style="margin: 8px 0 0 0; color: #cbd5e1; font-size: 0.95rem; line-height: 1.6;">
+            • <b>Target Anchoring:</b> Aim to anchor your initial target at the <b>75th percentile ({fmt_75})</b> during final recruiter calls.<br>
+            • <b>Variable Bonus & Equity:</b> Top tier employers typically offer an additional <b>15% - 30% performance bonus</b> and 4-year RSUs on top of the base salary.<br>
+            • <b>High-Leverage Skills:</b> Demonstrating verified competency in Distributed Systems, LLM deployment, and high-load database sharding pushes offers directly toward the 90th percentile.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+# ============================================================
+# 5. RESUME BUILDER WORKSPACE
 # ============================================================
 
 elif st.session_state.workspace == "Resume Builder":
@@ -1737,7 +1579,7 @@ p, div {{ font-size: 11.5px; color: #334155; line-height: 1.45; }}
             )
 
 # ============================================================
-# 4. RECRUITER WORKSPACE
+# 6. RECRUITER WORKSPACE
 # ============================================================
 
 elif st.session_state.workspace == "Recruiter":
@@ -1841,7 +1683,7 @@ elif st.session_state.workspace == "Recruiter":
         )
 
 # ============================================================
-# 5. AI CAREER ASSISTANT
+# 7. AI CAREER ASSISTANT
 # ============================================================
 
 elif st.session_state.workspace == "Assistant":
@@ -1859,7 +1701,7 @@ elif st.session_state.workspace == "Assistant":
     if "chat_messages" not in st.session_state:
         st.session_state.chat_messages = [{
             "role": "assistant",
-            "content": "Hi! Ask me anything about optimizing your resume, interview preparation, or career roadmaps."
+            "content": "Hi! Ask me anything about optimizing your resume, career trajectories, or ATS keywords."
         }]
 
     st.markdown("#### Popular Questions")
@@ -1898,66 +1740,116 @@ elif st.session_state.workspace == "Assistant":
         st.rerun()
 
 # ============================================================
-# 6. PRIVATE ADMIN & ANALYTICS DASHBOARD
+# 8. PRIVATE ADMIN & ANALYTICS DASHBOARD
 # ============================================================
 
 elif st.session_state.workspace == "Analytics":
     if not st.session_state.is_admin_auth:
-        st.warning("Unauthorized access. Admin privileges required.")
+        st.error("Unauthorized access. Admin privileges required.")
         st.stop()
 
-    st.markdown(
-        """
-        <section class="hero">
-            <div class="kicker">RESTRICTED ADMIN ACCESS</div>
-            <h1>Platform Telemetry.<br><span>User Audit & Ratings.</span></h1>
-            <p>Admin telemetry: view user registrations, login volume, exit ratings, and download analytics logs.</p>
-        </section>
-        """,
-        unsafe_allow_html=True,
-    )
+    st.markdown("""<section class="hero"><div class="kicker">ADMIN CONTROL CENTER</div><h1>CareerLens <span>Command Center.</span></h1><p>Monitor platform health, users, recruiters, AI activity, feedback and audit events from one responsive dashboard.</p></section>""", unsafe_allow_html=True)
 
     if os.path.exists(ANALYTICS_FILE):
         logs_df = pd.read_csv(ANALYTICS_FILE)
-        
-        col_a1, col_a2, col_a3 = st.columns(3)
-        total_logins = len(logs_df[logs_df["Event"].isin(["LOGIN", "GUEST_ACCESS"])])
-        total_regs = len(logs_df[logs_df["Event"] == "REGISTER"])
-        rated_entries = logs_df[logs_df["Event"] == "LOGOUT_WITH_RATING"]
-        
-        with col_a1:
-            render_radial_gauge(total_logins, "Total Visits", "Traffic", "#38bdf8")
-        with col_a2:
-            render_radial_gauge(total_regs, "Sign-ups", "Conversions", "#818cf8")
-        with col_a3:
-            render_radial_gauge(len(rated_entries), "Exit Reviews", "Feedback", "#c084fc")
-
-        st.markdown("<br>", unsafe_allow_html=True)
-        
-        st.markdown("#### ⭐ User Exit Ratings & Comments")
-        if not rated_entries.empty:
-            st.dataframe(
-                rated_entries[["Timestamp", "Username", "Rating", "Details"]].rename(columns={"Details": "Feedback"}),
-                use_container_width=True,
-                hide_index=True
-            )
-        else:
-            st.info("No ratings recorded yet.")
-
-        st.markdown("#### 📜 Full System Audit Log")
-        st.dataframe(logs_df.sort_values(by="Timestamp", ascending=False), use_container_width=True, hide_index=True)
-
-        st.download_button(
-            "⬇️ Export Full Telemetry Log (CSV)",
-            logs_df.to_csv(index=False).encode("utf-8"),
-            file_name="platform_analytics.csv",
-            mime="text/csv",
-            use_container_width=True,
-        )
     else:
-        st.info("No activity logs or ratings recorded yet.")
+        logs_df = pd.DataFrame(columns=["Timestamp","Event","Username","Rating","Details"])
 
-# ============================================================
+    if not logs_df.empty:
+        logs_df["Timestamp"] = pd.to_datetime(logs_df["Timestamp"], errors="coerce")
+        events = logs_df["Event"].fillna("").astype(str)
+        users = logs_df["Username"].fillna("").astype(str)
+        total_events = len(logs_df)
+        unique_users = users.replace("", pd.NA).nunique()
+        visits = int(events.isin(["LOGIN","GUEST_ACCESS"]).sum())
+        registrations = int((events == "REGISTER").sum())
+        admin_logins = int((events == "ADMIN_LOGIN").sum())
+        ratings = logs_df[events == "LOGOUT_WITH_RATING"]
+        ai_events = logs_df[events.str.contains("RESUME|MATCH|ROADMAP|CHAT|SCREEN|FRAUD|ASSESS|INTERVIEW", case=False, regex=True)]
+    else:
+        total_events = unique_users = visits = registrations = admin_logins = 0
+        ratings = pd.DataFrame(columns=logs_df.columns)
+        ai_events = pd.DataFrame(columns=logs_df.columns)
+
+    k1,k2,k3,k4,k5 = st.columns(5)
+    k1.metric("👥 Users", unique_users)
+    k2.metric("📈 Visits", visits)
+    k3.metric("📝 Sign-ups", registrations)
+    k4.metric("🤖 AI Events", len(ai_events))
+    k5.metric("⭐ Reviews", len(ratings))
+
+    st.markdown("### 📊 Platform Overview")
+    c1,c2 = st.columns(2)
+    with c1:
+        st.markdown("#### Activity by Event")
+        if not logs_df.empty:
+            counts = logs_df["Event"].value_counts().head(12)
+            st.bar_chart(counts)
+        else:
+            st.info("No activity recorded yet.")
+    with c2:
+        st.markdown("#### Daily Activity")
+        if not logs_df.empty and logs_df["Timestamp"].notna().any():
+            daily = logs_df.dropna(subset=["Timestamp"]).assign(Date=lambda x: x["Timestamp"].dt.date).groupby("Date").size()
+            st.line_chart(daily)
+        else:
+            st.info("No daily activity available.")
+
+    st.markdown("### 🧠 AI & Product Usage")
+    a1,a2,a3 = st.columns(3)
+    a1.metric("AI Operations", len(ai_events))
+    a2.metric("Admin Sessions", admin_logins)
+    a3.metric("Total Events", total_events)
+
+    if not ai_events.empty:
+        usage = ai_events["Event"].value_counts().rename_axis("Feature").reset_index(name="Uses")
+        st.dataframe(usage, use_container_width=True, hide_index=True)
+
+    st.markdown("### ⭐ User Feedback")
+    if not ratings.empty:
+        feedback_cols = [c for c in ["Timestamp","Username","Rating","Details"] if c in ratings.columns]
+        st.dataframe(ratings[feedback_cols].sort_values("Timestamp", ascending=False), use_container_width=True, hide_index=True)
+    else:
+        st.info("No user feedback recorded yet.")
+
+    st.markdown("### 👤 User Activity")
+    if not logs_df.empty:
+        user_summary = logs_df.groupby("Username", dropna=False).agg(Events=("Event","count"), Last_Activity=("Timestamp","max")).reset_index()
+        user_summary = user_summary.sort_values("Events", ascending=False).head(100)
+        st.dataframe(user_summary, use_container_width=True, hide_index=True)
+
+    st.markdown("### 🔎 Audit Log")
+    search = st.text_input("Search audit events", placeholder="username, event, action...")
+    filtered = logs_df.copy()
+    if search.strip() and not filtered.empty:
+        mask = filtered.astype(str).apply(lambda col: col.str.contains(search.strip(), case=False, na=False)).any(axis=1)
+        filtered = filtered[mask]
+    if not filtered.empty:
+        st.dataframe(filtered.sort_values("Timestamp", ascending=False), use_container_width=True, hide_index=True)
+    else:
+        st.info("No matching audit events.")
+
+    e1,e2,e3 = st.columns(3)
+    with e1:
+        st.download_button("⬇️ Export Audit CSV", logs_df.to_csv(index=False).encode("utf-8"), "careerlens_audit.csv", "text/csv", use_container_width=True)
+    with e2:
+        st.download_button("⬇️ Export Users CSV", user_summary.to_csv(index=False).encode("utf-8") if not logs_df.empty else b"Username,Events,Last_Activity\n", "careerlens_users.csv", "text/csv", use_container_width=True)
+    with e3:
+        if st.button("🔄 Refresh Dashboard", use_container_width=True):
+            st.rerun()
+
+    st.markdown("### 🔐 Admin Security")
+    s1,s2 = st.columns(2)
+    with s1:
+        st.success("Admin session authenticated")
+    with s2:
+        if st.button("🚪 Lock Admin Session", use_container_width=True):
+            st.session_state.is_admin_auth = False
+            st.session_state.is_logged_in = False
+            st.session_state.workspace = "Job Seeker"
+            log_event("ADMIN_LOGOUT", "Administrator", "N/A", "Admin session locked")
+            st.rerun()
+
 # FOOTER
 # ============================================================
 st.divider()
