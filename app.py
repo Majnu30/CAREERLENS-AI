@@ -477,7 +477,7 @@ ROLE_EXAM_BLUEPRINTS = {
 }
 
 def get_exam_blueprint(role: str):
-    return ROLE_EXAM_BLUEPRINTS.get(role, ROLE_EXAM_BLUEPRINTS["Software Engineer / Full Stack Developer"])[cite: 1]
+    return ROLE_EXAM_BLUEPRINTS.get(role, ROLE_EXAM_BLUEPRINTS["Software Engineer / Full Stack Developer"])
 
 def synthesize_dynamic_questions(role: str, blueprint: List, attempt_seed: str) -> List[Dict]:
     rng = random.Random(attempt_seed)
@@ -1060,7 +1060,7 @@ if st.session_state.workspace == "Job Seeker":
                 """, unsafe_allow_html=True)
                 st.code(st.session_state.ats_generated_bullets, language="markdown")
 
-    # 3. Salary Estimate
+    # 3. Accurate Dynamic Salary Estimate
     with tabs[2]:
         st.subheader("2026 India Market Salary Benchmarks")
         st.caption("Accurate salary benchmarks tailored to specific domains (AI, Data Analyst, Cloud, Software, etc.) based on experience level and location.")
@@ -1224,7 +1224,7 @@ elif st.session_state.workspace == "Assessment Exam":
             key="exam_role_selector",
         )
 
-        blueprint = get_exam_blueprint(exam_role_choice)[cite: 1]
+        blueprint = get_exam_blueprint(exam_role_choice)
 
         st.markdown(
             """
@@ -1289,7 +1289,7 @@ elif st.session_state.workspace == "Assessment Exam":
             "Selected options turn bright white."
         )
 
-        section_order = [name for name, _ in get_exam_blueprint(st.session_state.exam_role)][cite: 1]
+        section_order = [name for name, _ in get_exam_blueprint(st.session_state.exam_role)]
 
         for section_name in section_order:
             section_questions = [
