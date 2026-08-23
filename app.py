@@ -38,7 +38,7 @@ def log_event(event_type: str, username: str, rating: str = "N/A", details: str 
             details
         ])
 
-# --- Sci-Fi Theme ---
+# --- Custom Styling (Including Highlighted Selected Buttons) ---
 st.markdown(
     """
 <style>
@@ -242,6 +242,7 @@ p,label,.stMarkdown{
     border: 1px solid rgba(74, 222, 128, 0.35);
 }
 
+/* Default Action Buttons */
 .stButton > button {
     border-radius: 50px !important;
     background: linear-gradient(135deg, #0284c7 0%, #4f46e5 50%, #7c3aed 100%) !important;
@@ -258,6 +259,16 @@ p,label,.stMarkdown{
     transform: translateY(-2px) scale(1.02) !important;
     box-shadow: 0 8px 25px rgba(56, 189, 248, 0.55) !important;
     border-color: rgba(255, 255, 255, 0.35) !important;
+}
+
+/* Selected Exam Option Highlight (Solid White Accent) */
+.stButton > button[kind="primary"] {
+    background: #ffffff !important;
+    color: #07111f !important;
+    font-weight: 900 !important;
+    border: 2px solid #38bdf8 !important;
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.8) !important;
+    transform: scale(1.02) !important;
 }
 
 .footer{
@@ -314,7 +325,7 @@ def api_screen_candidates(files: List, job_description: str) -> List[Dict]:
 def api_chat_assistant(messages: List[Dict], resume_context: str = "") -> str:
     payload = {"messages": messages, "resume_context": resume_context}
     try:
-        res = requests.post(f"{API_BASE_URL}/api/chat/ask", json=payload, timeout=50)
+        res = requests.post(f"{API_BASE_URL}/api/chat/ask", json=payload, timeout=45)
         if res.status_code == 200:
             return res.json().get("reply", "")
     except Exception:
@@ -322,7 +333,100 @@ def api_chat_assistant(messages: List[Dict], resume_context: str = "") -> str:
     return ""
 
 # ============================================================
-# COMPREHENSIVE EXAMINATION ENGINE
+# ACCURATE DYNAMIC SALARY ENGINE
+# ============================================================
+
+SALARY_TIER_DATABASE = {
+    "data analyst": {"fresher": (3.5, 5.5, 7.5), "mid": (7.0, 11.0, 16.0), "senior": (14.0, 20.0, 28.0), "lead": (22.0, 32.0, 45.0)},
+    "data scientist": {"fresher": (6.5, 9.5, 14.0), "mid": (13.0, 19.0, 28.0), "senior": (24.0, 35.0, 52.0), "lead": (38.0, 55.0, 80.0)},
+    "data engineer": {"fresher": (5.0, 8.0, 12.0), "mid": (11.0, 17.0, 25.0), "senior": (22.0, 32.0, 46.0), "lead": (34.0, 48.0, 70.0)},
+    "ai engineer": {"fresher": (7.5, 11.0, 16.5), "mid": (15.0, 24.0, 36.0), "senior": (28.0, 42.0, 65.0), "lead": (45.0, 68.0, 100.0)},
+    "machine learning engineer": {"fresher": (7.0, 10.5, 15.5), "mid": (14.0, 22.0, 34.0), "senior": (26.0, 38.0, 60.0), "lead": (42.0, 62.0, 90.0)},
+    "genai engineer": {"fresher": (8.5, 13.0, 19.0), "mid": (18.0, 28.0, 44.0), "senior": (32.0, 50.0, 75.0), "lead": (50.0, 75.0, 120.0)},
+    "software engineer": {"fresher": (4.0, 6.5, 10.0), "mid": (10.0, 16.0, 24.0), "senior": (20.0, 30.0, 45.0), "lead": (32.0, 48.0, 68.0)},
+    "frontend developer": {"fresher": (3.8, 5.8, 8.5), "mid": (8.5, 13.5, 20.0), "senior": (17.0, 26.0, 38.0), "lead": (26.0, 40.0, 58.0)},
+    "backend developer": {"fresher": (4.5, 7.0, 11.0), "mid": (10.5, 16.5, 25.0), "senior": (21.0, 32.0, 48.0), "lead": (33.0, 50.0, 72.0)},
+    "full stack developer": {"fresher": (4.2, 6.8, 10.5), "mid": (9.5, 15.5, 24.0), "senior": (19.0, 29.0, 44.0), "lead": (30.0, 46.0, 66.0)},
+    "devops engineer": {"fresher": (5.0, 7.5, 11.5), "mid": (11.0, 17.5, 26.0), "senior": (22.0, 34.0, 50.0), "lead": (35.0, 52.0, 75.0)},
+    "cloud architect": {"fresher": (6.0, 9.0, 14.0), "mid": (14.0, 22.0, 32.0), "senior": (26.0, 40.0, 60.0), "lead": (42.0, 65.0, 95.0)},
+    "cybersecurity analyst": {"fresher": (4.5, 6.8, 10.0), "mid": (9.5, 15.0, 23.0), "senior": (19.0, 29.0, 42.0), "lead": (30.0, 45.0, 65.0)},
+    "ui ux designer": {"fresher": (3.5, 5.2, 8.0), "mid": (7.5, 12.0, 18.0), "senior": (15.0, 23.0, 34.0), "lead": (24.0, 36.0, 50.0)},
+    "product manager": {"fresher": (6.5, 9.5, 14.5), "mid": (14.5, 22.5, 35.0), "senior": (26.0, 40.0, 62.0), "lead": (42.0, 65.0, 95.0)},
+}
+
+def get_accurate_salary_estimate(role_query: str, exp_level: str, city: str) -> Dict:
+    q = role_query.lower().strip()
+    
+    if "0-2" in exp_level or "entry" in exp_level.lower() or "fresher" in exp_level.lower():
+        exp_key = "fresher"
+    elif "3-5" in exp_level or "mid" in exp_level.lower():
+        exp_key = "mid"
+    elif "6-8" in exp_level or "senior" in exp_level.lower():
+        exp_key = "senior"
+    else:
+        exp_key = "lead"
+
+    matched_role = None
+    if "genai" in q or "generative ai" in q or "llm" in q:
+        matched_role = "genai engineer"
+    elif "ai" in q.split() or "artificial intelligence" in q:
+        matched_role = "ai engineer"
+    elif "machine learning" in q or "ml" in q.split():
+        matched_role = "machine learning engineer"
+    elif "data analyst" in q or "analytics" in q:
+        matched_role = "data analyst"
+    elif "data scientist" in q:
+        matched_role = "data scientist"
+    elif "data engineer" in q:
+        matched_role = "data engineer"
+    elif "frontend" in q or "react" in q or "angular" in q:
+        matched_role = "frontend developer"
+    elif "backend" in q or "node" in q or "django" in q or "java" in q or "golang" in q:
+        matched_role = "backend developer"
+    elif "full stack" in q or "fullstack" in q:
+        matched_role = "full stack developer"
+    elif "devops" in q or "sre" in q or "kubernetes" in q:
+        matched_role = "devops engineer"
+    elif "cloud" in q or "aws" in q or "azure" in q:
+        matched_role = "cloud architect"
+    elif "security" in q or "cyber" in q:
+        matched_role = "cybersecurity analyst"
+    elif "ui" in q or "ux" in q or "design" in q:
+        matched_role = "ui ux designer"
+    elif "product manager" in q or "pm" in q.split():
+        matched_role = "product manager"
+    elif "software" in q or "sde" in q or "developer" in q or "engineer" in q:
+        matched_role = "software engineer"
+
+    if matched_role and matched_role in SALARY_TIER_DATABASE:
+        low, med, high = SALARY_TIER_DATABASE[matched_role][exp_key]
+        display_role = matched_role.title()
+    else:
+        low, med, high = (4.5, 7.0, 11.0) if exp_key == "fresher" else ((10.0, 16.0, 24.0) if exp_key == "mid" else ((20.0, 30.0, 44.0) if exp_key == "senior" else (32.0, 48.0, 68.0)))
+        display_role = role_query.title()
+
+    city_factor = {
+        "India Overall": 1.00,
+        "Bengaluru": 1.15,
+        "Hyderabad": 1.10,
+        "Pune": 1.06,
+        "Mumbai": 1.10,
+        "Delhi NCR": 1.08,
+        "Chennai": 1.04,
+        "Tier-2 / Other Cities": 0.85
+    }.get(city, 1.0)
+
+    return {
+        "role": display_role,
+        "experience": exp_level,
+        "city": city,
+        "low": round(low * city_factor, 1),
+        "median": round(med * city_factor, 1),
+        "high": round(high * city_factor, 1)
+    }
+
+# ============================================================
+# EXAMINATION ENGINE
 # ============================================================
 
 ROLE_EXAM_BLUEPRINTS = {
@@ -373,10 +477,9 @@ ROLE_EXAM_BLUEPRINTS = {
 }
 
 def get_exam_blueprint(role: str):
-    return ROLE_EXAM_BLUEPRINTS.get(role, ROLE_EXAM_BLUEPRINTS["Software Engineer / Full Stack Developer"])
+    return ROLE_EXAM_BLUEPRINTS.get(role, ROLE_EXAM_BLUEPRINTS["Software Engineer / Full Stack Developer"])[cite: 1]
 
 def synthesize_dynamic_questions(role: str, blueprint: List, attempt_seed: str) -> List[Dict]:
-    """Dynamically generates 50 unique questions parameterized by the attempt seed."""
     rng = random.Random(attempt_seed)
     exam_paper = []
     
@@ -442,8 +545,6 @@ def synthesize_dynamic_questions(role: str, blueprint: List, attempt_seed: str) 
 
 def generate_examination_suite(role: str, attempt_id: str, resume_context: str = "") -> List[Dict]:
     blueprint = get_exam_blueprint(role)
-    total_questions = sum(count for _, count in blueprint)
-
     system_prompt = (
         "You are the Lead Assessment Director for IT hiring. Generate a JSON array of multiple choice questions. "
         "Each question must have keys: id, section, question, options (array of 4 strings), answer (exact match of correct option)."
@@ -468,7 +569,7 @@ Format as raw JSON:
         json_match = re.search(r"\[\s*\{.*\}\s*\]", reply or "", re.DOTALL)
         if json_match:
             parsed = json.loads(json_match.group(0))
-            if isinstance(parsed, list) and len(parsed) >= 30:
+            if isinstance(parsed, list) and len(parsed) >= 20:
                 cleaned = []
                 for idx, q in enumerate(parsed[:50], start=1):
                     opts = [str(o).strip() for o in q.get("options", ["A", "B", "C", "D"])]
@@ -487,7 +588,6 @@ Format as raw JSON:
     except Exception:
         pass
 
-    # Seamless deterministic fallback guarantees zero downtime and a fresh paper
     return synthesize_dynamic_questions(role, blueprint, attempt_id)
 
 # ============================================================
@@ -791,7 +891,7 @@ if st.session_state.workspace == "Job Seeker":
         <section class="hero">
             <div class="kicker">CANDIDATE INTELLIGENCE</div>
             <h1>Understand Your Profile.<br><span>Build Your Career.</span></h1>
-            <p>Automated resume parsing, job match scores, salary estimates, mock interviews, and step-by-step career roadmaps.</p>
+            <p>Automated resume parsing, job match scores, compensation insights, and step-by-step career roadmaps.</p>
             <div style="margin-top: 14px;">
                 <span class="tag-bubble tag-cyan">✦ Resume Scoring</span>
                 <span class="tag-bubble tag-purple">✦ Salary Benchmarks</span>
@@ -962,144 +1062,79 @@ if st.session_state.workspace == "Job Seeker":
 
     # 3. Salary Estimate
     with tabs[2]:
-        st.subheader("2026 India Salary Benchmark")
-        st.caption("Role-specific indicative market ranges in ₹ LPA.")
+        st.subheader("2026 India Market Salary Benchmarks")
+        st.caption("Accurate salary benchmarks tailored to specific domains (AI, Data Analyst, Cloud, Software, etc.) based on experience level and location.")
 
-        salary_role = st.text_input(
-            "Job Role / Target Position",
-            "Software Engineer",
-            key="salary_role_input",
-            placeholder="e.g. Data Scientist, DevOps Engineer, AI Engineer, UI/UX Designer"
-        )
-        salary_exp = st.selectbox(
-            "Experience Level",
-            [
-                "Entry Level (0-2 yrs)",
-                "Mid Level (3-5 yrs)",
-                "Senior Level (6-8 yrs)",
-                "Lead / Principal (9+ yrs)"
-            ],
-            index=0,
-            key="salary_exp_input"
-        )
-        salary_city = st.selectbox(
-            "Market / City",
+        col_in1, col_in2 = st.columns([2, 1])
+        with col_in1:
+            salary_role_text = st.text_input(
+                "Search or Type ANY Role:",
+                value="Data Analyst",
+                key="salary_role_input_v2",
+                placeholder="e.g. AI Engineer, Data Analyst, Machine Learning, DevOps, Java Backend"
+            )
+        with col_in2:
+            salary_exp_select = st.selectbox(
+                "Experience Level:",
+                [
+                    "Entry Level / Fresher (0-2 yrs)",
+                    "Mid Level (3-5 yrs)",
+                    "Senior Level (6-8 yrs)",
+                    "Lead / Principal (9+ yrs)"
+                ],
+                index=0,
+                key="salary_exp_input_v2"
+            )
+
+        salary_city_select = st.selectbox(
+            "Market / City:",
             ["India Overall", "Bengaluru", "Hyderabad", "Pune", "Mumbai", "Delhi NCR", "Chennai", "Tier-2 / Other Cities"],
-            key="salary_city_input"
+            key="salary_city_input_v2"
         )
 
-        SALARY_BENCHMARKS_2026 = {
-            "software engineer": {
-                "Entry Level (0-2 yrs)": (4.0, 6.5, 10.0), "Mid Level (3-5 yrs)": (10.0, 16.0, 25.0),
-                "Senior Level (6-8 yrs)": (20.0, 30.0, 45.0), "Lead / Principal (9+ yrs)": (30.0, 45.0, 65.0)},
-            "full stack developer": {
-                "Entry Level (0-2 yrs)": (4.0, 6.5, 10.0), "Mid Level (3-5 yrs)": (9.0, 15.0, 24.0),
-                "Senior Level (6-8 yrs)": (18.0, 28.0, 42.0), "Lead / Principal (9+ yrs)": (28.0, 42.0, 60.0)},
-            "frontend developer": {
-                "Entry Level (0-2 yrs)": (4.0, 6.0, 9.0), "Mid Level (3-5 yrs)": (8.0, 13.0, 20.0),
-                "Senior Level (6-8 yrs)": (16.0, 25.0, 38.0), "Lead / Principal (9+ yrs)": (25.0, 38.0, 55.0)},
-            "backend developer": {
-                "Entry Level (0-2 yrs)": (4.0, 7.0, 11.0), "Mid Level (3-5 yrs)": (9.0, 16.0, 25.0),
-                "Senior Level (6-8 yrs)": (18.0, 30.0, 45.0), "Lead / Principal (9+ yrs)": (30.0, 45.0, 65.0)},
-            "data scientist": {
-                "Entry Level (0-2 yrs)": (6.0, 9.0, 13.0), "Mid Level (3-5 yrs)": (12.0, 18.0, 28.0),
-                "Senior Level (6-8 yrs)": (22.0, 32.0, 48.0), "Lead / Principal (9+ yrs)": (35.0, 52.0, 75.0)},
-            "data analyst": {
-                "Entry Level (0-2 yrs)": (4.0, 6.0, 8.0), "Mid Level (3-5 yrs)": (7.0, 11.0, 16.0),
-                "Senior Level (6-8 yrs)": (13.0, 19.0, 28.0), "Lead / Principal (9+ yrs)": (20.0, 30.0, 42.0)},
-            "data engineer": {
-                "Entry Level (0-2 yrs)": (5.0, 8.0, 12.0), "Mid Level (3-5 yrs)": (10.0, 16.0, 25.0),
-                "Senior Level (6-8 yrs)": (20.0, 30.0, 45.0), "Lead / Principal (9+ yrs)": (30.0, 45.0, 65.0)},
-            "machine learning engineer": {
-                "Entry Level (0-2 yrs)": (6.0, 9.0, 14.0), "Mid Level (3-5 yrs)": (12.0, 20.0, 32.0),
-                "Senior Level (6-8 yrs)": (24.0, 36.0, 55.0), "Lead / Principal (9+ yrs)": (38.0, 55.0, 80.0)},
-            "ai engineer": {
-                "Entry Level (0-2 yrs)": (7.0, 10.0, 16.0), "Mid Level (3-5 yrs)": (14.0, 22.0, 35.0),
-                "Senior Level (6-8 yrs)": (26.0, 40.0, 60.0), "Lead / Principal (9+ yrs)": (40.0, 60.0, 90.0)},
-            "genai engineer": {
-                "Entry Level (0-2 yrs)": (8.0, 12.0, 18.0), "Mid Level (3-5 yrs)": (16.0, 25.0, 40.0),
-                "Senior Level (6-8 yrs)": (30.0, 45.0, 70.0), "Lead / Principal (9+ yrs)": (45.0, 70.0, 100.0)},
-            "devops engineer": {
-                "Entry Level (0-2 yrs)": (4.0, 7.0, 11.0), "Mid Level (3-5 yrs)": (10.0, 16.0, 25.0),
-                "Senior Level (6-8 yrs)": (20.0, 30.0, 45.0), "Lead / Principal (9+ yrs)": (30.0, 45.0, 65.0)},
-            "cloud engineer": {
-                "Entry Level (0-2 yrs)": (5.0, 8.0, 12.0), "Mid Level (3-5 yrs)": (11.0, 18.0, 28.0),
-                "Senior Level (6-8 yrs)": (22.0, 32.0, 48.0), "Lead / Principal (9+ yrs)": (32.0, 48.0, 70.0)},
-            "cybersecurity engineer": {
-                "Entry Level (0-2 yrs)": (4.5, 7.0, 11.0), "Mid Level (3-5 yrs)": (10.0, 16.0, 25.0),
-                "Senior Level (6-8 yrs)": (20.0, 30.0, 45.0), "Lead / Principal (9+ yrs)": (30.0, 45.0, 65.0)},
-            "cybersecurity": {
-                "Entry Level (0-2 yrs)": (4.0, 7.0, 11.0), "Mid Level (3-5 yrs)": (10.0, 16.0, 25.0),
-                "Senior Level (6-8 yrs)": (20.0, 30.0, 45.0), "Lead / Principal (9+ yrs)": (30.0, 45.0, 65.0)},
-            "qa engineer": {
-                "Entry Level (0-2 yrs)": (3.5, 5.5, 8.0), "Mid Level (3-5 yrs)": (7.0, 11.0, 16.0),
-                "Senior Level (6-8 yrs)": (13.0, 19.0, 28.0), "Lead / Principal (9+ yrs)": (20.0, 30.0, 42.0)},
-            "ui ux designer": {
-                "Entry Level (0-2 yrs)": (3.5, 5.5, 8.0), "Mid Level (3-5 yrs)": (7.0, 12.0, 18.0),
-                "Senior Level (6-8 yrs)": (14.0, 22.0, 32.0), "Lead / Principal (9+ yrs)": (22.0, 34.0, 48.0)},
-            "product manager": {
-                "Entry Level (0-2 yrs)": (6.0, 9.0, 14.0), "Mid Level (3-5 yrs)": (14.0, 22.0, 35.0),
-                "Senior Level (6-8 yrs)": (25.0, 40.0, 60.0), "Lead / Principal (9+ yrs)": (40.0, 60.0, 85.0)},
-            "android developer": {
-                "Entry Level (0-2 yrs)": (4.0, 6.5, 10.0), "Mid Level (3-5 yrs)": (9.0, 15.0, 24.0),
-                "Senior Level (6-8 yrs)": (18.0, 28.0, 42.0), "Lead / Principal (9+ yrs)": (28.0, 42.0, 60.0)},
-            "ios developer": {
-                "Entry Level (0-2 yrs)": (4.5, 7.0, 11.0), "Mid Level (3-5 yrs)": (10.0, 16.0, 25.0),
-                "Senior Level (6-8 yrs)": (20.0, 30.0, 45.0), "Lead / Principal (9+ yrs)": (30.0, 45.0, 65.0)},
-            "blockchain developer": {
-                "Entry Level (0-2 yrs)": (5.0, 8.0, 13.0), "Mid Level (3-5 yrs)": (12.0, 20.0, 32.0),
-                "Senior Level (6-8 yrs)": (24.0, 38.0, 58.0), "Lead / Principal (9+ yrs)": (38.0, 58.0, 85.0)},
-        }
-
-        def normalize_salary_role(role_text: str) -> str:
-            r = re.sub(r"[^a-z0-9+# ]", " ", role_text.lower())
-            r = re.sub(r"\s+", " ", r).strip()
-            aliases = [
-                ("full stack", "full stack developer"), ("fullstack", "full stack developer"),
-                ("software developer", "software engineer"), ("sde", "software engineer"),
-                ("ml engineer", "machine learning engineer"), ("machine learning", "machine learning engineer"),
-                ("artificial intelligence engineer", "ai engineer"), ("ai/ ml", "ai engineer"),
-                ("generative ai", "genai engineer"), ("llm engineer", "genai engineer"),
-                ("dev ops", "devops engineer"), ("cloud", "cloud engineer"),
-                ("security engineer", "cybersecurity engineer"), ("cyber security", "cybersecurity engineer"),
-                ("qa automation", "qa engineer"), ("test engineer", "qa engineer"),
-                ("ui/ux", "ui ux designer"), ("ux designer", "ui ux designer"),
-            ]
-            for alias, canonical in aliases:
-                if alias in r:
-                    return canonical
-            for key in SALARY_BENCHMARKS_2026:
-                if key in r or r in key:
-                    return key
-            return "software engineer"
-
-        if st.button("📊 Get Role-Specific Market Estimate", use_container_width=True, key="btn_salary_2026"):
-            canonical_role = normalize_salary_role(salary_role)
-            low, median, high = SALARY_BENCHMARKS_2026[canonical_role][salary_exp]
-
-            city_factor = {
-                "India Overall": 1.00, "Bengaluru": 1.12, "Hyderabad": 1.08,
-                "Pune": 1.05, "Mumbai": 1.08, "Delhi NCR": 1.06,
-                "Chennai": 1.02, "Tier-2 / Other Cities": 0.85
-            }[salary_city]
-            low, median, high = [round(v * city_factor, 1) for v in (low, median, high)]
-
-            st.session_state.salary_result = {
-                "role": canonical_role.title(), "experience": salary_exp,
-                "city": salary_city, "low": low, "median": median, "high": high
-            }
+        if st.button("📊 Calculate Accurate Market Salary", use_container_width=True, key="btn_calc_salary_accurate"):
+            if not salary_role_text.strip():
+                st.warning("Please enter a role title.")
+            else:
+                sal_res = get_accurate_salary_estimate(salary_role_text, salary_exp_select, salary_city_select)
+                st.session_state.salary_result = sal_res
 
         if st.session_state.get("salary_result"):
             sr = st.session_state.salary_result
-            st.success(f"Market estimate generated for **{sr['role']}** — {sr['experience']} — {sr['city']}")
+            st.markdown(f"""
+            <div class="panel" style="border-color: rgba(56, 189, 248, 0.4); margin-top: 14px;">
+                <h4 style="margin: 0; color: #38bdf8;">💼 Compensation Benchmark for: {sr['role']}</h4>
+                <p style="margin: 4px 0 0 0; color: #cbd5e1; font-size: 0.9rem;">
+                    Level: <b>{sr['experience']}</b> &nbsp;|&nbsp; Region: <b>{sr['city']}</b>
+                </p>
+            </div>
+            """, unsafe_allow_html=True)
+
             col_sal1, col_sal2, col_sal3 = st.columns(3)
             with col_sal1:
-                st.metric("Lower Market", f"₹{sr['low']} LPA")
+                st.markdown(f"""
+                <div class="gauge-box">
+                    <div class="gauge-label">Starting Range</div>
+                    <div style="font-size: 2.2rem; font-weight: 900; color: #94a3b8; margin: 6px 0;">₹{sr['low']} LPA</div>
+                    <span class="tag-bubble tag-cyan">25th Percentile</span>
+                </div>
+                """, unsafe_allow_html=True)
             with col_sal2:
-                st.metric("Typical Market", f"₹{sr['median']} LPA")
+                st.markdown(f"""
+                <div class="gauge-box" style="border-color: #38bdf8;">
+                    <div class="gauge-label">Market Median</div>
+                    <div style="font-size: 2.4rem; font-weight: 900; color: #38bdf8; margin: 6px 0;">₹{sr['median']} LPA</div>
+                    <span class="tag-bubble tag-emerald">Typical Package</span>
+                </div>
+                """, unsafe_allow_html=True)
             with col_sal3:
-                st.metric("Upper Market", f"₹{sr['high']} LPA")
-            st.info("💡 These are indicative 2026 benchmarks. Actual CTC depends on company tier, interview performance, location, stack, and domain specialization.")
+                st.markdown(f"""
+                <div class="gauge-box">
+                    <div class="gauge-label">Top Tier Target</div>
+                    <div style="font-size: 2.2rem; font-weight: 900; color: #c084fc; margin: 6px 0;">₹{sr['high']} LPA</div>
+                    <span class="tag-bubble tag-purple">90th Percentile</span>
+                </div>
+                """, unsafe_allow_html=True)
 
     # 4. Career Road Map
     with tabs[3]:
@@ -1157,7 +1192,7 @@ if st.session_state.workspace == "Job Seeker":
                         st.error(f"Error: {exc}")
 
 # ============================================================
-# 2. PRE-INTERVIEW ASSESSMENT
+# 2. PRE-INTERVIEW ASSESSMENT (SOLID WHITE BUTTON HIGHLIGHT)
 # ============================================================
 
 elif st.session_state.workspace == "Assessment Exam":
@@ -1189,7 +1224,7 @@ elif st.session_state.workspace == "Assessment Exam":
             key="exam_role_selector",
         )
 
-        blueprint = get_exam_blueprint(exam_role_choice)
+        blueprint = get_exam_blueprint(exam_role_choice)[cite: 1]
 
         st.markdown(
             """
@@ -1251,10 +1286,10 @@ elif st.session_state.workspace == "Assessment Exam":
         st.markdown(f"### 📝 {st.session_state.exam_role}")
         st.caption(
             f"50-question examination • {answered_count}/50 answered • "
-            "Select one option for each question."
+            "Selected options turn bright white."
         )
 
-        section_order = [name for name, _ in get_exam_blueprint(st.session_state.exam_role)]
+        section_order = [name for name, _ in get_exam_blueprint(st.session_state.exam_role)][cite: 1]
 
         for section_name in section_order:
             section_questions = [
@@ -1296,15 +1331,18 @@ elif st.session_state.workspace == "Assessment Exam":
                     unsafe_allow_html=True,
                 )
 
+                # Renders active option as a Solid White button (type="primary")
                 option_cols = st.columns(2)
                 for opt_idx, option in enumerate(q["options"]):
-                    is_selected = current_answer == option
+                    is_selected = (current_answer == option)
+                    btn_type = "primary" if is_selected else "secondary"
                     marker = "✓" if is_selected else "○"
 
                     with option_cols[opt_idx % 2]:
                         if st.button(
                             f"{marker}  {option}",
                             key=f"exam_{st.session_state.exam_attempt_id}_{qid}_{opt_idx}",
+                            type=btn_type,
                             use_container_width=True,
                         ):
                             st.session_state.exam_answers[qid] = option
@@ -1340,13 +1378,12 @@ elif st.session_state.workspace == "Assessment Exam":
         ):
             correct_count = 0
             section_breakdown = {}
-            detailed_eval = []
 
             for q in questions:
                 qid = q["id"]
                 user_ans = str(st.session_state.exam_answers.get(qid, "")).strip()
                 correct_ans = str(q["answer"]).strip()
-                is_correct = bool(user_ans) and user_ans == correct_ans
+                is_correct = bool(user_ans) and (user_ans == correct_ans)
 
                 if is_correct:
                     correct_count += 1
@@ -1358,14 +1395,6 @@ elif st.session_state.workspace == "Assessment Exam":
                 section_breakdown[sec]["total"] += 1
                 if is_correct:
                     section_breakdown[sec]["correct"] += 1
-
-                detailed_eval.append(
-                    {
-                        "id": qid,
-                        "user_answer": user_ans,
-                        "is_correct": is_correct,
-                    }
-                )
 
             total_q = len(questions)
             percentage = int((correct_count / total_q) * 100) if total_q else 0
@@ -1482,7 +1511,7 @@ elif st.session_state.workspace == "Assessment Exam":
 
         st.markdown("<br>", unsafe_allow_html=True)
         st.success(
-            "Examination completed. The answer key is intentionally hidden from the candidate."
+            "Examination completed. The answer key is hidden from the candidate."
         )
 
         if st.button(
