@@ -64,8 +64,8 @@ h1,h2,h3,h4,h5,h6{color:var(--text)!important;} p,label,.stMarkdown{color:#b8c6d
 @media(hover:none) and (pointer:coarse){.stButton>button{min-height:50px!important}.stButton>button:hover{transform:none!important}input,textarea,button,select{-webkit-tap-highlight-color:transparent}}
 </style>
     """,
-    unsafe_allow_html=True,
-),
+    unsafe_allow_html=True
+)
 
 # ============================================================
 # API CALLS
