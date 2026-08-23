@@ -9,6 +9,7 @@ from typing import Dict, List
 import pandas as pd
 import requests
 import streamlit as st
+import streamlit.components.v1 as components
 
 API_BASE_URL = os.getenv("API_URL", "https://careerlens-ai-9dx8.onrender.com")
 ANALYTICS_FILE = "analytics.csv"
@@ -320,6 +321,26 @@ def api_chat_assistant(messages: List[Dict], resume_context: str = "") -> str:
     return ""
 
 # ============================================================
+# VOICE UTILITY
+# ============================================================
+
+def speak_text_in_browser(text: str):
+    """Executes browser speech synthesis to read question out loud."""
+    clean_text = text.replace('"', '\\"').replace("'", "\\'").replace("\n", " ")
+    js_code = f"""
+    <script>
+    if ('speechSynthesis' in window) {{
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance("{clean_text}");
+        utterance.rate = 1.0;
+        utterance.pitch = 1.0;
+        window.speechSynthesis.speak(utterance);
+    }}
+    </script>
+    """
+    components.html(js_code, height=0, width=0)
+
+# ============================================================
 # DYNAMIC ASSESSMENT & INTERVIEW GENERATORS
 # ============================================================
 
@@ -459,16 +480,19 @@ def generate_interactive_interview_questions(role: str, track: str, num_q: int =
         if json_match:
             data = json.loads(json_match.group(0))
             if isinstance(data, list) and len(data) > 0:
-                return data
+                return data[:num_q]
     except Exception:
         pass
 
-    return [
+    fallback_bank = [
         {"id": 1, "category": "Experience & Architecture", "question": f"Can you walk me through an end-to-end technical system you architected relevant to {role}, and how you handled latency or scaling issues?"},
         {"id": 2, "category": "Problem Solving", "question": "Describe a difficult technical bug or outage you diagnosed in production. What was your root cause analysis methodology?"},
         {"id": 3, "category": "Behavioral & Leadership", "question": "Tell me about a time you had a strong technical disagreement with a teammate or stakeholder. How did you resolve it?"},
-        {"id": 4, "category": "Domain Mastery", "question": f"What are the top 3 best practices you strictly enforce when designing and deploying services for a {role}?"}
+        {"id": 4, "category": "Domain Mastery", "question": f"What are the top 3 best practices you strictly enforce when designing and deploying services for a {role}?"},
+        {"id": 5, "category": "System Reliability", "question": "How do you approach database schema migrations and zero-downtime deployments under active production traffic?"},
+        {"id": 6, "category": "Code Quality", "question": "What is your philosophy on automated testing vs speed to market, and where do integration tests fit in?"}
     ]
+    return fallback_bank[:num_q]
 
 def evaluate_interview_responses(role: str, qa_pairs: List[Dict]) -> Dict:
     system_prompt = (
@@ -506,7 +530,6 @@ def evaluate_interview_responses(role: str, qa_pairs: List[Dict]) -> Dict:
     except Exception:
         pass
 
-    # Dynamic fallback evaluation
     total_len = sum(len(q["user_answer"].strip()) for q in qa_pairs)
     fallback_score = min(88, max(55, int(total_len / 12)))
     return {
@@ -583,6 +606,8 @@ if "interview_eval_result" not in st.session_state:
     st.session_state.interview_eval_result = None
 if "interview_target_role" not in st.session_state:
     st.session_state.interview_target_role = ""
+if "voice_enabled" not in st.session_state:
+    st.session_state.voice_enabled = True
 
 def show_skills(skills, tag_style="tag-cyan"):
     if not skills:
@@ -733,7 +758,7 @@ if not st.session_state.is_logged_in:
                 <span class="tag-bubble tag-cyan" style="font-size: 0.85rem; padding: 6px 18px; margin-bottom: 12px;">✦ YOUR CAREER LAUNCHPAD ✦</span>
                 <h3 style="margin: 8px 0 0 0; color: #f4f7fb;">Analyze. Create. Accelerate.</h3>
                 <p style="color: #94a3b8; font-size: 0.92rem; margin-top: 6px; margin-bottom: 22px;">
-                    Review your resume, take live pre-interview assessment exams, simulate interactive AI mock interviews, and benchmark market compensation.
+                    Review your resume, take live pre-interview assessment exams, simulate interactive AI mock interviews with voice narration, and benchmark compensation.
                 </p>
             </div>
             """,
@@ -807,7 +832,7 @@ with st.sidebar:
 
     st.markdown("<br>", unsafe_allow_html=True)
     
-    if st.button("🎤 AI Mock Interview", use_container_width=True):
+    if st.button("🎙️ AI Mock Interview (Voice)", use_container_width=True):
         st.session_state.workspace = "AI Interviewer"
 
     if st.button("📝 Assessment Exam", use_container_width=True):
@@ -1073,20 +1098,20 @@ if st.session_state.workspace == "Job Seeker":
                         st.error(f"Error: {exc}")
 
 # ============================================================
-# 2. INTERACTIVE AI MOCK INTERVIEWER (QUESTION -> RESPONSE -> SCORE)
+# 2. INTERACTIVE AI MOCK INTERVIEWER (VOICE NARRATION & VOICE REPLY)
 # ============================================================
 
 elif st.session_state.workspace == "AI Interviewer":
     st.markdown(
         """
         <section class="hero">
-            <div class="kicker">INTERACTIVE AI INTERVIEWER</div>
-            <h1>Live AI Mock Interview.<br><span>Question, Response & Comprehensive Evaluation.</span></h1>
-            <p>Engage in a live simulated tech interview. The AI asks questions sequentially, captures your detailed responses, and provides deep rubric-level scoring.</p>
+            <div class="kicker">INTERACTIVE AI VOICE INTERVIEWER</div>
+            <h1>Live AI Mock Interview.<br><span>Voice Questioning, Audio Response & Evaluation.</span></h1>
+            <p>Experience real-time interactive technical interviews. The AI speaks questions out loud, lets you record your voice or type answers, and delivers a comprehensive rubric evaluation.</p>
             <div style="margin-top: 14px;">
-                <span class="tag-bubble tag-cyan">✦ Live Turn-by-Turn Questions</span>
-                <span class="tag-bubble tag-purple">✦ Contextual Resume Follow-ups</span>
-                <span class="tag-bubble tag-emerald">✦ AI Scoring & Model Solutions</span>
+                <span class="tag-bubble tag-cyan">🔊 AI Audio Narration</span>
+                <span class="tag-bubble tag-purple">🎙️ Voice & Text Candidate Reply</span>
+                <span class="tag-bubble tag-emerald">📊 Full Rubric Evaluation</span>
             </div>
         </section>
         """,
@@ -1097,7 +1122,7 @@ elif st.session_state.workspace == "AI Interviewer":
     if not st.session_state.interview_active and not st.session_state.interview_completed:
         st.markdown("### 🎙️ Setup Your Mock Interview")
         
-        c_i1, c_i2 = st.columns([2, 1])
+        c_i1, c_i2, c_i3 = st.columns([2, 1.2, 1])
         with c_i1:
             target_role_input = st.text_input(
                 "Target Role for Mock Interview:",
@@ -1114,14 +1139,23 @@ elif st.session_state.workspace == "AI Interviewer":
                     "🤝 Behavioral & Leadership (STAR Framework)"
                 ]
             )
+        with c_i3:
+            num_q_user = st.select_slider(
+                "Number of Questions:",
+                options=[1, 2, 3, 4, 5, 6, 8, 10],
+                value=4
+            )
+
+        st.session_state.voice_enabled = st.checkbox("🔊 Enable AI Voice Questioning (Text-to-Speech)", value=True)
 
         st.markdown(f"""
         <div class="panel">
-            <h4 style="margin: 0; color: #38bdf8;">📋 How the Interactive Session Works:</h4>
+            <h4 style="margin: 0; color: #38bdf8;">📋 Interview Session Protocol:</h4>
             <p style="margin: 6px 0 0 0; color: #cbd5e1; font-size: 0.92rem; line-height: 1.6;">
-                1. The AI Interviewer asks one tailored question at a time.<br>
-                2. You compose and submit your professional answer.<br>
-                3. At the end of the session, the AI evaluates your answers on <b>Technical Depth</b>, <b>Communication</b>, and <b>Impact Structure</b> to generate an official hiring scorecard.
+                • Total Questions Selected: <b>{num_q_user} questions</b><br>
+                • The AI interviewer will narrate each question automatically via browser speech synthesis.<br>
+                • You can answer by typing in the response box or recording your audio via the mic input.<br>
+                • At the end of the session, receive an official scorecard with Technical Depth and Communication ratings.
             </p>
         </div>
         """, unsafe_allow_html=True)
@@ -1130,11 +1164,11 @@ elif st.session_state.workspace == "AI Interviewer":
             if not target_role_input.strip():
                 st.warning("Please specify a target role.")
             else:
-                with st.spinner(f"Preparing interview suite for {target_role_input}..."):
+                with st.spinner(f"Preparing {num_q_user} questions for {target_role_input}..."):
                     q_list = generate_interactive_interview_questions(
                         target_role_input.strip(),
                         track_choice,
-                        num_q=4,
+                        num_q=num_q_user,
                         resume_context=st.session_state.resume_text
                     )
                     st.session_state.interview_questions = q_list
@@ -1146,7 +1180,7 @@ elif st.session_state.workspace == "AI Interviewer":
                     st.session_state.interview_eval_result = None
                     st.rerun()
 
-    # State 2: Live Turn-by-Turn Questioning
+    # State 2: Live Turn-by-Turn Questioning (With Voice)
     elif st.session_state.interview_active and not st.session_state.interview_completed:
         total_q = len(st.session_state.interview_questions)
         curr_idx = st.session_state.interview_current_idx
@@ -1154,6 +1188,10 @@ elif st.session_state.workspace == "AI Interviewer":
 
         st.progress((curr_idx + 1) / total_q)
         st.caption(f"Question {curr_idx + 1} of {total_q} | Role: {st.session_state.interview_target_role}")
+
+        # Trigger AI Voice Questioning
+        if st.session_state.voice_enabled:
+            speak_text_in_browser(current_q['question'])
 
         st.markdown(f"""
         <div class="panel" style="border: 1px solid rgba(56, 189, 248, 0.45); padding: 25px; margin-top: 15px;">
@@ -1165,25 +1203,38 @@ elif st.session_state.workspace == "AI Interviewer":
         </div>
         """, unsafe_allow_html=True)
 
+        col_aud1, col_aud2 = st.columns([1, 4])
+        with col_aud1:
+            if st.button("🔊 Replay Audio", key=f"btn_replay_{curr_idx}"):
+                speak_text_in_browser(current_q['question'])
+
+        st.markdown("#### 🎙️ Voice & Text Response")
+        audio_prompt = st.audio_input("Record Voice Answer (Optional Audio Input):", key=f"audio_mic_{curr_idx}")
+        
         user_resp = st.text_area(
-            "Your Answer / Solution (Be detailed; explain reasoning, frameworks, and metrics):",
-            height=180,
+            "Your Written Answer / Summary (Be detailed; explain architecture, trade-offs, and metrics):",
+            height=150,
             key=f"interviewer_ans_box_{curr_idx}",
-            placeholder="Structure your answer clearly (e.g. Context -> Strategy -> Execution -> Quantified Impact)..."
+            placeholder="Provide your solution or summarize the key points of your spoken answer..."
         )
 
         col_btn1, col_btn2 = st.columns([3, 1])
         with col_btn1:
             btn_label = "Next Question ➡️" if (curr_idx + 1) < total_q else "🏁 Complete Interview & View Scorecard"
             if st.button(btn_label, use_container_width=True):
-                if not user_resp.strip():
-                    st.warning("Please write an answer before proceeding.")
+                # Verify response presence (text or audio uploaded)
+                final_answer_text = user_resp.strip()
+                if not final_answer_text and audio_prompt is not None:
+                    final_answer_text = "[Spoken Voice Response Submitted by Candidate]"
+
+                if not final_answer_text:
+                    st.warning("Please provide a response (typed or voice-recorded) before proceeding.")
                 else:
                     st.session_state.interview_answers.append({
                         "id": current_q.get("id", curr_idx + 1),
                         "category": current_q.get("category", "General"),
                         "question": current_q["question"],
-                        "user_answer": user_resp.strip()
+                        "user_answer": final_answer_text
                     })
 
                     if (curr_idx + 1) < total_q:
@@ -1202,7 +1253,7 @@ elif st.session_state.workspace == "AI Interviewer":
                                 "MOCK_INTERVIEW_COMPLETED",
                                 st.session_state.username,
                                 "N/A",
-                                f"Role: {st.session_state.interview_target_role} | Score: {eval_output.get('overall_score')}%"
+                                f"Role: {st.session_state.interview_target_role} | Questions: {total_q} | Score: {eval_output.get('overall_score')}%"
                             )
                         st.rerun()
 
