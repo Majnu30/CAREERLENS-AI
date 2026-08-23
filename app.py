@@ -320,7 +320,7 @@ def api_chat_assistant(messages: List[Dict], resume_context: str = "") -> str:
     return ""
 
 # ============================================================
-# DYNAMIC ASSESSMENT & GENERATORS
+# DYNAMIC ASSESSMENT & INTERVIEW GENERATORS
 # ============================================================
 
 def build_dynamic_fallback_exam(role: str, count: int) -> List[Dict]:
@@ -436,12 +436,96 @@ def generate_examination_suite(role: str, num_questions: int, resume_context: st
         
     return build_dynamic_fallback_exam(role, num_questions)
 
-def generate_interview_prep(role: str, category: str, resume_context: str = "") -> str:
-    prompt = [
-        {"role": "system", "content": "You are a Principal Tech Interviewer at a FAANG company. Provide 5 challenging, highly realistic interview questions tailored to the candidate's experience and target role. For each question, provide: 1) What the interviewer looks for, and 2) A STAR-framework or technical model answer framework."},
-        {"role": "user", "content": f"Role: {role}\nInterview Track: {category}\nCandidate Resume Background:\n{resume_context[:1200]}"}
+def generate_interactive_interview_questions(role: str, track: str, num_q: int = 4, resume_context: str = "") -> List[Dict]:
+    system_prompt = (
+        "You are an executive interviewer at a top tech company. "
+        "Generate realistic interview questions. Output ONLY a valid JSON array of question strings or objects with 'id', 'category', and 'question'."
+    )
+    user_prompt = (
+        f"Generate {num_q} interview questions for the role '{role}' in the track '{track}'.\n"
+        f"Candidate context: {resume_context[:600]}\n"
+        "Output format strictly raw JSON:\n"
+        "[\n"
+        "  {\"id\": 1, \"category\": \"Technical/Behavioral/Design\", \"question\": \"Question text here...\"}\n"
+        "]"
+    )
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_prompt}
     ]
-    return api_chat_assistant(prompt, resume_context=resume_context)
+    try:
+        reply = api_chat_assistant(messages, resume_context=resume_context)
+        json_match = re.search(r'\[\s*\{.*\}\s*\]', reply, re.DOTALL)
+        if json_match:
+            data = json.loads(json_match.group(0))
+            if isinstance(data, list) and len(data) > 0:
+                return data
+    except Exception:
+        pass
+
+    return [
+        {"id": 1, "category": "Experience & Architecture", "question": f"Can you walk me through an end-to-end technical system you architected relevant to {role}, and how you handled latency or scaling issues?"},
+        {"id": 2, "category": "Problem Solving", "question": "Describe a difficult technical bug or outage you diagnosed in production. What was your root cause analysis methodology?"},
+        {"id": 3, "category": "Behavioral & Leadership", "question": "Tell me about a time you had a strong technical disagreement with a teammate or stakeholder. How did you resolve it?"},
+        {"id": 4, "category": "Domain Mastery", "question": f"What are the top 3 best practices you strictly enforce when designing and deploying services for a {role}?"}
+    ]
+
+def evaluate_interview_responses(role: str, qa_pairs: List[Dict]) -> Dict:
+    system_prompt = (
+        "You are a Senior Principal Interviewer grading a candidate's complete mock interview. "
+        "Evaluate their answers thoroughly. Output ONLY a valid JSON object."
+    )
+    transcript_text = "\n\n".join([
+        f"Question {i+1} [{item.get('category', 'General')}]: {item['question']}\nCandidate Answer: {item['user_answer']}"
+        for i, item in enumerate(qa_pairs)
+    ])
+    user_prompt = (
+        f"Role: {role}\n\nTranscript:\n{transcript_text}\n\n"
+        "Grade this interview. Output strictly JSON with this exact schema:\n"
+        "{\n"
+        "  \"overall_score\": <integer 0-100>,\n"
+        "  \"verdict\": \"Strong Hire\" | \"Hire\" | \"Lean Hire\" | \"Needs Improvement\",\n"
+        "  \"communication_score\": <integer 0-100>,\n"
+        "  \"technical_depth_score\": <integer 0-100>,\n"
+        "  \"strengths\": [\"strength 1\", \"strength 2\"],\n"
+        "  \"improvements\": [\"improvement 1\", \"improvement 2\"],\n"
+        "  \"per_question_feedback\": [\n"
+        "     {\"id\": 1, \"score\": <integer 0-100>, \"feedback\": \"brief constructive critique\", \"model_answer_tip\": \"tip on how to answer better\"}\n"
+        "  ]\n"
+        "}"
+    )
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_prompt}
+    ]
+    try:
+        reply = api_chat_assistant(messages)
+        json_match = re.search(r'\{.*\}', reply, re.DOTALL)
+        if json_match:
+            return json.loads(json_match.group(0))
+    except Exception:
+        pass
+
+    # Dynamic fallback evaluation
+    total_len = sum(len(q["user_answer"].strip()) for q in qa_pairs)
+    fallback_score = min(88, max(55, int(total_len / 12)))
+    return {
+        "overall_score": fallback_score,
+        "verdict": "Hire" if fallback_score >= 70 else "Needs Improvement",
+        "communication_score": min(92, fallback_score + 5),
+        "technical_depth_score": max(50, fallback_score - 4),
+        "strengths": ["Structured responses", "Addressed the core prompt directly"],
+        "improvements": ["Incorporate more quantified business metrics (STAR framework)", "Provide deeper architectural specifics"],
+        "per_question_feedback": [
+            {
+                "id": q.get("id", i+1),
+                "score": fallback_score,
+                "feedback": "Answer demonstrates foundational knowledge. Elaborate further on trade-offs.",
+                "model_answer_tip": "Structure using Situation, Task, Action, and Measurable Result."
+            }
+            for i, q in enumerate(qa_pairs)
+        ]
+    }
 
 # ============================================================
 # STATE & HELPERS
@@ -469,8 +553,6 @@ if "ats_generated_bullets" not in st.session_state:
     st.session_state.ats_generated_bullets = None
 if "recruiter_outreach_email" not in st.session_state:
     st.session_state.recruiter_outreach_email = None
-if "generated_interview_q" not in st.session_state:
-    st.session_state.generated_interview_q = None
 
 # Assessment Exam State
 if "exam_active" not in st.session_state:
@@ -485,6 +567,22 @@ if "exam_results" not in st.session_state:
     st.session_state.exam_results = None
 if "exam_role" not in st.session_state:
     st.session_state.exam_role = ""
+
+# Live Interactive Mock Interview State
+if "interview_active" not in st.session_state:
+    st.session_state.interview_active = False
+if "interview_questions" not in st.session_state:
+    st.session_state.interview_questions = []
+if "interview_current_idx" not in st.session_state:
+    st.session_state.interview_current_idx = 0
+if "interview_answers" not in st.session_state:
+    st.session_state.interview_answers = []
+if "interview_completed" not in st.session_state:
+    st.session_state.interview_completed = False
+if "interview_eval_result" not in st.session_state:
+    st.session_state.interview_eval_result = None
+if "interview_target_role" not in st.session_state:
+    st.session_state.interview_target_role = ""
 
 def show_skills(skills, tag_style="tag-cyan"):
     if not skills:
@@ -635,7 +733,7 @@ if not st.session_state.is_logged_in:
                 <span class="tag-bubble tag-cyan" style="font-size: 0.85rem; padding: 6px 18px; margin-bottom: 12px;">✦ YOUR CAREER LAUNCHPAD ✦</span>
                 <h3 style="margin: 8px 0 0 0; color: #f4f7fb;">Analyze. Create. Accelerate.</h3>
                 <p style="color: #94a3b8; font-size: 0.92rem; margin-top: 6px; margin-bottom: 22px;">
-                    Review your resume, take live pre-interview assessment exams, simulate mock interviews, and benchmark market compensation.
+                    Review your resume, take live pre-interview assessment exams, simulate interactive AI mock interviews, and benchmark market compensation.
                 </p>
             </div>
             """,
@@ -709,11 +807,11 @@ with st.sidebar:
 
     st.markdown("<br>", unsafe_allow_html=True)
     
-    if st.button("📝 Pre-Interview Assessment", use_container_width=True):
-        st.session_state.workspace = "Assessment Exam"
+    if st.button("🎤 AI Mock Interview", use_container_width=True):
+        st.session_state.workspace = "AI Interviewer"
 
-    if st.button("🎤 AI Interview Prep", use_container_width=True):
-        st.session_state.workspace = "Interview Prep"
+    if st.button("📝 Assessment Exam", use_container_width=True):
+        st.session_state.workspace = "Assessment Exam"
 
     if st.button("💰 Salary Estimator", use_container_width=True):
         st.session_state.workspace = "Salary Estimator"
@@ -975,7 +1073,227 @@ if st.session_state.workspace == "Job Seeker":
                         st.error(f"Error: {exc}")
 
 # ============================================================
-# 2. PRE-INTERVIEW ASSESSMENT
+# 2. INTERACTIVE AI MOCK INTERVIEWER (QUESTION -> RESPONSE -> SCORE)
+# ============================================================
+
+elif st.session_state.workspace == "AI Interviewer":
+    st.markdown(
+        """
+        <section class="hero">
+            <div class="kicker">INTERACTIVE AI INTERVIEWER</div>
+            <h1>Live AI Mock Interview.<br><span>Question, Response & Comprehensive Evaluation.</span></h1>
+            <p>Engage in a live simulated tech interview. The AI asks questions sequentially, captures your detailed responses, and provides deep rubric-level scoring.</p>
+            <div style="margin-top: 14px;">
+                <span class="tag-bubble tag-cyan">✦ Live Turn-by-Turn Questions</span>
+                <span class="tag-bubble tag-purple">✦ Contextual Resume Follow-ups</span>
+                <span class="tag-bubble tag-emerald">✦ AI Scoring & Model Solutions</span>
+            </div>
+        </section>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    # State 1: Configuration & Setup
+    if not st.session_state.interview_active and not st.session_state.interview_completed:
+        st.markdown("### 🎙️ Setup Your Mock Interview")
+        
+        c_i1, c_i2 = st.columns([2, 1])
+        with c_i1:
+            target_role_input = st.text_input(
+                "Target Role for Mock Interview:",
+                value="Senior Backend Engineer",
+                placeholder="e.g. Full Stack Developer, Machine Learning Engineer, DevOps Architect..."
+            )
+        with c_i2:
+            track_choice = st.selectbox(
+                "Interview Track Focus:",
+                [
+                    "🚀 Full 360° Tech & Behavioral Mix",
+                    "💻 Core Technical & System Coding",
+                    "🏗️ Distributed Systems & Architecture",
+                    "🤝 Behavioral & Leadership (STAR Framework)"
+                ]
+            )
+
+        st.markdown(f"""
+        <div class="panel">
+            <h4 style="margin: 0; color: #38bdf8;">📋 How the Interactive Session Works:</h4>
+            <p style="margin: 6px 0 0 0; color: #cbd5e1; font-size: 0.92rem; line-height: 1.6;">
+                1. The AI Interviewer asks one tailored question at a time.<br>
+                2. You compose and submit your professional answer.<br>
+                3. At the end of the session, the AI evaluates your answers on <b>Technical Depth</b>, <b>Communication</b>, and <b>Impact Structure</b> to generate an official hiring scorecard.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+
+        if st.button("🚀 Start Live Interview Session", use_container_width=True):
+            if not target_role_input.strip():
+                st.warning("Please specify a target role.")
+            else:
+                with st.spinner(f"Preparing interview suite for {target_role_input}..."):
+                    q_list = generate_interactive_interview_questions(
+                        target_role_input.strip(),
+                        track_choice,
+                        num_q=4,
+                        resume_context=st.session_state.resume_text
+                    )
+                    st.session_state.interview_questions = q_list
+                    st.session_state.interview_current_idx = 0
+                    st.session_state.interview_answers = []
+                    st.session_state.interview_target_role = target_role_input.strip()
+                    st.session_state.interview_active = True
+                    st.session_state.interview_completed = False
+                    st.session_state.interview_eval_result = None
+                    st.rerun()
+
+    # State 2: Live Turn-by-Turn Questioning
+    elif st.session_state.interview_active and not st.session_state.interview_completed:
+        total_q = len(st.session_state.interview_questions)
+        curr_idx = st.session_state.interview_current_idx
+        current_q = st.session_state.interview_questions[curr_idx]
+
+        st.progress((curr_idx + 1) / total_q)
+        st.caption(f"Question {curr_idx + 1} of {total_q} | Role: {st.session_state.interview_target_role}")
+
+        st.markdown(f"""
+        <div class="panel" style="border: 1px solid rgba(56, 189, 248, 0.45); padding: 25px; margin-top: 15px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <span class="tag-bubble tag-cyan">Interviewer Question #{curr_idx + 1}</span>
+                <span class="tag-bubble tag-purple">{current_q.get('category', 'Technical Inquiry')}</span>
+            </div>
+            <h3 style="margin: 0; color: #f4f7fb; line-height: 1.4;">"{current_q['question']}"</h3>
+        </div>
+        """, unsafe_allow_html=True)
+
+        user_resp = st.text_area(
+            "Your Answer / Solution (Be detailed; explain reasoning, frameworks, and metrics):",
+            height=180,
+            key=f"interviewer_ans_box_{curr_idx}",
+            placeholder="Structure your answer clearly (e.g. Context -> Strategy -> Execution -> Quantified Impact)..."
+        )
+
+        col_btn1, col_btn2 = st.columns([3, 1])
+        with col_btn1:
+            btn_label = "Next Question ➡️" if (curr_idx + 1) < total_q else "🏁 Complete Interview & View Scorecard"
+            if st.button(btn_label, use_container_width=True):
+                if not user_resp.strip():
+                    st.warning("Please write an answer before proceeding.")
+                else:
+                    st.session_state.interview_answers.append({
+                        "id": current_q.get("id", curr_idx + 1),
+                        "category": current_q.get("category", "General"),
+                        "question": current_q["question"],
+                        "user_answer": user_resp.strip()
+                    })
+
+                    if (curr_idx + 1) < total_q:
+                        st.session_state.interview_current_idx += 1
+                        st.rerun()
+                    else:
+                        st.session_state.interview_active = False
+                        st.session_state.interview_completed = True
+                        with st.spinner("AI Interviewer is grading your complete session..."):
+                            eval_output = evaluate_interview_responses(
+                                st.session_state.interview_target_role,
+                                st.session_state.interview_answers
+                            )
+                            st.session_state.interview_eval_result = eval_output
+                            log_event(
+                                "MOCK_INTERVIEW_COMPLETED",
+                                st.session_state.username,
+                                "N/A",
+                                f"Role: {st.session_state.interview_target_role} | Score: {eval_output.get('overall_score')}%"
+                            )
+                        st.rerun()
+
+        with col_btn2:
+            if st.button("Quit Session", use_container_width=True):
+                st.session_state.interview_active = False
+                st.session_state.interview_completed = False
+                st.session_state.interview_questions = []
+                st.session_state.interview_answers = []
+                st.rerun()
+
+    # State 3: Final Scorecard & Comprehensive Rubric
+    elif st.session_state.interview_completed and st.session_state.interview_eval_result:
+        report = st.session_state.interview_eval_result
+        score_val = report.get("overall_score", 75)
+        verdict = report.get("verdict", "Hire")
+        tech_score = report.get("technical_depth_score", 70)
+        comm_score = report.get("communication_score", 80)
+
+        st.markdown(f"## 🏆 Interview Performance Scorecard: {st.session_state.interview_target_role}")
+
+        r_c1, r_c2, r_c3 = st.columns(3)
+        with r_c1:
+            g_col = "#4ade80" if score_val >= 75 else ("#38bdf8" if score_val >= 55 else "#fbbf24")
+            render_radial_gauge(score_val, "Overall Score", verdict, g_col)
+        with r_c2:
+            render_radial_gauge(tech_score, "Technical Depth", "Domain Mastery", "#8b7cff")
+        with r_c3:
+            render_radial_gauge(comm_score, "Communication", "Clarity & Structure", "#38bdf8")
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        col_fb1, col_fb2 = st.columns(2)
+        with col_fb1:
+            st.markdown(f"""
+            <div class="panel" style="border-color: rgba(74, 222, 128, 0.3); height: 100%;">
+                <h4 style="margin: 0; color: #4ade80;">✅ Key Candidate Strengths</h4>
+                <ul style="margin-top: 8px; color: #f4f7fb;">
+                    {''.join([f'<li>{s}</li>' for s in report.get('strengths', ['Strong domain clarity'])])}
+                </ul>
+            </div>
+            """, unsafe_allow_html=True)
+        with col_fb2:
+            st.markdown(f"""
+            <div class="panel" style="border-color: rgba(192, 132, 252, 0.3); height: 100%;">
+                <h4 style="margin: 0; color: #c084fc;">📈 High-Impact Recommendations</h4>
+                <ul style="margin-top: 8px; color: #f4f7fb;">
+                    {''.join([f'<li>{imp}</li>' for imp in report.get('improvements', ['Structure examples with metrics'])])}
+                </ul>
+            </div>
+            """, unsafe_allow_html=True)
+
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown("### 🔍 Question-by-Question Deep Evaluation")
+
+        per_q_feed = report.get("per_question_feedback", [])
+        for idx, item in enumerate(st.session_state.interview_answers):
+            q_feed = next((f for f in per_q_feed if f.get("id") == item.get("id")), None)
+            q_score = q_feed.get("score", 75) if q_feed else 75
+            critique = q_feed.get("feedback", "Good logical structure.") if q_feed else "Demonstrated domain knowledge."
+            model_tip = q_feed.get("model_answer_tip", "Incorporate more quantified metrics.") if q_feed else "Structure answers with explicit measurable outcomes."
+
+            st.markdown(f"""
+            <div class="panel" style="border-color: rgba(56, 189, 248, 0.35);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <span style="font-weight: 800; color: #38bdf8;">Question #{idx+1} [{item.get('category', 'Technical')}]</span>
+                    <span class="tag-bubble tag-cyan">Score: {q_score}%</span>
+                </div>
+                <div style="font-size: 1.05rem; font-weight: 700; color: #f4f7fb; margin-bottom: 8px;">{item['question']}</div>
+                <div style="font-size: 0.92rem; color: #cbd5e1; background: rgba(15, 23, 42, 0.6); padding: 10px 14px; border-radius: 8px; margin-bottom: 10px;">
+                    <b>Your Response:</b><br>{item['user_answer']}
+                </div>
+                <div style="font-size: 0.90rem; color: #38bdf8; margin-bottom: 4px;">
+                    💡 <b>Interviewer Critique:</b> {critique}
+                </div>
+                <div style="font-size: 0.90rem; color: #4ade80;">
+                    🎯 <b>Model Solution Strategy:</b> {model_tip}
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+        if st.button("🔄 Start a New Mock Interview Session", use_container_width=True):
+            st.session_state.interview_active = False
+            st.session_state.interview_completed = False
+            st.session_state.interview_questions = []
+            st.session_state.interview_answers = []
+            st.session_state.interview_eval_result = None
+            st.rerun()
+
+# ============================================================
+# 3. PRE-INTERVIEW ASSESSMENT EXAM
 # ============================================================
 
 elif st.session_state.workspace == "Assessment Exam":
@@ -1190,63 +1508,6 @@ elif st.session_state.workspace == "Assessment Exam":
             st.rerun()
 
 # ============================================================
-# 3. AI INTERVIEW QUESTIONS & PREPARATION WORKSPACE
-# ============================================================
-
-elif st.session_state.workspace == "Interview Prep":
-    st.markdown(
-        """
-        <section class="hero">
-            <div class="kicker">INTERVIEW INTELLIGENCE</div>
-            <h1>Simulate & Prepare.<br><span>AI-Powered Interview Question Suites.</span></h1>
-            <p>Generate high-yield Technical, System Design, and Behavioral interview questions tailored specifically to your resume background and target role.</p>
-            <div style="margin-top: 14px;">
-                <span class="tag-bubble tag-cyan">✦ Live Technical Deep Dives</span>
-                <span class="tag-bubble tag-purple">✦ System Architecture & Design</span>
-                <span class="tag-bubble tag-emerald">✦ Behavioral (STAR Framework)</span>
-            </div>
-        </section>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    c_iq1, c_iq2 = st.columns([1.5, 1])
-    with c_iq1:
-        interview_role = st.text_input(
-            "Target Job Role:",
-            value="Senior Full Stack Engineer",
-            placeholder="e.g. AI Engineer, Product Manager, Cloud DevOps Architect..."
-        )
-    with c_iq2:
-        interview_track = st.selectbox(
-            "Select Interview Track:",
-            [
-                "💻 Core Technical & Coding Fundamentals",
-                "🏗️ Distributed Systems & System Architecture",
-                "🤝 Behavioral, Leadership & STAR Method",
-                "🧠 Complex Algorithmic & Problem Solving",
-                "🎯 Comprehensive 360° Mock Interview Suite"
-            ]
-        )
-
-    if st.button("🚀 Generate Tailored Interview Questions", use_container_width=True):
-        with st.spinner(f"Architecting tailored interview questions for {interview_role}..."):
-            qa_res = generate_interview_prep(interview_role, interview_track, st.session_state.resume_text)
-            st.session_state.generated_interview_q = qa_res
-            log_event("INTERVIEW_QUESTIONS_GEN", st.session_state.username, "N/A", f"Track: {interview_track} | Role: {interview_role}")
-
-    if st.session_state.generated_interview_q:
-        st.markdown(f"""
-        <div class="panel" style="border: 1px solid rgba(56, 189, 248, 0.4); margin-top: 20px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                <h3 style="margin: 0; color: #38bdf8;">📋 Interview Preparation: {interview_role}</h3>
-                <span class="tag-bubble tag-purple">{interview_track.split(' ')[1]}</span>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-        st.markdown(st.session_state.generated_interview_q)
-
-# ============================================================
 # 4. SALARY & COMPENSATION ESTIMATION WORKSPACE
 # ============================================================
 
@@ -1304,7 +1565,6 @@ elif st.session_state.workspace == "Salary Estimator":
             ]
         )
 
-    # Deterministic salary calculation engine
     base_salaries = {
         "Software Engineer / Backend Developer": 115000,
         "Full Stack Developer": 110000,
@@ -1336,7 +1596,6 @@ elif st.session_state.workspace == "Salary Estimator":
     currency_symbol = "₹" if "India" in sal_loc else ("£" if "London" in sal_loc else "$")
     
     if "India" in sal_loc:
-        # Convert to Lakhs (INR) approximation
         fmt_25 = f"₹{(p25_calc * 83) / 100000:.1f} LPA"
         fmt_med = f"₹{(median_calc * 83) / 100000:.1f} LPA"
         fmt_75 = f"₹{(p75_calc * 83) / 100000:.1f} LPA"
