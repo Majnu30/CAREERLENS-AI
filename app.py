@@ -321,24 +321,89 @@ def api_chat_assistant(messages: List[Dict], resume_context: str = "") -> str:
     return ""
 
 # ============================================================
-# VOICE UTILITY
+# VOICE & AUDIO COMPONENTS (REAL-TIME TTS & STT)
 # ============================================================
 
-def speak_text_in_browser(text: str):
-    """Executes browser speech synthesis to read question out loud."""
+def play_ai_question_voice(text: str):
+    """Executes browser speech synthesis to read question out loud automatically."""
     clean_text = text.replace('"', '\\"').replace("'", "\\'").replace("\n", " ")
     js_code = f"""
     <script>
     if ('speechSynthesis' in window) {{
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance("{clean_text}");
-        utterance.rate = 1.0;
-        utterance.pitch = 1.0;
+        utterance.rate = 0.95;
+        utterance.pitch = 1.05;
         window.speechSynthesis.speak(utterance);
     }}
     </script>
     """
     components.html(js_code, height=0, width=0)
+
+def render_realtime_speech_recorder():
+    """Live HTML5 Web Speech Recognition for continuous voice replies."""
+    html_code = """
+    <div style="background: rgba(13, 26, 43, 0.9); border: 1px solid #213754; border-radius: 12px; padding: 14px; margin-top: 10px;">
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+            <span style="color: #38bdf8; font-weight: 700; font-size: 13.5px;">🎙️ Live Speech-to-Text Dictation</span>
+            <div>
+                <button id="start-record-btn" style="background: #0284c7; color: white; border: none; border-radius: 20px; padding: 6px 14px; font-weight: 700; cursor: pointer; font-size: 12px; margin-right: 6px;">▶️ Start Speaking</button>
+                <button id="stop-record-btn" style="background: #ef4444; color: white; border: none; border-radius: 20px; padding: 6px 14px; font-weight: 700; cursor: pointer; font-size: 12px;">⏹️ Stop</button>
+            </div>
+        </div>
+        <div id="recording-status" style="color: #94a3b8; font-size: 12px; margin-top: 6px;">Status: Microphone idle. Click 'Start Speaking'.</div>
+        <div id="transcript-display" style="background: #081526; color: #f4f7fb; padding: 10px; border-radius: 8px; font-size: 13px; margin-top: 8px; min-height: 45px; border: 1px solid #1b304b;">Your transcribed speech will appear here...</div>
+    </div>
+
+    <script>
+    const startBtn = document.getElementById('start-record-btn');
+    const stopBtn = document.getElementById('stop-record-btn');
+    const statusDiv = document.getElementById('recording-status');
+    const transcriptDiv = document.getElementById('transcript-display');
+
+    window.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (window.SpeechRecognition) {
+        const recognition = new SpeechRecognition();
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = 'en-US';
+
+        startBtn.onclick = () => {
+            try {
+                recognition.start();
+                statusDiv.innerHTML = "<span style='color: #4ade80;'>🔴 Listening... Speak clearly into your microphone.</span>";
+            } catch(e) {
+                statusDiv.innerHTML = "Microphone is already active.";
+            }
+        };
+
+        stopBtn.onclick = () => {
+            recognition.stop();
+            statusDiv.innerHTML = "<span style='color: #38bdf8;'>⏹️ Finished recording. Copy or paste below if needed.</span>";
+        };
+
+        recognition.onresult = (event) => {
+            let finalTranscript = '';
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
+                if (event.results[i].isFinal) {
+                    finalTranscript += event.results[i][0].transcript;
+                }
+            }
+            if (finalTranscript) {
+                transcriptDiv.innerText = finalTranscript;
+            }
+        };
+
+        recognition.onerror = (event) => {
+            statusDiv.innerHTML = "Speech recognition error: " + event.error;
+        };
+    } else {
+        statusDiv.innerHTML = "Speech recognition is not natively supported in this browser. Use Chrome/Edge or type your response.";
+    }
+    </script>
+    """
+    components.html(html_code, height=155)
 
 # ============================================================
 # DYNAMIC ASSESSMENT & INTERVIEW GENERATORS
@@ -422,12 +487,10 @@ def generate_examination_suite(role: str, num_questions: int, resume_context: st
         "  }\n"
         "]"
     )
-    
     messages = [
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": user_prompt}
     ]
-    
     try:
         reply = api_chat_assistant(messages, resume_context=resume_context)
         json_match = re.search(r'\[\s*\{.*\}\s*\]', reply, re.DOTALL)
@@ -460,7 +523,7 @@ def generate_examination_suite(role: str, num_questions: int, resume_context: st
 def generate_interactive_interview_questions(role: str, track: str, num_q: int = 4, resume_context: str = "") -> List[Dict]:
     system_prompt = (
         "You are an executive interviewer at a top tech company. "
-        "Generate realistic interview questions. Output ONLY a valid JSON array of question strings or objects with 'id', 'category', and 'question'."
+        "Generate realistic, spoken interview questions. Output ONLY a valid JSON array of questions with 'id', 'category', and 'question'."
     )
     user_prompt = (
         f"Generate {num_q} interview questions for the role '{role}' in the track '{track}'.\n"
@@ -496,7 +559,7 @@ def generate_interactive_interview_questions(role: str, track: str, num_q: int =
 
 def evaluate_interview_responses(role: str, qa_pairs: List[Dict]) -> Dict:
     system_prompt = (
-        "You are a Senior Principal Interviewer grading a candidate's complete mock interview. "
+        "You are a Senior Principal Interviewer grading a candidate's complete voice mock interview. "
         "Evaluate their answers thoroughly. Output ONLY a valid JSON object."
     )
     transcript_text = "\n\n".join([
@@ -537,13 +600,13 @@ def evaluate_interview_responses(role: str, qa_pairs: List[Dict]) -> Dict:
         "verdict": "Hire" if fallback_score >= 70 else "Needs Improvement",
         "communication_score": min(92, fallback_score + 5),
         "technical_depth_score": max(50, fallback_score - 4),
-        "strengths": ["Structured responses", "Addressed the core prompt directly"],
-        "improvements": ["Incorporate more quantified business metrics (STAR framework)", "Provide deeper architectural specifics"],
+        "strengths": ["Clear voice communication", "Addressed question requirements systematically"],
+        "improvements": ["Incorporate more quantified business metrics (STAR framework)", "Deepen architectural specifics and trade-offs"],
         "per_question_feedback": [
             {
                 "id": q.get("id", i+1),
                 "score": fallback_score,
-                "feedback": "Answer demonstrates foundational knowledge. Elaborate further on trade-offs.",
+                "feedback": "Answer demonstrates foundational knowledge. Elaborate further on production trade-offs.",
                 "model_answer_tip": "Structure using Situation, Task, Action, and Measurable Result."
             }
             for i, q in enumerate(qa_pairs)
@@ -758,7 +821,7 @@ if not st.session_state.is_logged_in:
                 <span class="tag-bubble tag-cyan" style="font-size: 0.85rem; padding: 6px 18px; margin-bottom: 12px;">✦ YOUR CAREER LAUNCHPAD ✦</span>
                 <h3 style="margin: 8px 0 0 0; color: #f4f7fb;">Analyze. Create. Accelerate.</h3>
                 <p style="color: #94a3b8; font-size: 0.92rem; margin-top: 6px; margin-bottom: 22px;">
-                    Review your resume, take live pre-interview assessment exams, simulate interactive AI mock interviews with voice narration, and benchmark compensation.
+                    Review your resume, take live pre-interview assessment exams, simulate interactive AI voice mock interviews, and benchmark compensation.
                 </p>
             </div>
             """,
@@ -832,7 +895,7 @@ with st.sidebar:
 
     st.markdown("<br>", unsafe_allow_html=True)
     
-    if st.button("🎙️ AI Mock Interview (Voice)", use_container_width=True):
+    if st.button("🎙️ AI Voice Mock Interview", use_container_width=True):
         st.session_state.workspace = "AI Interviewer"
 
     if st.button("📝 Assessment Exam", use_container_width=True):
@@ -1098,27 +1161,27 @@ if st.session_state.workspace == "Job Seeker":
                         st.error(f"Error: {exc}")
 
 # ============================================================
-# 2. INTERACTIVE AI MOCK INTERVIEWER (VOICE NARRATION & VOICE REPLY)
+# 2. REAL-TIME AI VOICE MOCK INTERVIEWER (SPEECH IN & SPEECH OUT)
 # ============================================================
 
 elif st.session_state.workspace == "AI Interviewer":
     st.markdown(
         """
         <section class="hero">
-            <div class="kicker">INTERACTIVE AI VOICE INTERVIEWER</div>
-            <h1>Live AI Mock Interview.<br><span>Voice Questioning, Audio Response & Evaluation.</span></h1>
-            <p>Experience real-time interactive technical interviews. The AI speaks questions out loud, lets you record your voice or type answers, and delivers a comprehensive rubric evaluation.</p>
+            <div class="kicker">REAL-TIME AI VOICE INTERVIEWER</div>
+            <h1>Live AI Voice Mock Interview.<br><span>Spoken Questions, Voice Speech Input & Comprehensive Rubric.</span></h1>
+            <p>Experience an authentic interview simulation. The AI speaks questions out loud, listens to your spoken answers in real time, and scores your performance.</p>
             <div style="margin-top: 14px;">
-                <span class="tag-bubble tag-cyan">🔊 AI Audio Narration</span>
-                <span class="tag-bubble tag-purple">🎙️ Voice & Text Candidate Reply</span>
-                <span class="tag-bubble tag-emerald">📊 Full Rubric Evaluation</span>
+                <span class="tag-bubble tag-cyan">🔊 AI Speech Output</span>
+                <span class="tag-bubble tag-purple">🎙️ Live Voice Dictation</span>
+                <span class="tag-bubble tag-emerald">📊 Executive Rubric Scoring</span>
             </div>
         </section>
         """,
         unsafe_allow_html=True,
     )
 
-    # State 1: Configuration & Setup
+    # State 1: Configuration & Question Count Setup
     if not st.session_state.interview_active and not st.session_state.interview_completed:
         st.markdown("### 🎙️ Setup Your Mock Interview")
         
@@ -1141,30 +1204,30 @@ elif st.session_state.workspace == "AI Interviewer":
             )
         with c_i3:
             num_q_user = st.select_slider(
-                "Number of Questions:",
+                "Select Question Count:",
                 options=[1, 2, 3, 4, 5, 6, 8, 10],
                 value=4
             )
 
-        st.session_state.voice_enabled = st.checkbox("🔊 Enable AI Voice Questioning (Text-to-Speech)", value=True)
+        st.session_state.voice_enabled = st.checkbox("🔊 Enable AI Audio Narration (Text-to-Speech)", value=True)
 
         st.markdown(f"""
         <div class="panel">
-            <h4 style="margin: 0; color: #38bdf8;">📋 Interview Session Protocol:</h4>
+            <h4 style="margin: 0; color: #38bdf8;">📋 Interactive Voice Protocol:</h4>
             <p style="margin: 6px 0 0 0; color: #cbd5e1; font-size: 0.92rem; line-height: 1.6;">
-                • Total Questions Selected: <b>{num_q_user} questions</b><br>
-                • The AI interviewer will narrate each question automatically via browser speech synthesis.<br>
-                • You can answer by typing in the response box or recording your audio via the mic input.<br>
-                • At the end of the session, receive an official scorecard with Technical Depth and Communication ratings.
+                • Selected Questions: <b>{num_q_user} questions</b><br>
+                • The AI interviewer speaks each question out loud.<br>
+                • Use the <b>'Start Speaking'</b> microphone button or the text field to submit your response.<br>
+                • Upon completing all questions, you receive a full scorecard with Communication and Technical Depth metrics.
             </p>
         </div>
         """, unsafe_allow_html=True)
 
-        if st.button("🚀 Start Live Interview Session", use_container_width=True):
+        if st.button("🚀 Begin Voice Mock Interview", use_container_width=True):
             if not target_role_input.strip():
                 st.warning("Please specify a target role.")
             else:
-                with st.spinner(f"Preparing {num_q_user} questions for {target_role_input}..."):
+                with st.spinner(f"Architecting {num_q_user} interview questions for {target_role_input}..."):
                     q_list = generate_interactive_interview_questions(
                         target_role_input.strip(),
                         track_choice,
@@ -1180,7 +1243,7 @@ elif st.session_state.workspace == "AI Interviewer":
                     st.session_state.interview_eval_result = None
                     st.rerun()
 
-    # State 2: Live Turn-by-Turn Questioning (With Voice)
+    # State 2: Live Turn-by-Turn Voice Questioning & Answering
     elif st.session_state.interview_active and not st.session_state.interview_completed:
         total_q = len(st.session_state.interview_questions)
         curr_idx = st.session_state.interview_current_idx
@@ -1189,52 +1252,47 @@ elif st.session_state.workspace == "AI Interviewer":
         st.progress((curr_idx + 1) / total_q)
         st.caption(f"Question {curr_idx + 1} of {total_q} | Role: {st.session_state.interview_target_role}")
 
-        # Trigger AI Voice Questioning
+        # Speak Question Aloud
         if st.session_state.voice_enabled:
-            speak_text_in_browser(current_q['question'])
+            play_ai_question_voice(current_q['question'])
 
         st.markdown(f"""
         <div class="panel" style="border: 1px solid rgba(56, 189, 248, 0.45); padding: 25px; margin-top: 15px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                <span class="tag-bubble tag-cyan">Interviewer Question #{curr_idx + 1}</span>
+                <span class="tag-bubble tag-cyan">Question {curr_idx + 1}</span>
                 <span class="tag-bubble tag-purple">{current_q.get('category', 'Technical Inquiry')}</span>
             </div>
             <h3 style="margin: 0; color: #f4f7fb; line-height: 1.4;">"{current_q['question']}"</h3>
         </div>
         """, unsafe_allow_html=True)
 
-        col_aud1, col_aud2 = st.columns([1, 4])
+        col_aud1, col_aud2 = st.columns([1.2, 3.8])
         with col_aud1:
-            if st.button("🔊 Replay Audio", key=f"btn_replay_{curr_idx}"):
-                speak_text_in_browser(current_q['question'])
+            if st.button("🔊 Replay Question Audio", key=f"btn_replay_{curr_idx}"):
+                play_ai_question_voice(current_q['question'])
 
-        st.markdown("#### 🎙️ Voice & Text Response")
-        audio_prompt = st.audio_input("Record Voice Answer (Optional Audio Input):", key=f"audio_mic_{curr_idx}")
-        
+        st.markdown("#### 🎙️ Speak Your Answer")
+        render_realtime_speech_recorder()
+
         user_resp = st.text_area(
-            "Your Written Answer / Summary (Be detailed; explain architecture, trade-offs, and metrics):",
-            height=150,
+            "Your Answer (Type or paste spoken answer from the recorder above):",
+            height=140,
             key=f"interviewer_ans_box_{curr_idx}",
-            placeholder="Provide your solution or summarize the key points of your spoken answer..."
+            placeholder="Structure your answer clearly (Context -> Strategy -> Execution -> Impact)..."
         )
 
         col_btn1, col_btn2 = st.columns([3, 1])
         with col_btn1:
-            btn_label = "Next Question ➡️" if (curr_idx + 1) < total_q else "🏁 Complete Interview & View Scorecard"
+            btn_label = "Submit Answer & Next Question ➡️" if (curr_idx + 1) < total_q else "🏁 Complete Interview & View Scorecard"
             if st.button(btn_label, use_container_width=True):
-                # Verify response presence (text or audio uploaded)
-                final_answer_text = user_resp.strip()
-                if not final_answer_text and audio_prompt is not None:
-                    final_answer_text = "[Spoken Voice Response Submitted by Candidate]"
-
-                if not final_answer_text:
-                    st.warning("Please provide a response (typed or voice-recorded) before proceeding.")
+                if not user_resp.strip():
+                    st.warning("Please provide an answer (speak or type) before submitting.")
                 else:
                     st.session_state.interview_answers.append({
                         "id": current_q.get("id", curr_idx + 1),
                         "category": current_q.get("category", "General"),
                         "question": current_q["question"],
-                        "user_answer": final_answer_text
+                        "user_answer": user_resp.strip()
                     })
 
                     if (curr_idx + 1) < total_q:
@@ -1243,7 +1301,7 @@ elif st.session_state.workspace == "AI Interviewer":
                     else:
                         st.session_state.interview_active = False
                         st.session_state.interview_completed = True
-                        with st.spinner("AI Interviewer is grading your complete session..."):
+                        with st.spinner("AI Interviewer is grading your complete voice session..."):
                             eval_output = evaluate_interview_responses(
                                 st.session_state.interview_target_role,
                                 st.session_state.interview_answers
@@ -1265,7 +1323,7 @@ elif st.session_state.workspace == "AI Interviewer":
                 st.session_state.interview_answers = []
                 st.rerun()
 
-    # State 3: Final Scorecard & Comprehensive Rubric
+    # State 3: Final Scorecard & Performance Report
     elif st.session_state.interview_completed and st.session_state.interview_eval_result:
         report = st.session_state.interview_eval_result
         score_val = report.get("overall_score", 75)
@@ -1273,7 +1331,7 @@ elif st.session_state.workspace == "AI Interviewer":
         tech_score = report.get("technical_depth_score", 70)
         comm_score = report.get("communication_score", 80)
 
-        st.markdown(f"## 🏆 Interview Performance Scorecard: {st.session_state.interview_target_role}")
+        st.markdown(f"## 🏆 Interview Scorecard: {st.session_state.interview_target_role}")
 
         r_c1, r_c2, r_c3 = st.columns(3)
         with r_c1:
@@ -1282,7 +1340,7 @@ elif st.session_state.workspace == "AI Interviewer":
         with r_c2:
             render_radial_gauge(tech_score, "Technical Depth", "Domain Mastery", "#8b7cff")
         with r_c3:
-            render_radial_gauge(comm_score, "Communication", "Clarity & Structure", "#38bdf8")
+            render_radial_gauge(comm_score, "Communication", "Clarity & Tone", "#38bdf8")
 
         st.markdown("<br>", unsafe_allow_html=True)
 
@@ -1292,7 +1350,7 @@ elif st.session_state.workspace == "AI Interviewer":
             <div class="panel" style="border-color: rgba(74, 222, 128, 0.3); height: 100%;">
                 <h4 style="margin: 0; color: #4ade80;">✅ Key Candidate Strengths</h4>
                 <ul style="margin-top: 8px; color: #f4f7fb;">
-                    {''.join([f'<li>{s}</li>' for s in report.get('strengths', ['Strong domain clarity'])])}
+                    {''.join([f'<li>{s}</li>' for s in report.get('strengths', ['Strong domain knowledge'])])}
                 </ul>
             </div>
             """, unsafe_allow_html=True)
@@ -1301,7 +1359,7 @@ elif st.session_state.workspace == "AI Interviewer":
             <div class="panel" style="border-color: rgba(192, 132, 252, 0.3); height: 100%;">
                 <h4 style="margin: 0; color: #c084fc;">📈 High-Impact Recommendations</h4>
                 <ul style="margin-top: 8px; color: #f4f7fb;">
-                    {''.join([f'<li>{imp}</li>' for imp in report.get('improvements', ['Structure examples with metrics'])])}
+                    {''.join([f'<li>{imp}</li>' for imp in report.get('improvements', ['Quantify business results using metrics'])])}
                 </ul>
             </div>
             """, unsafe_allow_html=True)
@@ -1313,8 +1371,8 @@ elif st.session_state.workspace == "AI Interviewer":
         for idx, item in enumerate(st.session_state.interview_answers):
             q_feed = next((f for f in per_q_feed if f.get("id") == item.get("id")), None)
             q_score = q_feed.get("score", 75) if q_feed else 75
-            critique = q_feed.get("feedback", "Good logical structure.") if q_feed else "Demonstrated domain knowledge."
-            model_tip = q_feed.get("model_answer_tip", "Incorporate more quantified metrics.") if q_feed else "Structure answers with explicit measurable outcomes."
+            critique = q_feed.get("feedback", "Demonstrated good structural approach.") if q_feed else "Good logical structure."
+            model_tip = q_feed.get("model_answer_tip", "Include explicit production metrics.") if q_feed else "Use concrete examples."
 
             st.markdown(f"""
             <div class="panel" style="border-color: rgba(56, 189, 248, 0.35);">
@@ -1335,7 +1393,7 @@ elif st.session_state.workspace == "AI Interviewer":
             </div>
             """, unsafe_allow_html=True)
 
-        if st.button("🔄 Start a New Mock Interview Session", use_container_width=True):
+        if st.button("🔄 Start a New Voice Mock Interview", use_container_width=True):
             st.session_state.interview_active = False
             st.session_state.interview_completed = False
             st.session_state.interview_questions = []
