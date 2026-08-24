@@ -410,7 +410,7 @@ st.markdown(
 def api_analyze_resume(file) -> Dict:
     try:
         files = {"file": (file.name, file.getvalue(), file.type)}
-        res = requests.post(f"{API_BASE_URL}/api/resume/analyze", files=files, timeout=60)[cite: 1]
+        res = requests.post(f"{API_BASE_URL}/api/resume/analyze", files=files, timeout=60)
         if res.status_code == 200:
             return res.json()
     except Exception:
@@ -440,7 +440,7 @@ def api_analyze_resume(file) -> Dict:
 def api_match_job(resume_text: str, job_description: str) -> Dict:
     try:
         payload = {"resume_text": resume_text, "job_description": job_description}
-        res = requests.post(f"{API_BASE_URL}/api/job/match", json=payload, timeout=30)[cite: 1]
+        res = requests.post(f"{API_BASE_URL}/api/job/match", json=payload, timeout=30)
         if res.status_code == 200:
             return normalize_job_match(res.json())
     except Exception:
@@ -455,7 +455,7 @@ def api_match_job(resume_text: str, job_description: str) -> Dict:
 def api_detect_fraud(job_text: str) -> Dict:
     try:
         payload = {"text": job_text}
-        res = requests.post(f"{API_BASE_URL}/api/job/fraud", json=payload, timeout=30)[cite: 1]
+        res = requests.post(f"{API_BASE_URL}/api/job/fraud", json=payload, timeout=30)
         if res.status_code == 200:
             return res.json()
     except Exception:
@@ -472,7 +472,7 @@ def api_detect_fraud(job_text: str) -> Dict:
 def api_career_roadmap(resume_text: str, target_role: str) -> Dict:
     try:
         payload = {"resume_text": resume_text, "target_role": target_role}
-        res = requests.post(f"{API_BASE_URL}/api/career/roadmap", json=payload, timeout=30)[cite: 1]
+        res = requests.post(f"{API_BASE_URL}/api/career/roadmap", json=payload, timeout=30)
         if res.status_code == 200:
             return res.json()
     except Exception:
@@ -489,9 +489,9 @@ def api_career_roadmap(resume_text: str, target_role: str) -> Dict:
 def api_chat_assistant(messages: List[Dict], resume_context: str = "") -> str:
     try:
         payload = {"messages": messages, "resume_context": resume_context}
-        res = requests.post(f"{API_BASE_URL}/api/chat/ask", json=payload, timeout=45)[cite: 1]
+        res = requests.post(f"{API_BASE_URL}/api/chat/ask", json=payload, timeout=45)
         if res.status_code == 200:
-            return res.json().get("reply", "")[cite: 1]
+            return res.json().get("reply", "")
     except Exception:
         pass
     return "Here are actionable insights tailored to your career trajectory. Focusing on measurable impact, quantifiable metrics, and modern technical stacks yields the highest success rate."
@@ -513,9 +513,9 @@ if "active_tool" not in st.session_state:
 
 # Candidate Data State
 if "resume_text" not in st.session_state:
-    st.session_state.resume_text = ""[cite: 1]
+    st.session_state.resume_text = ""
 if "resume_analysis" not in st.session_state:
-    st.session_state.resume_analysis = None[cite: 1]
+    st.session_state.resume_analysis = None
 if "job_match_result" not in st.session_state:
     st.session_state.job_match_result = None
 
@@ -539,7 +539,7 @@ if "interview_report" not in st.session_state:
 
 # Assessment Engine State (100 Questions, 100 Marks)
 if "assessment_active" not in st.session_state:
-    st.session_state.assessment_active = False[cite: 1]
+    st.session_state.assessment_active = False
 if "assessment_role" not in st.session_state:
     st.session_state.assessment_role = "Software Developer"
 if "assessment_questions" not in st.session_state:
@@ -547,7 +547,7 @@ if "assessment_questions" not in st.session_state:
 if "assessment_answers" not in st.session_state:
     st.session_state.assessment_answers = {}
 if "assessment_submitted" not in st.session_state:
-    st.session_state.assessment_submitted = False[cite: 1]
+    st.session_state.assessment_submitted = False
 if "assessment_candidate_token" not in st.session_state:
     st.session_state.assessment_candidate_token = ""
 
@@ -607,15 +607,15 @@ def dialog_auth():
         p = st.text_input("Password", type="password", key="auth_sign_p")
         if st.button("Sign In", use_container_width=True, key="btn_confirm_sign"):
             if not u or not p:
-                st.warning("Please fill in both fields.")[cite: 1]
+                st.warning("Please fill in both fields.")
             elif u in st.session_state.users_db and st.session_state.users_db[u] == p:
                 st.session_state.username = u.split("@")[0].capitalize()
-                st.session_state.is_logged_in = True[cite: 1]
-                log_event("LOGIN", st.session_state.username, "N/A", "User Login")[cite: 1]
+                st.session_state.is_logged_in = True
+                log_event("LOGIN", st.session_state.username, "N/A", "User Login")
                 st.rerun()
             elif u.lower() == "admin" and p == ADMIN_PIN:
                 st.session_state.username = "Administrator"
-                st.session_state.is_logged_in = True[cite: 1]
+                st.session_state.is_logged_in = True
                 st.session_state.active_workspace = "Recruiter Workspace"
                 st.rerun()
             else:
@@ -626,12 +626,12 @@ def dialog_auth():
         reg_p = st.text_input("Create Password", type="password", key="auth_reg_p")
         if st.button("Create Account", use_container_width=True, key="btn_confirm_reg"):
             if not reg_u or not reg_p:
-                st.warning("Username and password are required.")[cite: 1]
+                st.warning("Username and password are required.")
             else:
                 st.session_state.users_db[reg_u] = reg_p
                 st.session_state.username = reg_n.strip() if reg_n.strip() else reg_u.split("@")[0].capitalize()
-                st.session_state.is_logged_in = True[cite: 1]
-                log_event("REGISTER", st.session_state.username, "N/A", f"Registered: {reg_u}")[cite: 1]
+                st.session_state.is_logged_in = True
+                log_event("REGISTER", st.session_state.username, "N/A", f"Registered: {reg_u}")
                 st.rerun()
 
 # ============================================================
@@ -682,7 +682,7 @@ with st.sidebar:
     with col_s2:
         if st.button("Guest Access", use_container_width=True, key="btn_quick_guest"):
             st.session_state.username = "Guest Explorer"
-            st.session_state.is_logged_in = True[cite: 1]
+            st.session_state.is_logged_in = True
             st.rerun()
 
     # 3. Main Workspaces Navigation
@@ -758,8 +758,8 @@ with st.sidebar:
 
     st.markdown("<hr style='border-color: rgba(255,255,255,0.08); margin: 20px 0;'>", unsafe_allow_html=True)
     if st.button("🚪  Logout", key="btn_logout_side", use_container_width=True):
-        st.session_state.is_logged_in = False[cite: 1]
-        st.session_state.username = "Guest"[cite: 1]
+        st.session_state.is_logged_in = False
+        st.session_state.username = "Guest"
         st.session_state.active_tool = "Dashboard"
         st.rerun()
 
@@ -1225,9 +1225,9 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
 
         if st.button("Check Match Compatibility", use_container_width=True):
             if not st.session_state.resume_text:
-                st.warning("Please upload your resume in Resume Intelligence first.")[cite: 1]
+                st.warning("Please upload your resume in Resume Intelligence first.")
             elif not jd_text.strip():
-                st.warning("Please paste a job description.")[cite: 1]
+                st.warning("Please paste a job description.")
             else:
                 with st.spinner("Calculating semantic match score..."):
                     raw_res = api_match_job(st.session_state.resume_text, jd_text)
@@ -1332,7 +1332,7 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
             st.rerun()
 
         st.markdown("### 📄 Professional Resume Builder")
-        rb_name = st.text_input("Full Name", value=st.session_state.username)[cite: 1]
+        rb_name = st.text_input("Full Name", value=st.session_state.username)
         rb_title = st.text_input("Professional Headline", value="Full Stack & AI Engineer")
         rb_skills = st.text_area("Core Skills", value="Python, FastAPI, React, SQL, Docker")
 
