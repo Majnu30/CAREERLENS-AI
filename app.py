@@ -12,16 +12,16 @@ import pandas as pd
 import requests
 import streamlit as st
 
-API_BASE_URL = os.getenv("API_URL", "https://careerlens-ai-9dx8.onrender.com")[cite: 1, 3]
-ANALYTICS_FILE = "analytics.csv"[cite: 1, 3]
-ADMIN_PIN = "1234"[cite: 1, 3]
+API_BASE_URL = os.getenv("API_URL", "https://careerlens-ai-9dx8.onrender.com")
+ANALYTICS_FILE = "analytics.csv"
+ADMIN_PIN = "1234"
 
 st.set_page_config(
     page_title="CareerLens AI - Smart Career & Recruiter Intelligence",
     page_icon="💼",
     layout="wide",
     initial_sidebar_state="expanded",
-)[cite: 1, 3]
+)
 
 # ============================================================
 # SAFE RESPONSE NORMALIZERS
@@ -95,19 +95,19 @@ def extract_phone_from_text(text: str) -> str:
 # ============================================================
 
 def log_event(event_type: str, username: str, rating: str = "N/A", details: str = ""):
-    file_exists = os.path.isfile(ANALYTICS_FILE)[cite: 1, 3]
+    file_exists = os.path.isfile(ANALYTICS_FILE)
     try:
-        with open(ANALYTICS_FILE, mode="a", newline="", encoding="utf-8") as f:[cite: 1, 3]
-            writer = csv.writer(f)[cite: 1, 3]
+        with open(ANALYTICS_FILE, mode="a", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
             if not file_exists:
-                writer.writerow(["Timestamp", "Event", "Username", "Rating", "Details"])[cite: 1, 3]
+                writer.writerow(["Timestamp", "Event", "Username", "Rating", "Details"])
             writer.writerow([
                 datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 event_type,
                 username,
                 rating,
                 details
-            ])[cite: 1, 3]
+            ])
     except Exception:
         pass
 
@@ -213,7 +213,7 @@ st.markdown(
     box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4) !important;
 }
 
-/* Standard Main Area Buttons (Clean solid fill with no black glitch) */
+/* Standard Main Area Buttons */
 .stButton > button {
     border-radius: 10px !important;
     background-color: #2563eb !important;
@@ -233,7 +233,7 @@ st.markdown(
     box-shadow: 0 6px 18px rgba(37, 99, 235, 0.35) !important;
 }
 
-/* Dark Navy Header (High Contrast) */
+/* Dark Navy Header */
 .dark-blue-header {
     background: linear-gradient(135deg, #091224 0%, #0d1b38 60%, #1e1b4b 100%);
     border-radius: 20px;
@@ -401,10 +401,10 @@ div[data-testid="column"] .stButton > button:hover {
 
 def api_analyze_resume(file) -> Dict:
     try:
-        files = {"file": (file.name, file.getvalue(), file.type)}[cite: 1, 3]
-        res = requests.post(f"{API_BASE_URL}/api/resume/analyze", files=files, timeout=60)[cite: 1, 3]
-        if res.status_code == 200:[cite: 1, 3]
-            return res.json()[cite: 1, 3]
+        files = {"file": (file.name, file.getvalue(), file.type)}
+        res = requests.post(f"{API_BASE_URL}/api/resume/analyze", files=files, timeout=60)
+        if res.status_code == 200:
+            return res.json()
     except Exception:
         pass
     
@@ -431,8 +431,8 @@ def api_analyze_resume(file) -> Dict:
 
 def api_match_job(resume_text: str, job_description: str) -> Dict:
     try:
-        payload = {"resume_text": resume_text, "job_description": job_description}[cite: 1, 3]
-        res = requests.post(f"{API_BASE_URL}/api/job/match", json=payload, timeout=30)[cite: 1, 3]
+        payload = {"resume_text": resume_text, "job_description": job_description}
+        res = requests.post(f"{API_BASE_URL}/api/job/match", json=payload, timeout=30)
         if res.status_code == 200:
             return normalize_job_match(res.json())
     except Exception:
@@ -446,10 +446,10 @@ def api_match_job(resume_text: str, job_description: str) -> Dict:
 
 def api_detect_fraud(job_text: str) -> Dict:
     try:
-        payload = {"text": job_text}[cite: 1, 3]
-        res = requests.post(f"{API_BASE_URL}/api/job/fraud", json=payload, timeout=30)[cite: 1, 3]
-        if res.status_code == 200:[cite: 1, 3]
-            return res.json()[cite: 1, 3]
+        payload = {"text": job_text}
+        res = requests.post(f"{API_BASE_URL}/api/job/fraud", json=payload, timeout=30)
+        if res.status_code == 200:
+            return res.json()
     except Exception:
         pass
     
@@ -463,10 +463,10 @@ def api_detect_fraud(job_text: str) -> Dict:
 
 def api_career_roadmap(resume_text: str, target_role: str) -> Dict:
     try:
-        payload = {"resume_text": resume_text, "target_role": target_role}[cite: 1, 3]
-        res = requests.post(f"{API_BASE_URL}/api/career/roadmap", json=payload, timeout=30)[cite: 1, 3]
-        if res.status_code == 200:[cite: 1, 3]
-            return res.json()[cite: 1, 3]
+        payload = {"resume_text": resume_text, "target_role": target_role}
+        res = requests.post(f"{API_BASE_URL}/api/career/roadmap", json=payload, timeout=30)
+        if res.status_code == 200:
+            return res.json()
     except Exception:
         pass
     return {
@@ -480,10 +480,10 @@ def api_career_roadmap(resume_text: str, target_role: str) -> Dict:
 
 def api_chat_assistant(messages: List[Dict], resume_context: str = "") -> str:
     try:
-        payload = {"messages": messages, "resume_context": resume_context}[cite: 1, 3]
-        res = requests.post(f"{API_BASE_URL}/api/chat/ask", json=payload, timeout=45)[cite: 1, 3]
-        if res.status_code == 200:[cite: 1, 3]
-            return res.json().get("reply", "")[cite: 1, 3]
+        payload = {"messages": messages, "resume_context": resume_context}
+        res = requests.post(f"{API_BASE_URL}/api/chat/ask", json=payload, timeout=45)
+        if res.status_code == 200:
+            return res.json().get("reply", "")
     except Exception:
         pass
     return "Focus on measurable impact, quantifiable metrics, and modern technical stacks for best results."
@@ -493,11 +493,11 @@ def api_chat_assistant(messages: List[Dict], resume_context: str = "") -> str:
 # ============================================================
 
 if "is_logged_in" not in st.session_state:
-    st.session_state.is_logged_in = False[cite: 1, 3]
+    st.session_state.is_logged_in = False
 if "username" not in st.session_state:
     st.session_state.username = "Guest Explorer"
 if "users_db" not in st.session_state:
-    st.session_state.users_db = {}[cite: 1, 3]
+    st.session_state.users_db = {}
 if "selected_gateway" not in st.session_state:
     st.session_state.selected_gateway = False
 if "active_workspace" not in st.session_state:
@@ -506,9 +506,9 @@ if "active_tool" not in st.session_state:
     st.session_state.active_tool = "Dashboard"
 
 if "resume_text" not in st.session_state:
-    st.session_state.resume_text = ""[cite: 1, 3]
+    st.session_state.resume_text = ""
 if "resume_analysis" not in st.session_state:
-    st.session_state.resume_analysis = None[cite: 1, 3]
+    st.session_state.resume_analysis = None
 if "job_match_result" not in st.session_state:
     st.session_state.job_match_result = None
 
@@ -532,7 +532,7 @@ if "interview_report" not in st.session_state:
 
 # Assessment Engine State (100 Questions)
 if "assessment_active" not in st.session_state:
-    st.session_state.assessment_active = False[cite: 1]
+    st.session_state.assessment_active = False
 if "assessment_role" not in st.session_state:
     st.session_state.assessment_role = "Software Developer"
 if "assessment_questions" not in st.session_state:
@@ -540,7 +540,7 @@ if "assessment_questions" not in st.session_state:
 if "assessment_answers" not in st.session_state:
     st.session_state.assessment_answers = {}
 if "assessment_submitted" not in st.session_state:
-    st.session_state.assessment_submitted = False[cite: 1, 3]
+    st.session_state.assessment_submitted = False
 if "assessment_candidate_token" not in st.session_state:
     st.session_state.assessment_candidate_token = ""
 
@@ -596,19 +596,19 @@ def dialog_auth():
         p = st.text_input("Password", type="password", key="auth_sign_p")
         if st.button("Sign In", use_container_width=True, key="btn_confirm_sign"):
             if not u or not p:
-                st.warning("Please fill in both fields.")[cite: 1, 3]
+                st.warning("Please fill in both fields.")
             elif u in st.session_state.users_db and st.session_state.users_db[u] == p:
                 st.session_state.username = u.split("@")[0].capitalize()
-                st.session_state.is_logged_in = True[cite: 1, 3]
+                st.session_state.is_logged_in = True
                 st.session_state.selected_gateway = False
                 log_event("LOGIN", st.session_state.username, "N/A", "User Login")
-                st.rerun()[cite: 1, 3]
+                st.rerun()
             elif u.lower() == "admin" and p == ADMIN_PIN:
-                st.session_state.username = "Administrator"[cite: 1, 3]
-                st.session_state.is_logged_in = True[cite: 1, 3]
+                st.session_state.username = "Administrator"
+                st.session_state.is_logged_in = True
                 st.session_state.selected_gateway = True
                 st.session_state.active_workspace = "Recruiter Workspace"
-                st.rerun()[cite: 1, 3]
+                st.rerun()
             else:
                 st.error("Account not found. Please register or continue as Guest.")
     with tab_auth2:
@@ -617,14 +617,14 @@ def dialog_auth():
         reg_p = st.text_input("Create Password", type="password", key="auth_reg_p")
         if st.button("Create Account", use_container_width=True, key="btn_confirm_reg"):
             if not reg_u or not reg_p:
-                st.warning("Username and password are required.")[cite: 1, 3]
+                st.warning("Username and password are required.")
             else:
                 st.session_state.users_db[reg_u] = reg_p
                 st.session_state.username = reg_n.strip() if reg_n.strip() else reg_u.split("@")[0].capitalize()
-                st.session_state.is_logged_in = True[cite: 1, 3]
+                st.session_state.is_logged_in = True
                 st.session_state.selected_gateway = False
-                log_event("REGISTER", st.session_state.username, "N/A", f"Registered: {reg_u}")[cite: 1, 3]
-                st.rerun()[cite: 1, 3]
+                log_event("REGISTER", st.session_state.username, "N/A", f"Registered: {reg_u}")
+                st.rerun()
 
 # ============================================================
 # 1. ENTRY SCREEN
@@ -642,7 +642,7 @@ if not st.session_state.is_logged_in:
         unsafe_allow_html=True
     )
     
-    col_c1, col_c2, col_c3 = st.columns([1, 1.3, 1])[cite: 1, 3]
+    col_c1, col_c2, col_c3 = st.columns([1, 1.3, 1])
     with col_c2:
         st.markdown(
             """
@@ -657,22 +657,22 @@ if not st.session_state.is_logged_in:
             unsafe_allow_html=True
         )
         
-        b1, b2, b3 = st.columns(3)[cite: 1, 3]
+        b1, b2, b3 = st.columns(3)
         with b1:
-            if st.button("Sign In", key="btn_entry_sign_in", use_container_width=True):[cite: 1, 3]
+            if st.button("Sign In", key="btn_entry_sign_in", use_container_width=True):
                 dialog_auth()
         with b2:
-            if st.button("Register", key="btn_entry_register", use_container_width=True):[cite: 1, 3]
+            if st.button("Register", key="btn_entry_register", use_container_width=True):
                 dialog_auth()
         with b3:
             if st.button("Continue as Guest", key="btn_entry_guest", use_container_width=True):
                 st.session_state.username = "Guest Explorer"
-                st.session_state.is_logged_in = True[cite: 1, 3]
+                st.session_state.is_logged_in = True
                 st.session_state.selected_gateway = False
                 log_event("GUEST_ACCESS", "Guest", "N/A", "Guest entry")
-                st.rerun()[cite: 1, 3]
+                st.rerun()
 
-    st.stop()[cite: 1, 3]
+    st.stop()
 
 # ============================================================
 # 2. TWO-CARD GATEWAY PORTAL
@@ -1086,9 +1086,9 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
             with st.spinner("Analyzing resume content..."):
                 res = api_analyze_resume(uploaded_doc)
                 st.session_state.resume_analysis = res
-                st.session_state.resume_text = res.get("extracted_text", "")[cite: 1, 3]
+                st.session_state.resume_text = res.get("extracted_text", "")
                 st.success("Resume parsed successfully!")
-                st.rerun()[cite: 1, 3]
+                st.rerun()
 
         if st.session_state.resume_analysis:
             r = st.session_state.resume_analysis
@@ -1141,11 +1141,11 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
 
             if st.button("Start 100-Question Assessment", use_container_width=True):
                 st.session_state.assessment_questions = generate_100q_assessment(selected_assessment_role)
-                st.session_state.assessment_role = selected_assessment_role[cite: 1]
-                st.session_state.assessment_answers = {}[cite: 1]
-                st.session_state.assessment_active = True[cite: 1, 3]
+                st.session_state.assessment_role = selected_assessment_role
+                st.session_state.assessment_answers = {}
+                st.session_state.assessment_active = True
                 st.session_state.assessment_candidate_token = f"{st.session_state.username}_{uuid.uuid4().hex[:6]}"
-                st.rerun()[cite: 1, 3]
+                st.rerun()
 
         elif st.session_state.assessment_active and not st.session_state.assessment_submitted:
             st.markdown(f"#### Active Examination: {st.session_state.assessment_role}")
@@ -1175,9 +1175,9 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
                     "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M")
                 }
                 st.session_state.recruiter_assessment_submissions[st.session_state.assessment_candidate_token] = submission
-                st.session_state.assessment_active = False[cite: 1, 3]
-                st.session_state.assessment_submitted = True[cite: 1, 3]
-                st.rerun()[cite: 1, 3]
+                st.session_state.assessment_active = False
+                st.session_state.assessment_submitted = True
+                st.rerun()
 
         elif st.session_state.assessment_submitted:
             st.markdown(
@@ -1193,9 +1193,9 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
                 unsafe_allow_html=True
             )
             if st.button("Take Another Assessment", key="btn_reset_exam"):
-                st.session_state.assessment_submitted = False[cite: 1, 3]
-                st.session_state.assessment_active = False[cite: 1, 3]
-                st.rerun()[cite: 1, 3]
+                st.session_state.assessment_submitted = False
+                st.session_state.assessment_active = False
+                st.rerun()
 
     # 3. AI MOCK INTERVIEW
     elif st.session_state.active_tool == "AI Mock Interview":
@@ -1226,7 +1226,7 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
                 st.session_state.interview_current_idx = 0
                 st.session_state.interview_transcript = []
                 st.session_state.interview_active = True
-                st.rerun()[cite: 1, 3]
+                st.rerun()
 
         elif st.session_state.interview_active and not st.session_state.interview_completed:
             curr_i = st.session_state.interview_current_idx
@@ -1255,7 +1255,7 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
                     })
                     if curr_i + 1 < total_i:
                         st.session_state.interview_current_idx += 1
-                        st.rerun()[cite: 1, 3]
+                        st.rerun()
                     else:
                         st.session_state.interview_active = False
                         st.session_state.interview_completed = True
@@ -1266,7 +1266,7 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
                             "correctness": "80%",
                             "role_knowledge": "78%"
                         }
-                        st.rerun()[cite: 1, 3]
+                        st.rerun()
 
         elif st.session_state.interview_completed:
             rep = st.session_state.interview_report
@@ -1290,7 +1290,7 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
 
             if st.button("Practice Another Mock Interview", key="btn_retry_mock"):
                 st.session_state.interview_completed = False
-                st.rerun()[cite: 1, 3]
+                st.rerun()
 
     # 4. AI JOB MATCH
     elif st.session_state.active_tool == "AI Job Match":
@@ -1303,9 +1303,9 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
 
         if st.button("Check Match Compatibility", use_container_width=True):
             if not st.session_state.resume_text:
-                st.warning("Please upload your resume in Resume Intelligence first.")[cite: 1, 3]
+                st.warning("Please upload your resume in Resume Intelligence first.")
             elif not jd_text.strip():
-                st.warning("Please paste a job description.")[cite: 1, 3]
+                st.warning("Please paste a job description.")
             else:
                 with st.spinner("Calculating semantic match score..."):
                     raw_res = api_match_job(st.session_state.resume_text, jd_text)
