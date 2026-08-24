@@ -12,16 +12,16 @@ import pandas as pd
 import requests
 import streamlit as st
 
-API_BASE_URL = os.getenv("API_URL", "https://careerlens-ai-9dx8.onrender.com")
-ANALYTICS_FILE = "analytics.csv"
-ADMIN_PIN = "1234"
+API_BASE_URL = os.getenv("API_URL", "https://careerlens-ai-9dx8.onrender.com")[cite: 1, 3]
+ANALYTICS_FILE = "analytics.csv"[cite: 1, 3]
+ADMIN_PIN = "1234"[cite: 1, 3]
 
 st.set_page_config(
     page_title="CareerLens AI - Smart Career & Recruiter Intelligence",
-    page_icon="💼",
+    page_icon="✨",
     layout="wide",
     initial_sidebar_state="expanded",
-)
+)[cite: 1, 3]
 
 # ============================================================
 # SAFE RESPONSE NORMALIZERS
@@ -95,12 +95,12 @@ def extract_phone_from_text(text: str) -> str:
 # ============================================================
 
 def log_event(event_type: str, username: str, rating: str = "N/A", details: str = ""):
-    file_exists = os.path.isfile(ANALYTICS_FILE)
+    file_exists = os.path.isfile(ANALYTICS_FILE)[cite: 1, 3]
     try:
         with open(ANALYTICS_FILE, mode="a", newline="", encoding="utf-8") as f:
-            writer = csv.writer(f)
+            writer = csv.writer(f)[cite: 1, 3]
             if not file_exists:
-                writer.writerow(["Timestamp", "Event", "Username", "Rating", "Details"])
+                writer.writerow(["Timestamp", "Event", "Username", "Rating", "Details"])[cite: 1, 3]
             writer.writerow([
                 datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 event_type,
@@ -112,7 +112,7 @@ def log_event(event_type: str, username: str, rating: str = "N/A", details: str 
         pass
 
 # ============================================================
-# MODERN DESIGN SYSTEM & CONTRAST FIXES
+# ULTRA-CLEAN MODERN LIGHT THEME (Zero Black Box Glitches)
 # ============================================================
 
 st.markdown(
@@ -122,10 +122,11 @@ st.markdown(
 
 :root {
     --bg-page: #f8fafc;
-    --navy-sidebar: #0b1528;
-    --navy-header: #0f1f3d;
+    --navy-sidebar: #0a1128;
+    --navy-header: #0f172a;
     --card-bg: #ffffff;
-    --text-dark: #0f172a;
+    --border-subtle: #e2e8f0;
+    --text-navy: #0f172a;
     --text-muted: #64748b;
     --blue-primary: #2563eb;
     --blue-hover: #1d4ed8;
@@ -134,44 +135,96 @@ st.markdown(
     --amber-accent: #d97706;
 }
 
+/* Page Canvas */
 .stApp {
     background-color: var(--bg-page) !important;
     font-family: 'Plus Jakarta Sans', -apple-system, sans-serif !important;
-    color: var(--text-dark) !important;
+    color: var(--text-navy) !important;
 }
 
 .block-container {
     max-width: 1420px;
-    padding: 20px 36px 40px !important;
+    padding: 24px 38px 40px !important;
 }
 
-/* Sidebar Custom High-Contrast Styling */
+/* Fix Streamlit Text & Form Default Colors */
+p, span, label, div {
+    color: var(--text-navy);
+}
+
+/* Fix File Uploader (Remove Black Merge Bug) */
+[data-testid="stFileUploader"] {
+    background-color: #ffffff !important;
+    border: 2px dashed #cbd5e1 !important;
+    border-radius: 16px !important;
+    padding: 20px !important;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.03) !important;
+}
+
+[data-testid="stFileUploader"] * {
+    color: #0f172a !important;
+    background-color: transparent !important;
+}
+
+[data-testid="stFileUploader"] section {
+    background-color: #f8fafc !important;
+    border-radius: 12px !important;
+    border: 1px solid #e2e8f0 !important;
+}
+
+[data-testid="stFileUploader"] button {
+    background: #2563eb !important;
+    color: #ffffff !important;
+    border-radius: 8px !important;
+    border: none !important;
+}
+
+/* Fix Inputs and Text Areas */
+.stTextInput input, .stTextArea textarea, .stSelectbox [data-baseweb="select"] {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 12px !important;
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.02) !important;
+}
+
+.stTextInput input:focus, .stTextArea textarea:focus {
+    border-color: #2563eb !important;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
+}
+
+/* Sidebar Custom Styling */
 [data-testid="stSidebar"] {
     background-color: var(--navy-sidebar) !important;
     border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
 }
 
-[data-testid="stSidebar"] p, [data-testid="stSidebar"] span, [data-testid="stSidebar"] div {
+[data-testid="stSidebar"] * {
     font-family: 'Plus Jakarta Sans', sans-serif !important;
+    color: #f8fafc !important;
 }
 
 .sidebar-brand-box {
     background: #ffffff;
-    border-radius: 12px;
+    border-radius: 14px;
     padding: 14px 18px;
-    margin-bottom: 16px;
+    margin-bottom: 18px;
     display: flex;
     align-items: center;
     gap: 12px;
-    box-shadow: 0 4px 14px rgba(0,0,0,0.2);
+    box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+}
+
+.sidebar-brand-box * {
+    color: #0a1128 !important;
 }
 
 .sidebar-user-box {
     background: rgba(255, 255, 255, 0.06);
     border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 12px;
+    border-radius: 14px;
     padding: 12px 14px;
-    margin-bottom: 16px;
+    margin-bottom: 18px;
 }
 
 .sidebar-section-title {
@@ -180,14 +233,14 @@ st.markdown(
     color: #94a3b8 !important;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    margin: 16px 0 8px 4px;
+    margin: 18px 0 8px 4px;
 }
 
-/* Sidebar Specific Button Styling */
+/* Sidebar Specific Buttons */
 [data-testid="stSidebar"] .stButton > button {
-    background-color: rgba(255, 255, 255, 0.08) !important;
+    background-color: rgba(255, 255, 255, 0.07) !important;
     color: #ffffff !important;
-    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
     border-radius: 10px !important;
     padding: 0.55rem 0.95rem !important;
     font-weight: 700 !important;
@@ -200,23 +253,23 @@ st.markdown(
 }
 
 [data-testid="stSidebar"] .stButton > button:hover {
-    background-color: #2563eb !important;
+    background: linear-gradient(90deg, #2563eb, #7c3aed) !important;
     color: #ffffff !important;
     border-color: #60a5fa !important;
     transform: translateX(4px) !important;
 }
 
 [data-testid="stSidebar"] .stButton > button[kind="primary"] {
-    background-color: #2563eb !important;
+    background: linear-gradient(90deg, #2563eb, #4f46e5) !important;
     color: #ffffff !important;
     border: 1px solid #60a5fa !important;
     box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4) !important;
 }
 
-/* Standard Main Area Buttons */
+/* Main Screen Buttons */
 .stButton > button {
     border-radius: 10px !important;
-    background-color: #2563eb !important;
+    background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%) !important;
     color: #ffffff !important;
     font-weight: 800 !important;
     font-size: 0.92rem !important;
@@ -227,71 +280,68 @@ st.markdown(
 }
 
 .stButton > button:hover {
-    background-color: #1d4ed8 !important;
-    color: #ffffff !important;
+    background: linear-gradient(135deg, #1d4ed8 0%, #4338ca 100%) !important;
     transform: translateY(-1px) !important;
     box-shadow: 0 6px 18px rgba(37, 99, 235, 0.35) !important;
 }
 
-/* Dark Navy Header */
-.dark-blue-header {
+/* Header Banner */
+.header-banner {
     background: linear-gradient(135deg, #091224 0%, #0d1b38 60%, #1e1b4b 100%);
     border-radius: 20px;
-    padding: 26px 32px;
+    padding: 28px 34px;
     margin-bottom: 24px;
-    box-shadow: 0 8px 24px rgba(7, 14, 29, 0.18);
+    box-shadow: 0 10px 30px rgba(9, 18, 36, 0.15);
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
 
-.header-title-white {
-    font-size: 1.8rem;
+.header-title {
+    font-size: 1.85rem;
     font-weight: 900;
     color: #ffffff !important;
     margin: 0;
-    letter-spacing: -0.02em;
 }
 
-.header-sub-white {
-    font-size: 0.95rem;
-    color: #e2e8f0 !important;
+.header-sub {
+    font-size: 0.96rem;
+    color: #cbd5e1 !important;
     margin: 4px 0 0 0;
-    font-weight: 500;
 }
 
-/* 4 KPI Top Cards */
+/* KPI Top Metric Grid */
 .kpi-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 16px;
-    margin-bottom: 26px;
+    gap: 18px;
+    margin-bottom: 28px;
 }
 
 .kpi-card {
     background: #ffffff;
     border: 1px solid #e2e8f0;
-    border-radius: 16px;
-    padding: 16px 18px;
+    border-radius: 18px;
+    padding: 18px 20px;
     display: flex;
     align-items: center;
-    gap: 14px;
-    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04);
+    gap: 16px;
+    box-shadow: 0 4px 18px rgba(15, 23, 42, 0.04);
 }
 
-.kpi-circle {
-    width: 46px;
-    height: 46px;
-    border-radius: 50%;
+.kpi-icon-badge {
+    width: 50px;
+    height: 50px;
+    border-radius: 14px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 22px;
+    font-size: 24px;
     flex-shrink: 0;
 }
 
-/* Clickable Dashboard Card Component */
-.card-preview-box {
+/* Tool Grid Cards */
+.tool-box-card {
     background: #ffffff;
     border: 1px solid #e2e8f0;
     border-radius: 18px 18px 0 0;
@@ -301,64 +351,46 @@ st.markdown(
     display: flex;
     flex-direction: column;
     align-items: center;
-    height: 160px;
+    height: 165px;
     justify-content: flex-start;
 }
 
-.card-icon-circle {
-    width: 52px;
-    height: 52px;
+.tool-icon-circle {
+    width: 54px;
+    height: 54px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 24px;
-    margin-bottom: 8px;
+    font-size: 26px;
+    margin-bottom: 10px;
 }
 
-.card-title-text {
+.tool-title {
     font-size: 1.05rem;
     font-weight: 800;
     color: #0f172a;
     margin-bottom: 4px;
 }
 
-.card-desc-text {
-    font-size: 0.8rem;
+.tool-desc {
+    font-size: 0.82rem;
     color: #64748b;
-    line-height: 1.4;
+    line-height: 1.45;
 }
 
-/* Card Button Integration */
-div[data-testid="column"] .stButton > button {
-    border-radius: 0 0 16px 16px !important;
-    background-color: #ffffff !important;
-    color: #2563eb !important;
-    border: 1px solid #e2e8f0 !important;
-    border-top: none !important;
-    font-weight: 800 !important;
-    font-size: 0.86rem !important;
-    padding: 0.45rem 1rem !important;
-    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03) !important;
-}
-
-div[data-testid="column"] .stButton > button:hover {
-    background-color: #2563eb !important;
-    color: #ffffff !important;
-    border-color: #2563eb !important;
-}
-
-/* Content & Form Containers */
+/* Clean Form Content Box */
 .content-box {
     background: #ffffff;
     border: 1px solid #e2e8f0;
     border-radius: 18px;
-    padding: 26px;
+    padding: 28px;
     box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
     margin-bottom: 20px;
 }
 
-.pill-tag {
+/* Trending Tags & Badges */
+.tag-badge {
     display: inline-flex;
     align-items: center;
     padding: 4px 12px;
@@ -367,28 +399,24 @@ div[data-testid="column"] .stButton > button:hover {
     font-weight: 700;
     margin: 3px;
 }
-.pill-blue { background: #eff6ff; color: #1d4ed8; border: 1px solid #dbeafe; }
-.pill-green { background: #f0fdf4; color: #15803d; border: 1px solid #dcfce7; }
-.pill-purple { background: #faf5ff; color: #7e22ce; border: 1px solid #f3e8ff; }
-.pill-amber { background: #fffbeb; color: #b45309; border: 1px solid #fef3c7; }
+.tag-blue { background: #eff6ff; color: #1d4ed8; border: 1px solid #dbeafe; }
+.tag-purple { background: #faf5ff; color: #7e22ce; border: 1px solid #f3e8ff; }
+.tag-green { background: #f0fdf4; color: #15803d; border: 1px solid #dcfce7; }
+.tag-amber { background: #fffbeb; color: #b45309; border: 1px solid #fef3c7; }
 
-/* Gateway Cards */
+/* Gateway Selection Cards */
 .gateway-card {
     background: #ffffff;
     border: 2px solid #e2e8f0;
     border-radius: 20px;
-    padding: 28px 24px;
+    padding: 30px 26px;
     box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
     height: 100%;
 }
 
-.gateway-bullet {
-    display: flex;
-    align-items: flex-start;
-    gap: 8px;
-    font-size: 0.9rem;
-    color: #475569;
-    margin: 8px 0;
+.gateway-card:hover {
+    border-color: #2563eb;
+    transform: translateY(-3px);
 }
 </style>
 """,
@@ -401,10 +429,10 @@ div[data-testid="column"] .stButton > button:hover {
 
 def api_analyze_resume(file) -> Dict:
     try:
-        files = {"file": (file.name, file.getvalue(), file.type)}
-        res = requests.post(f"{API_BASE_URL}/api/resume/analyze", files=files, timeout=60)
-        if res.status_code == 200:
-            return res.json()
+        files = {"file": (file.name, file.getvalue(), file.type)}[cite: 1, 3]
+        res = requests.post(f"{API_BASE_URL}/api/resume/analyze", files=files, timeout=60)[cite: 1, 3]
+        if res.status_code == 200:[cite: 1, 3]
+            return res.json()[cite: 1, 3]
     except Exception:
         pass
     
@@ -425,31 +453,31 @@ def api_analyze_resume(file) -> Dict:
         "experience": "3+ Years",
         "resume_score": random.randint(75, 92),
         "readiness": random.randint(78, 95),
-        "skills": ["Python", "SQL", "Communication", "Data Analysis", "System Design", "Git"],
+        "skills": ["Python", "FastAPI", "React", "PostgreSQL", "Docker", "Machine Learning", "System Design"],
         "extracted_text": text
     }
 
 def api_match_job(resume_text: str, job_description: str) -> Dict:
     try:
-        payload = {"resume_text": resume_text, "job_description": job_description}
-        res = requests.post(f"{API_BASE_URL}/api/job/match", json=payload, timeout=30)
+        payload = {"resume_text": resume_text, "job_description": job_description}[cite: 1, 3]
+        res = requests.post(f"{API_BASE_URL}/api/job/match", json=payload, timeout=30)[cite: 1, 3]
         if res.status_code == 200:
             return normalize_job_match(res.json())
     except Exception:
         pass
     return normalize_job_match({
         "overall": random.randint(72, 89),
-        "matched": ["Python", "SQL", "Team Collaboration", "Problem Solving"],
+        "matched": ["Python", "FastAPI", "SQL", "Team Collaboration"],
         "missing": ["Distributed Caching", "Cloud Microservices"],
-        "summary": "Strong foundational overlap with core qualifications."
+        "summary": "Strong core qualifications matched."
     })
 
 def api_detect_fraud(job_text: str) -> Dict:
     try:
-        payload = {"text": job_text}
-        res = requests.post(f"{API_BASE_URL}/api/job/fraud", json=payload, timeout=30)
-        if res.status_code == 200:
-            return res.json()
+        payload = {"text": job_text}[cite: 1, 3]
+        res = requests.post(f"{API_BASE_URL}/api/job/fraud", json=payload, timeout=30)[cite: 1, 3]
+        if res.status_code == 200:[cite: 1, 3]
+            return res.json()[cite: 1, 3]
     except Exception:
         pass
     
@@ -463,41 +491,41 @@ def api_detect_fraud(job_text: str) -> Dict:
 
 def api_career_roadmap(resume_text: str, target_role: str) -> Dict:
     try:
-        payload = {"resume_text": resume_text, "target_role": target_role}
-        res = requests.post(f"{API_BASE_URL}/api/career/roadmap", json=payload, timeout=30)
-        if res.status_code == 200:
-            return res.json()
+        payload = {"resume_text": resume_text, "target_role": target_role}[cite: 1, 3]
+        res = requests.post(f"{API_BASE_URL}/api/career/roadmap", json=payload, timeout=30)[cite: 1, 3]
+        if res.status_code == 200:[cite: 1, 3]
+            return res.json()[cite: 1, 3]
     except Exception:
         pass
     return {
         "steps": [
-            f"Step 1: Strengthen core domain foundations in {target_role}.",
-            "Step 2: Build a production-grade portfolio project highlighting end-to-end architecture.",
-            "Step 3: Refactor resume bullet points using the Google XYZ framework.",
-            "Step 4: Practice role-specific technical and behavioral mock interview sessions."
+            f"Step 1: Strengthen foundational architecture in {target_role}.",
+            "Step 2: Build an end-to-end production portfolio showcasing measurable throughput.",
+            "Step 3: Refactor achievements into the Google XYZ format.",
+            "Step 4: Practice domain mock interview questions and system design scenarios."
         ]
     }
 
 def api_chat_assistant(messages: List[Dict], resume_context: str = "") -> str:
     try:
-        payload = {"messages": messages, "resume_context": resume_context}
-        res = requests.post(f"{API_BASE_URL}/api/chat/ask", json=payload, timeout=45)
-        if res.status_code == 200:
-            return res.json().get("reply", "")
+        payload = {"messages": messages, "resume_context": resume_context}[cite: 1, 3]
+        res = requests.post(f"{API_BASE_URL}/api/chat/ask", json=payload, timeout=45)[cite: 1, 3]
+        if res.status_code == 200:[cite: 1, 3]
+            return res.json().get("reply", "")[cite: 1, 3]
     except Exception:
         pass
-    return "Focus on measurable impact, quantifiable metrics, and modern technical stacks for best results."
+    return "Focus on quantifiable business outcomes, active GitHub portfolio proof, and modern architecture patterns for the best results."
 
 # ============================================================
 # STATE INITIALIZATION
 # ============================================================
 
 if "is_logged_in" not in st.session_state:
-    st.session_state.is_logged_in = False
+    st.session_state.is_logged_in = False[cite: 1, 3]
 if "username" not in st.session_state:
     st.session_state.username = "Guest Explorer"
 if "users_db" not in st.session_state:
-    st.session_state.users_db = {}
+    st.session_state.users_db = {}[cite: 1, 3]
 if "selected_gateway" not in st.session_state:
     st.session_state.selected_gateway = False
 if "active_workspace" not in st.session_state:
@@ -506,9 +534,9 @@ if "active_tool" not in st.session_state:
     st.session_state.active_tool = "Dashboard"
 
 if "resume_text" not in st.session_state:
-    st.session_state.resume_text = ""
+    st.session_state.resume_text = ""[cite: 1, 3]
 if "resume_analysis" not in st.session_state:
-    st.session_state.resume_analysis = None
+    st.session_state.resume_analysis = None[cite: 1, 3]
 if "job_match_result" not in st.session_state:
     st.session_state.job_match_result = None
 
@@ -532,7 +560,7 @@ if "interview_report" not in st.session_state:
 
 # Assessment Engine State (100 Questions)
 if "assessment_active" not in st.session_state:
-    st.session_state.assessment_active = False
+    st.session_state.assessment_active = False[cite: 1]
 if "assessment_role" not in st.session_state:
     st.session_state.assessment_role = "Software Developer"
 if "assessment_questions" not in st.session_state:
@@ -540,7 +568,7 @@ if "assessment_questions" not in st.session_state:
 if "assessment_answers" not in st.session_state:
     st.session_state.assessment_answers = {}
 if "assessment_submitted" not in st.session_state:
-    st.session_state.assessment_submitted = False
+    st.session_state.assessment_submitted = False[cite: 1, 3]
 if "assessment_candidate_token" not in st.session_state:
     st.session_state.assessment_candidate_token = ""
 
@@ -596,19 +624,19 @@ def dialog_auth():
         p = st.text_input("Password", type="password", key="auth_sign_p")
         if st.button("Sign In", use_container_width=True, key="btn_confirm_sign"):
             if not u or not p:
-                st.warning("Please fill in both fields.")
+                st.warning("Please fill in both fields.")[cite: 1, 3]
             elif u in st.session_state.users_db and st.session_state.users_db[u] == p:
                 st.session_state.username = u.split("@")[0].capitalize()
-                st.session_state.is_logged_in = True
+                st.session_state.is_logged_in = True[cite: 1, 3]
                 st.session_state.selected_gateway = False
                 log_event("LOGIN", st.session_state.username, "N/A", "User Login")
-                st.rerun()
+                st.rerun()[cite: 1, 3]
             elif u.lower() == "admin" and p == ADMIN_PIN:
-                st.session_state.username = "Administrator"
-                st.session_state.is_logged_in = True
+                st.session_state.username = "Administrator"[cite: 1, 3]
+                st.session_state.is_logged_in = True[cite: 1, 3]
                 st.session_state.selected_gateway = True
                 st.session_state.active_workspace = "Recruiter Workspace"
-                st.rerun()
+                st.rerun()[cite: 1, 3]
             else:
                 st.error("Account not found. Please register or continue as Guest.")
     with tab_auth2:
@@ -617,24 +645,24 @@ def dialog_auth():
         reg_p = st.text_input("Create Password", type="password", key="auth_reg_p")
         if st.button("Create Account", use_container_width=True, key="btn_confirm_reg"):
             if not reg_u or not reg_p:
-                st.warning("Username and password are required.")
+                st.warning("Username and password are required.")[cite: 1, 3]
             else:
                 st.session_state.users_db[reg_u] = reg_p
                 st.session_state.username = reg_n.strip() if reg_n.strip() else reg_u.split("@")[0].capitalize()
-                st.session_state.is_logged_in = True
+                st.session_state.is_logged_in = True[cite: 1, 3]
                 st.session_state.selected_gateway = False
-                log_event("REGISTER", st.session_state.username, "N/A", f"Registered: {reg_u}")
-                st.rerun()
+                log_event("REGISTER", st.session_state.username, "N/A", f"Registered: {reg_u}")[cite: 1, 3]
+                st.rerun()[cite: 1, 3]
 
 # ============================================================
-# 1. ENTRY SCREEN
+# 1. LANDING & ACCESS SCREEN
 # ============================================================
 
 if not st.session_state.is_logged_in:
     st.markdown(
         """
         <div style="text-align: center; padding: 40px 0 24px;">
-            <div style="font-size: 58px; margin-bottom: 8px;">💼</div>
+            <div style="font-size: 58px; margin-bottom: 8px;">✨</div>
             <h1 style="font-size: 3rem; margin: 0; color: #091224; font-weight: 900;">Career<span style="color: #2563eb;">Lens</span> AI</h1>
             <p style="color: #475569; font-size: 1.15rem; margin-top: 6px; font-weight: 600;">Understand Your Career. Build Your Future.</p>
         </div>
@@ -642,51 +670,51 @@ if not st.session_state.is_logged_in:
         unsafe_allow_html=True
     )
     
-    col_c1, col_c2, col_c3 = st.columns([1, 1.3, 1])
+    col_c1, col_c2, col_c3 = st.columns([1, 1.3, 1])[cite: 1, 3]
     with col_c2:
         st.markdown(
             """
             <div class="content-box" style="text-align: center; padding: 36px 30px;">
-                <span class="pill-tag pill-blue" style="font-size: 0.82rem; padding: 6px 16px; margin-bottom: 12px;">✦ ENTERPRISE INTELLIGENCE ✦</span>
-                <h3 style="margin: 10px 0 8px 0; font-size: 1.35rem; color: #0f172a;">Sign in to your CareerLens Account</h3>
+                <span class="tag-badge tag-blue" style="font-size: 0.82rem; padding: 6px 16px; margin-bottom: 12px;">✦ AI CAREER ECOSYSTEM ✦</span>
+                <h3 style="margin: 10px 0 8px 0; font-size: 1.35rem; color: #0f172a;">Access Your Career Workspace</h3>
                 <p style="color: #64748b; font-size: 0.92rem; margin-bottom: 26px;">
-                    Smart candidate intelligence, standardized assessments, and AI mock interviews.
+                    Resume scoring, standardized qualifying tests, AI mock interviews, and recruiter tools.
                 </p>
             </div>
             """,
             unsafe_allow_html=True
         )
         
-        b1, b2, b3 = st.columns(3)
+        b1, b2, b3 = st.columns(3)[cite: 1, 3]
         with b1:
-            if st.button("Sign In", key="btn_entry_sign_in", use_container_width=True):
+            if st.button("🔐 Sign In", key="btn_entry_sign_in", use_container_width=True):
                 dialog_auth()
         with b2:
-            if st.button("Register", key="btn_entry_register", use_container_width=True):
+            if st.button("📝 Register", key="btn_entry_register", use_container_width=True):
                 dialog_auth()
         with b3:
-            if st.button("Continue as Guest", key="btn_entry_guest", use_container_width=True):
+            if st.button("🚀 Guest Access", key="btn_entry_guest", use_container_width=True):
                 st.session_state.username = "Guest Explorer"
-                st.session_state.is_logged_in = True
+                st.session_state.is_logged_in = True[cite: 1, 3]
                 st.session_state.selected_gateway = False
                 log_event("GUEST_ACCESS", "Guest", "N/A", "Guest entry")
-                st.rerun()
+                st.rerun()[cite: 1, 3]
 
-    st.stop()
+    st.stop()[cite: 1, 3]
 
 # ============================================================
-# 2. TWO-CARD GATEWAY PORTAL
+# 2. WORKSPACE GATEWAY PORTAL
 # ============================================================
 
 if not st.session_state.selected_gateway:
     st.markdown(
         f"""
-        <div class="dark-blue-header">
+        <div class="header-banner">
             <div>
-                <div class="header-title-white">Welcome, {st.session_state.username}! 👋</div>
-                <div class="header-sub-white">Select your workspace portal to start your journey with CareerLens AI.</div>
+                <div class="header-title">Welcome, {st.session_state.username}! 👋</div>
+                <div class="header-sub">Select your workspace portal to start your journey with CareerLens AI.</div>
             </div>
-            <span class="pill-tag pill-blue" style="font-size: 0.85rem; padding: 6px 16px; background:#ffffff; color:#2563eb;">PORTAL SELECTOR</span>
+            <span class="tag-badge tag-blue" style="font-size: 0.85rem; padding: 6px 16px; background:#ffffff; color:#2563eb;">PORTAL GATEWAY</span>
         </div>
         """,
         unsafe_allow_html=True
@@ -705,23 +733,23 @@ if not st.session_state.selected_gateway:
                         </div>
                         <div>
                             <h3 style="margin:0; font-size:1.4rem; color:#0f172a;">Job Seeker Portal</h3>
-                            <span class="pill-tag pill-blue">Candidate Intelligence</span>
+                            <span class="tag-badge tag-blue">Candidate Intelligence</span>
                         </div>
                     </div>
                     <p style="color:#64748b; font-size:0.92rem; margin-bottom:18px;">
-                        Accelerate your job search with deep AI-powered profile analytics and interview readiness.
+                        Accelerate your career with resume scoring, AI mock interviews, and roadmaps.
                     </p>
                     <hr style="border-color:#f1f5f9; margin:14px 0;">
-                    <div class="gateway-bullet">✦ <b>Resume Intelligence:</b> Instant parsing, strengths, and weaknesses diagnostics.</div>
-                    <div class="gateway-bullet">✦ <b>AI Mock Interview:</b> Sequential dynamic interview questions with scoring.</div>
-                    <div class="gateway-bullet">✦ <b>Pre-Interview Assessment:</b> 100-mark standardized domain exams.</div>
-                    <div class="gateway-bullet">✦ <b>AI Job Match & Salary:</b> Semantic gap matching and 2026 market benchmarks.</div>
+                    <div style="color:#475569; font-size:0.9rem; margin:8px 0;">✦ <b>Resume Intelligence:</b> Deep skill extraction and score diagnostics.</div>
+                    <div style="color:#475569; font-size:0.9rem; margin:8px 0;">✦ <b>AI Mock Interview:</b> Real-time conversational interview simulations.</div>
+                    <div style="color:#475569; font-size:0.9rem; margin:8px 0;">✦ <b>Pre-Interview Exam:</b> 100-mark standardized MCQ qualifying test.</div>
+                    <div style="color:#475569; font-size:0.9rem; margin:8px 0;">✦ <b>Salary Estimation:</b> 2026 accurate compensation benchmarks.</div>
                 </div>
             </div>
             """,
             unsafe_allow_html=True
         )
-        if st.button("Start Journey as Job Seeker", key="btn_portal_seeker", use_container_width=True):
+        if st.button("🚀 Start Journey as Job Seeker", key="btn_portal_seeker", use_container_width=True):
             st.session_state.active_workspace = "Job Seeker Workspace"
             st.session_state.active_tool = "Dashboard"
             st.session_state.selected_gateway = True
@@ -738,23 +766,23 @@ if not st.session_state.selected_gateway:
                         </div>
                         <div>
                             <h3 style="margin:0; font-size:1.4rem; color:#0f172a;">Recruiter Portal</h3>
-                            <span class="pill-tag pill-purple">Talent Acquisition</span>
+                            <span class="tag-badge tag-purple">Talent Acquisition</span>
                         </div>
                     </div>
                     <p style="color:#64748b; font-size:0.92rem; margin-bottom:18px;">
-                        Streamline your hiring funnel with bulk resume parsing and automated assessments.
+                        Streamline your hiring pipeline with bulk resume screening and automated testing.
                     </p>
                     <hr style="border-color:#f1f5f9; margin:14px 0;">
-                    <div class="gateway-bullet">✦ <b>Bulk Resume Intake:</b> Upload cohorts and auto-extract candidate emails.</div>
-                    <div class="gateway-bullet">✦ <b>Assessment Dispatcher:</b> Send 100Q MCQ exam links in 1-click.</div>
-                    <div class="gateway-bullet">✦ <b>Private Score Vault:</b> Recruiter-only assessment rankings & verification.</div>
-                    <div class="gateway-bullet">✦ <b>Candidate Benchmarking:</b> Objective technical and aptitude analytics.</div>
+                    <div style="color:#475569; font-size:0.9rem; margin:8px 0;">✦ <b>Bulk Resume Intake:</b> Upload cohorts and auto-extract candidate emails.</div>
+                    <div style="color:#475569; font-size:0.9rem; margin:8px 0;">✦ <b>Assessment Dispatcher:</b> Send 100Q MCQ exam links in 1-click.</div>
+                    <div style="color:#475569; font-size:0.9rem; margin:8px 0;">✦ <b>Candidate Score Vault:</b> Private recruiter assessment ranking view.</div>
+                    <div style="color:#475569; font-size:0.9rem; margin:8px 0;">✦ <b>Role Blueprints:</b> Standardized evaluation tracks for IT and Non-IT.</div>
                 </div>
             </div>
             """,
             unsafe_allow_html=True
         )
-        if st.button("Start Hiring as Recruiter", key="btn_portal_recruiter", use_container_width=True):
+        if st.button("🏢 Start Hiring as Recruiter", key="btn_portal_recruiter", use_container_width=True):
             st.session_state.active_workspace = "Recruiter Workspace"
             st.session_state.active_tool = "Dashboard"
             st.session_state.selected_gateway = True
@@ -770,7 +798,7 @@ with st.sidebar:
     st.markdown(
         """
         <div class="sidebar-brand-box">
-            <div style="font-size: 26px; color: #2563eb;">✦</div>
+            <div style="font-size: 26px; color: #2563eb;">✨</div>
             <div>
                 <div style="font-size: 1.15rem; font-weight: 900; color: #091224; line-height: 1.1;">
                     Career<span style="color: #2563eb;">lens</span> <span style="color: #7c3aed;">AI</span>
@@ -805,12 +833,12 @@ with st.sidebar:
     is_seeker = st.session_state.active_workspace == "Job Seeker Workspace"
     is_recruiter = st.session_state.active_workspace == "Recruiter Workspace"
 
-    if st.button("Job Seeker Workspace", key="sb_ws_seeker", type="primary" if is_seeker else "secondary", use_container_width=True):
+    if st.button("👤  Job Seeker Workspace", key="sb_ws_seeker", type="primary" if is_seeker else "secondary", use_container_width=True):
         st.session_state.active_workspace = "Job Seeker Workspace"
         st.session_state.active_tool = "Dashboard"
         st.rerun()
 
-    if st.button("Recruiter Workspace", key="sb_ws_recruiter", type="primary" if is_recruiter else "secondary", use_container_width=True):
+    if st.button("🏢  Recruiter Workspace", key="sb_ws_recruiter", type="primary" if is_recruiter else "secondary", use_container_width=True):
         st.session_state.active_workspace = "Recruiter Workspace"
         st.session_state.active_tool = "Dashboard"
         st.rerun()
@@ -818,16 +846,16 @@ with st.sidebar:
     if is_seeker:
         st.markdown('<div class="sidebar-section-title">CAREER TOOLS</div>', unsafe_allow_html=True)
         seeker_tools = [
-            ("Dashboard", "Dashboard"),
-            ("Resume Intelligence", "Resume Intelligence"),
-            ("Pre-Interview Assessment", "Pre-Interview Assessment"),
-            ("AI Mock Interview", "AI Mock Interview"),
-            ("AI Job Match", "AI Job Match"),
-            ("Salary Estimation", "Salary Estimation"),
-            ("Career Roadmap", "Career Roadmap"),
-            ("Real-Time Job Detection", "Real-Time Job Detection"),
-            ("Resume Builder", "Resume Builder"),
-            ("AI Career Assistant", "AI Career Assistant"),
+            ("📊 Dashboard", "Dashboard"),
+            ("📄 Resume Intelligence", "Resume Intelligence"),
+            ("📝 Pre-Interview Assessment", "Pre-Interview Assessment"),
+            ("🎤 AI Mock Interview", "AI Mock Interview"),
+            ("🎯 AI Job Match", "AI Job Match"),
+            ("💰 Salary Estimation", "Salary Estimation"),
+            ("🗺️ Career Roadmap", "Career Roadmap"),
+            ("🛡️ Job Detection", "Real-Time Job Detection"),
+            ("📄 Resume Builder", "Resume Builder"),
+            ("🤖 AI Assistant", "AI Career Assistant"),
         ]
         for name, key_val in seeker_tools:
             is_active = st.session_state.active_tool == key_val
@@ -837,10 +865,10 @@ with st.sidebar:
     else:
         st.markdown('<div class="sidebar-section-title">RECRUITER TOOLS</div>', unsafe_allow_html=True)
         rec_tools = [
-            ("Dashboard", "Dashboard"),
-            ("Bulk Resume Screening", "Bulk Screening"),
-            ("Candidate Score Vault", "Score Vault"),
-            ("100Q Assessment Blueprints", "Assessment Blueprints")
+            ("📊 Recruiter Dashboard", "Dashboard"),
+            ("📤 Bulk Screening", "Bulk Screening"),
+            ("🔐 Score Vault", "Score Vault"),
+            ("📝 Blueprints", "Assessment Blueprints")
         ]
         for name, key_val in rec_tools:
             is_active = st.session_state.active_tool == key_val
@@ -849,21 +877,21 @@ with st.sidebar:
                 st.rerun()
 
     st.markdown("<hr style='border-color: rgba(255,255,255,0.1); margin: 20px 0;'>", unsafe_allow_html=True)
-    if st.button("Logout / Switch Mode", key="sb_logout_btn", use_container_width=True):
+    if st.button("🚪 Switch Mode / Logout", key="sb_logout_btn", use_container_width=True):
         st.session_state.selected_gateway = False
         st.session_state.active_tool = "Dashboard"
         st.rerun()
 
 # ============================================================
-# 4. HIGH CONTRAST DARK BLUE HEADER BAR
+# 4. TOP APP HEADER
 # ============================================================
 
 st.markdown(
     f"""
-    <div class="dark-blue-header">
+    <div class="header-banner">
         <div>
-            <div class="header-title-white">CareerLens AI — {st.session_state.active_workspace}</div>
-            <div class="header-sub-white">Welcome back, {st.session_state.username}! Explore intelligent tools to achieve your professional milestones.</div>
+            <div class="header-title">CareerLens AI — {st.session_state.active_workspace}</div>
+            <div class="header-sub">Welcome back, {st.session_state.username}! Access high-impact career analytics.</div>
         </div>
         <div style="display:flex; align-items:center; gap:12px;">
             <div style="background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.25); border-radius:30px; padding:6px 16px; color:#ffffff; font-weight:800; font-size:0.88rem;">
@@ -891,35 +919,35 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
         f"""
         <div class="kpi-grid">
             <div class="kpi-card">
-                <div class="kpi-circle" style="background:#eff6ff; color:#2563eb;">📄</div>
+                <div class="kpi-icon-badge" style="background:#eff6ff; color:#2563eb;">📄</div>
                 <div>
-                    <div style="font-size:0.8rem; font-weight:700; color:#64748b; text-transform:uppercase;">Resume Score</div>
+                    <div style="font-size:0.75rem; font-weight:700; color:#64748b; text-transform:uppercase;">Resume Score</div>
                     <div style="font-size:1.45rem; font-weight:900; color:#0f172a;">{resume_score_val}</div>
-                    <div style="font-size:0.75rem; color:#94a3b8;">Upload resume to score</div>
+                    <span class="tag-badge tag-blue">AI Evaluated</span>
                 </div>
             </div>
             <div class="kpi-card">
-                <div class="kpi-circle" style="background:#faf5ff; color:#7c3aed;">📈</div>
+                <div class="kpi-icon-badge" style="background:#faf5ff; color:#7c3aed;">📈</div>
                 <div>
-                    <div style="font-size:0.8rem; font-weight:700; color:#64748b; text-transform:uppercase;">Readiness Index</div>
+                    <div style="font-size:0.75rem; font-weight:700; color:#64748b; text-transform:uppercase;">Readiness Index</div>
                     <div style="font-size:1.45rem; font-weight:900; color:#0f172a;">{readiness_val}</div>
-                    <div style="font-size:0.75rem; color:#94a3b8;">Assessment status</div>
+                    <span class="tag-badge tag-purple">Domain Ready</span>
                 </div>
             </div>
             <div class="kpi-card">
-                <div class="kpi-circle" style="background:#ecfdf5; color:#059669;">🎯</div>
+                <div class="kpi-icon-badge" style="background:#ecfdf5; color:#059669;">🎯</div>
                 <div>
-                    <div style="font-size:0.8rem; font-weight:700; color:#64748b; text-transform:uppercase;">Market Match</div>
+                    <div style="font-size:0.75rem; font-weight:700; color:#64748b; text-transform:uppercase;">Market Match</div>
                     <div style="font-size:1.45rem; font-weight:900; color:#0f172a;">{market_match_val}</div>
-                    <div style="font-size:0.75rem; color:#94a3b8;">Job description match</div>
+                    <span class="tag-badge tag-green">Job Target</span>
                 </div>
             </div>
             <div class="kpi-card">
-                <div class="kpi-circle" style="background:#fffbeb; color:#d97706;">💡</div>
+                <div class="kpi-icon-badge" style="background:#fffbeb; color:#d97706;">💡</div>
                 <div>
-                    <div style="font-size:0.8rem; font-weight:700; color:#64748b; text-transform:uppercase;">Detected Skills</div>
+                    <div style="font-size:0.75rem; font-weight:700; color:#64748b; text-transform:uppercase;">Detected Stack</div>
                     <div style="font-size:1.45rem; font-weight:900; color:#0f172a;">{skills_count_val}</div>
-                    <div style="font-size:0.75rem; color:#94a3b8;">Extracted capabilities</div>
+                    <span class="tag-badge tag-amber">Verified Skills</span>
                 </div>
             </div>
         </div>
@@ -928,7 +956,7 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
     )
 
     if st.session_state.active_tool == "Dashboard":
-        st.markdown("<h3 style='margin-bottom:16px; font-weight:900; font-size:1.25rem; color:#0f172a;'>Career Tools</h3>", unsafe_allow_html=True)
+        st.markdown("<h3 style='margin-bottom:16px; font-weight:900; font-size:1.25rem; color:#0f172a;'>Career Tools Suite</h3>", unsafe_allow_html=True)
 
         # Row 1
         c1, c2, c3, c4, c5 = st.columns(5)
@@ -936,10 +964,10 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
         with c1:
             st.markdown(
                 """
-                <div class="card-preview-box">
-                    <div class="card-icon-circle" style="background:#eff6ff; color:#2563eb;">📄</div>
-                    <div class="card-title-text">Resume Intelligence</div>
-                    <div class="card-desc-text">Analyze strengths, weaknesses and enhancements.</div>
+                <div class="tool-box-card">
+                    <div class="tool-icon-circle" style="background:#eff6ff; color:#2563eb;">📄</div>
+                    <div class="tool-title">Resume Intelligence</div>
+                    <div class="tool-desc">Deep resume analysis, strengths and enhancements.</div>
                 </div>
                 """,
                 unsafe_allow_html=True
@@ -951,10 +979,10 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
         with c2:
             st.markdown(
                 """
-                <div class="card-preview-box">
-                    <div class="card-icon-circle" style="background:#faf5ff; color:#7c3aed;">📝</div>
-                    <div class="card-title-text">Pre-Interview Exam</div>
-                    <div class="card-desc-text">Role-specific 100-mark standardized MCQ qualifying test.</div>
+                <div class="tool-box-card">
+                    <div class="tool-icon-circle" style="background:#faf5ff; color:#7c3aed;">📝</div>
+                    <div class="tool-title">Pre-Interview Exam</div>
+                    <div class="tool-desc">100-mark standardized MCQ domain qualifying test.</div>
                 </div>
                 """,
                 unsafe_allow_html=True
@@ -966,10 +994,10 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
         with c3:
             st.markdown(
                 """
-                <div class="card-preview-box">
-                    <div class="card-icon-circle" style="background:#eff6ff; color:#0284c7;">🎤</div>
-                    <div class="card-title-text">AI Mock Interview</div>
-                    <div class="card-desc-text">Sequential dynamic interview questions with scoring.</div>
+                <div class="tool-box-card">
+                    <div class="tool-icon-circle" style="background:#eff6ff; color:#0284c7;">🎤</div>
+                    <div class="tool-title">AI Mock Interview</div>
+                    <div class="tool-desc">Sequential dynamic interview questions with scoring.</div>
                 </div>
                 """,
                 unsafe_allow_html=True
@@ -981,10 +1009,10 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
         with c4:
             st.markdown(
                 """
-                <div class="card-preview-box">
-                    <div class="card-icon-circle" style="background:#ecfdf5; color:#059669;">🎯</div>
-                    <div class="card-title-text">AI Job Match</div>
-                    <div class="card-desc-text">Match profile with JDs and identify missing skills.</div>
+                <div class="tool-box-card">
+                    <div class="tool-icon-circle" style="background:#ecfdf5; color:#059669;">🎯</div>
+                    <div class="tool-title">AI Job Match</div>
+                    <div class="tool-desc">Match profile with job postings to find skill gaps.</div>
                 </div>
                 """,
                 unsafe_allow_html=True
@@ -996,10 +1024,10 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
         with c5:
             st.markdown(
                 """
-                <div class="card-preview-box">
-                    <div class="card-icon-circle" style="background:#fffbeb; color:#d97706;">💰</div>
-                    <div class="card-title-text">Salary Estimation</div>
-                    <div class="card-desc-text">Market salary estimates based on your profile & experience.</div>
+                <div class="tool-box-card">
+                    <div class="tool-icon-circle" style="background:#fffbeb; color:#d97706;">💰</div>
+                    <div class="tool-title">Salary Estimation</div>
+                    <div class="tool-desc">2026 accurate market salary estimates.</div>
                 </div>
                 """,
                 unsafe_allow_html=True
@@ -1016,10 +1044,10 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
         with c6:
             st.markdown(
                 """
-                <div class="card-preview-box">
-                    <div class="card-icon-circle" style="background:#ecfdf5; color:#10b981;">🗺️</div>
-                    <div class="card-title-text">Career Roadmap</div>
-                    <div class="card-desc-text">Plan your career progression step-by-step.</div>
+                <div class="tool-box-card">
+                    <div class="tool-icon-circle" style="background:#ecfdf5; color:#10b981;">🗺️</div>
+                    <div class="tool-title">Career Roadmap</div>
+                    <div class="tool-desc">Step-by-step career progression milestones.</div>
                 </div>
                 """,
                 unsafe_allow_html=True
@@ -1031,10 +1059,10 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
         with c7:
             st.markdown(
                 """
-                <div class="card-preview-box">
-                    <div class="card-icon-circle" style="background:#fef2f2; color:#ef4444;">🛡️</div>
-                    <div class="card-title-text">Real-Time Job Detection</div>
-                    <div class="card-desc-text">Detect suspicious offers or fake job posts in real time.</div>
+                <div class="tool-box-card">
+                    <div class="tool-icon-circle" style="background:#fef2f2; color:#ef4444;">🛡️</div>
+                    <div class="tool-title">Job Detection</div>
+                    <div class="tool-desc">Real-time scam and fake job offer detection.</div>
                 </div>
                 """,
                 unsafe_allow_html=True
@@ -1046,10 +1074,10 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
         with c8:
             st.markdown(
                 """
-                <div class="card-preview-box">
-                    <div class="card-icon-circle" style="background:#eff6ff; color:#3b82f6;">📄</div>
-                    <div class="card-title-text">Resume Builder</div>
-                    <div class="card-desc-text">Build professional, ATS-ready formatted resumes.</div>
+                <div class="tool-box-card">
+                    <div class="tool-icon-circle" style="background:#eff6ff; color:#3b82f6;">📄</div>
+                    <div class="tool-title">Resume Builder</div>
+                    <div class="tool-desc">Build ATS-friendly clean formatted resumes.</div>
                 </div>
                 """,
                 unsafe_allow_html=True
@@ -1061,10 +1089,10 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
         with c9:
             st.markdown(
                 """
-                <div class="card-preview-box">
-                    <div class="card-icon-circle" style="background:#faf5ff; color:#8b5cf6;">🤖</div>
-                    <div class="card-title-text">AI Career Assistant</div>
-                    <div class="card-desc-text">Ask career, interview prep, and profile questions.</div>
+                <div class="tool-box-card">
+                    <div class="tool-icon-circle" style="background:#faf5ff; color:#8b5cf6;">🤖</div>
+                    <div class="tool-title">AI Career Assistant</div>
+                    <div class="tool-desc">Ask interview preparation and profile guidance.</div>
                 </div>
                 """,
                 unsafe_allow_html=True
@@ -1075,20 +1103,22 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
 
     # 1. RESUME INTELLIGENCE
     elif st.session_state.active_tool == "Resume Intelligence":
-        if st.button("← Back to Career Tools Dashboard", key="btn_back_res"):
+        if st.button("← Back to Dashboard", key="btn_back_res"):
             st.session_state.active_tool = "Dashboard"
             st.rerun()
 
-        st.markdown("### 📄 Resume Intelligence & Skill Diagnostics")
-        uploaded_doc = st.file_uploader("Upload your resume (PDF, DOCX, TXT):", type=["pdf", "docx", "txt"])
+        st.markdown("### 📄 Resume Intelligence")
+        st.markdown('<p style="color:#64748b;">Upload your resume in PDF, DOCX, or TXT format for deep skill analysis.</p>', unsafe_allow_html=True)
         
-        if uploaded_doc and st.button("Analyze Resume Now", use_container_width=True):
-            with st.spinner("Analyzing resume content..."):
+        uploaded_doc = st.file_uploader("Upload Resume File", type=["pdf", "docx", "txt"], label_visibility="collapsed")
+        
+        if uploaded_doc and st.button("🚀 Analyze Resume", use_container_width=True):
+            with st.spinner("Analyzing profile structure & stack..."):
                 res = api_analyze_resume(uploaded_doc)
                 st.session_state.resume_analysis = res
-                st.session_state.resume_text = res.get("extracted_text", "")
+                st.session_state.resume_text = res.get("extracted_text", "")[cite: 1, 3]
                 st.success("Resume parsed successfully!")
-                st.rerun()
+                st.rerun()[cite: 1, 3]
 
         if st.session_state.resume_analysis:
             r = st.session_state.resume_analysis
@@ -1097,7 +1127,7 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
                 <div class="content-box">
                     <div style="display:flex; justify-content:space-between; align-items:center;">
                         <h3 style="margin:0; color:#2563eb;">{r.get('name', 'Candidate Profile')}</h3>
-                        <span class="pill-tag pill-green">Score: {r.get('resume_score', 85)}%</span>
+                        <span class="tag-badge tag-green">Score: {r.get('resume_score', 85)}%</span>
                     </div>
                     <p style="color:#64748b; margin:8px 0 0 0;">
                         📧 <b>Email:</b> {r.get('email')} &nbsp;|&nbsp; 📱 <b>Phone:</b> {r.get('phone')} &nbsp;|&nbsp; ⏳ <b>Exp:</b> {r.get('experience')}
@@ -1107,17 +1137,17 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
                 unsafe_allow_html=True
             )
             st.markdown("#### Detected Technical & Domain Stack")
-            skills_html = "".join([f'<span class="pill-tag pill-blue">{s}</span>' for s in r.get("skills", [])])
+            skills_html = "".join([f'<span class="tag-badge tag-blue">{s}</span>' for s in r.get("skills", [])])
             st.markdown(skills_html, unsafe_allow_html=True)
 
     # 2. PRE-INTERVIEW ASSESSMENT
     elif st.session_state.active_tool == "Pre-Interview Assessment":
-        if st.button("← Back to Career Tools Dashboard", key="btn_back_exam"):
+        if st.button("← Back to Dashboard", key="btn_back_exam"):
             st.session_state.active_tool = "Dashboard"
             st.rerun()
 
-        st.markdown("### 📝 Standardized Pre-Interview Assessment (100 Marks)")
-        st.caption("100 Questions • 100 Marks • IT & Non-IT Specializations")
+        st.markdown("### 📝 Pre-Interview Assessment")
+        st.caption("100 Questions • 100 Marks • Standardized Qualifying Test")
 
         if not st.session_state.assessment_active and not st.session_state.assessment_submitted:
             domain_type = st.radio("Domain Category:", ["IT Roles", "Non-IT Roles"], horizontal=True)
@@ -1127,7 +1157,7 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
             st.markdown(
                 """
                 <div class="content-box">
-                    <h4 style="margin:0; color:#2563eb;">Assessment Blueprint Structure</h4>
+                    <h4 style="margin:0; color:#2563eb;">100-Mark Assessment Structure</h4>
                     <p style="color:#64748b; margin:6px 0 0 0; font-size:0.9rem;">
                         • Section A: Quantitative & Logical Reasoning (25 Marks)<br>
                         • Section B: Core Domain Fundamentals (35 Marks)<br>
@@ -1139,17 +1169,17 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
                 unsafe_allow_html=True
             )
 
-            if st.button("Start 100-Question Assessment", use_container_width=True):
+            if st.button("🚀 Start 100-Question Assessment", use_container_width=True):
                 st.session_state.assessment_questions = generate_100q_assessment(selected_assessment_role)
-                st.session_state.assessment_role = selected_assessment_role
-                st.session_state.assessment_answers = {}
-                st.session_state.assessment_active = True
+                st.session_state.assessment_role = selected_assessment_role[cite: 1]
+                st.session_state.assessment_answers = {}[cite: 1]
+                st.session_state.assessment_active = True[cite: 1, 3]
                 st.session_state.assessment_candidate_token = f"{st.session_state.username}_{uuid.uuid4().hex[:6]}"
-                st.rerun()
+                st.rerun()[cite: 1, 3]
 
         elif st.session_state.assessment_active and not st.session_state.assessment_submitted:
             st.markdown(f"#### Active Examination: {st.session_state.assessment_role}")
-            st.caption("Complete all questions and click Submit. Your results will be transmitted to the recruiter vault.")
+            st.caption("Complete all questions and click Submit.")
 
             for q in st.session_state.assessment_questions:
                 qid = q["id"]
@@ -1164,7 +1194,7 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
                 st.session_state.assessment_answers[qid] = chosen_ans
                 st.markdown("<hr style='border-color:#f1f5f9; margin:10px 0;'>", unsafe_allow_html=True)
 
-            if st.button("Submit Assessment", use_container_width=True):
+            if st.button("🏁 Submit Assessment", use_container_width=True):
                 correct = sum(1 for q in st.session_state.assessment_questions if st.session_state.assessment_answers.get(q["id"]) == q["answer"])
                 submission = {
                     "candidate_name": st.session_state.username,
@@ -1175,9 +1205,9 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
                     "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M")
                 }
                 st.session_state.recruiter_assessment_submissions[st.session_state.assessment_candidate_token] = submission
-                st.session_state.assessment_active = False
-                st.session_state.assessment_submitted = True
-                st.rerun()
+                st.session_state.assessment_active = False[cite: 1, 3]
+                st.session_state.assessment_submitted = True[cite: 1, 3]
+                st.rerun()[cite: 1, 3]
 
         elif st.session_state.assessment_submitted:
             st.markdown(
@@ -1186,20 +1216,20 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
                     <div style="font-size: 52px; margin-bottom: 12px;">✅</div>
                     <h2 style="color: #059669; margin: 0 0 10px 0;">Assessment Completed & Submitted</h2>
                     <p style="color: #64748b; max-width: 620px; margin: 0 auto; font-size: 0.95rem;">
-                        Your examination has been logged. Per assessment privacy protocols, detailed rankings and scores are delivered directly to the recruiter.
+                        Your examination has been logged. Scores and rankings are routed directly to the recruiter vault.
                     </p>
                 </div>
                 """,
                 unsafe_allow_html=True
             )
             if st.button("Take Another Assessment", key="btn_reset_exam"):
-                st.session_state.assessment_submitted = False
-                st.session_state.assessment_active = False
-                st.rerun()
+                st.session_state.assessment_submitted = False[cite: 1, 3]
+                st.session_state.assessment_active = False[cite: 1, 3]
+                st.rerun()[cite: 1, 3]
 
     # 3. AI MOCK INTERVIEW
     elif st.session_state.active_tool == "AI Mock Interview":
-        if st.button("← Back to Career Tools Dashboard", key="btn_back_mock"):
+        if st.button("← Back to Dashboard", key="btn_back_mock"):
             st.session_state.active_tool = "Dashboard"
             st.rerun()
 
@@ -1212,7 +1242,7 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
             with c2:
                 interview_len = st.select_slider("Interview Questions:", options=[3, 5, 7, 10], value=5)
 
-            if st.button("Start Live Interview", use_container_width=True):
+            if st.button("🚀 Start Live Interview", use_container_width=True):
                 q_bank = [
                     f"Tell me about yourself and your motivations for applying as a {target_interview_role}?",
                     f"What key technical skills and methodologies do you utilize in your {target_interview_role} workflows?",
@@ -1226,7 +1256,7 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
                 st.session_state.interview_current_idx = 0
                 st.session_state.interview_transcript = []
                 st.session_state.interview_active = True
-                st.rerun()
+                st.rerun()[cite: 1, 3]
 
         elif st.session_state.interview_active and not st.session_state.interview_completed:
             curr_i = st.session_state.interview_current_idx
@@ -1236,7 +1266,7 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
             st.markdown(
                 f"""
                 <div class="content-box">
-                    <span class="pill-tag pill-blue">QUESTION {curr_i + 1} OF {total_i}</span>
+                    <span class="tag-badge tag-blue">QUESTION {curr_i + 1} OF {total_i}</span>
                     <h3 style="margin-top: 10px; color:#0f172a;">{curr_question_text}</h3>
                 </div>
                 """,
@@ -1245,7 +1275,7 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
 
             cand_response = st.text_area("Type your response to the interviewer:", height=160, key=f"ans_text_{curr_i}")
 
-            if st.button("Submit & Proceed", use_container_width=True):
+            if st.button("Submit & Next ➔", use_container_width=True):
                 if not cand_response.strip():
                     st.warning("Please type your response before proceeding.")
                 else:
@@ -1255,7 +1285,7 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
                     })
                     if curr_i + 1 < total_i:
                         st.session_state.interview_current_idx += 1
-                        st.rerun()
+                        st.rerun()[cite: 1, 3]
                     else:
                         st.session_state.interview_active = False
                         st.session_state.interview_completed = True
@@ -1266,14 +1296,14 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
                             "correctness": "80%",
                             "role_knowledge": "78%"
                         }
-                        st.rerun()
+                        st.rerun()[cite: 1, 3]
 
         elif st.session_state.interview_completed:
             rep = st.session_state.interview_report
             st.markdown(
                 f"""
                 <div class="content-box" style="text-align: center;">
-                    <span class="pill-tag pill-green">EVALUATION COMPLETED</span>
+                    <span class="tag-badge tag-green">EVALUATION COMPLETED</span>
                     <h2 style="margin: 10px 0;">Interview Readiness: <span style="color:#2563eb;">{rep['overall']}%</span></h2>
                     <p style="color:#64748b;">Comprehensive evaluation for {st.session_state.interview_role}</p>
                 </div>
@@ -1290,22 +1320,22 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
 
             if st.button("Practice Another Mock Interview", key="btn_retry_mock"):
                 st.session_state.interview_completed = False
-                st.rerun()
+                st.rerun()[cite: 1, 3]
 
     # 4. AI JOB MATCH
     elif st.session_state.active_tool == "AI Job Match":
-        if st.button("← Back to Career Tools Dashboard", key="btn_back_jm"):
+        if st.button("← Back to Dashboard", key="btn_back_jm"):
             st.session_state.active_tool = "Dashboard"
             st.rerun()
 
-        st.markdown("### 🎯 AI Job Match & Semantic Skill Gap Diagnostics")
+        st.markdown("### 🎯 AI Job Match")
         jd_text = st.text_area("Paste Job Description:", height=180)
 
-        if st.button("Check Match Compatibility", use_container_width=True):
+        if st.button("Check Match Score", use_container_width=True):
             if not st.session_state.resume_text:
-                st.warning("Please upload your resume in Resume Intelligence first.")
+                st.warning("Please upload your resume in Resume Intelligence first.")[cite: 1, 3]
             elif not jd_text.strip():
-                st.warning("Please paste a job description.")
+                st.warning("Please paste a job description.")[cite: 1, 3]
             else:
                 with st.spinner("Calculating semantic match score..."):
                     raw_res = api_match_job(st.session_state.resume_text, jd_text)
@@ -1326,31 +1356,31 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
             col_j1, col_j2 = st.columns(2)
             with col_j1:
                 st.markdown("#### ✅ Matching Skills")
-                matched_pills = "".join([f'<span class="pill-tag pill-green">{s}</span>' for s in m.get("matched", [])])
+                matched_pills = "".join([f'<span class="tag-badge tag-green">{s}</span>' for s in m.get("matched", [])])
                 st.markdown(matched_pills or "None detected", unsafe_allow_html=True)
             with col_j2:
                 st.markdown("#### ⚠️ Missing Skills")
-                missing_pills = "".join([f'<span class="pill-tag pill-amber">{s}</span>' for s in m.get("missing", [])])
+                missing_pills = "".join([f'<span class="tag-badge tag-amber">{s}</span>' for s in m.get("missing", [])])
                 st.markdown(missing_pills or "None detected", unsafe_allow_html=True)
 
     # 5. SALARY ESTIMATION
     elif st.session_state.active_tool == "Salary Estimation":
-        if st.button("← Back to Career Tools Dashboard", key="btn_back_sal"):
+        if st.button("← Back to Dashboard", key="btn_back_sal"):
             st.session_state.active_tool = "Dashboard"
             st.rerun()
 
-        st.markdown("### 💰 Compensation Benchmark Calculator")
+        st.markdown("### 💰 Salary Estimation")
         c1, c2 = st.columns(2)
         with c1:
             sal_role_in = st.text_input("Role Title:", "Software Engineer")
         with c2:
             sal_exp_in = st.selectbox("Experience Level:", ["Entry Level (0-2 yrs)", "Mid Level (3-5 yrs)", "Senior Level (6+ yrs)"])
 
-        if st.button("Calculate Market Benchmark", use_container_width=True):
+        if st.button("Calculate Compensation Band", use_container_width=True):
             st.markdown(
                 f"""
                 <div class="content-box" style="margin-top: 20px;">
-                    <span class="pill-tag pill-blue">MARKET ESTIMATE</span>
+                    <span class="tag-badge tag-blue">MARKET ESTIMATE</span>
                     <h2 style="margin: 8px 0; color:#2563eb;">₹9.5 LPA - ₹18.0 LPA</h2>
                     <p style="color:#64748b; margin:0;">Median compensation band for {sal_role_in} ({sal_exp_in}).</p>
                 </div>
@@ -1360,11 +1390,11 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
 
     # 6. CAREER ROADMAP
     elif st.session_state.active_tool == "Career Roadmap":
-        if st.button("← Back to Career Tools Dashboard", key="btn_back_road"):
+        if st.button("← Back to Dashboard", key="btn_back_road"):
             st.session_state.active_tool = "Dashboard"
             st.rerun()
 
-        st.markdown("### 🗺️ Career Progression Roadmap")
+        st.markdown("### 🗺️ Career Roadmap")
         target_goal = st.text_input("Target Dream Role:", "Lead AI Architect")
 
         if st.button("Generate Step-by-Step Plan", use_container_width=True):
@@ -1375,14 +1405,14 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
 
     # 7. REAL-TIME JOB DETECTION
     elif st.session_state.active_tool == "Real-Time Job Detection":
-        if st.button("← Back to Career Tools Dashboard", key="btn_back_det"):
+        if st.button("← Back to Dashboard", key="btn_back_det"):
             st.session_state.active_tool = "Dashboard"
             st.rerun()
 
-        st.markdown("### 🛡️ Fake Job & Offer Fraud Detector")
+        st.markdown("### 🛡️ Real-Time Job Detection")
         post_text = st.text_area("Paste Job Posting or Offer Body:", height=180)
 
-        if st.button("Analyze Posting Safety", use_container_width=True):
+        if st.button("Analyze Safety Signals", use_container_width=True):
             res = api_detect_fraud(post_text)
             verdict_color = "#ef4444" if res['level'] == "HIGH RISK" else "#059669"
             st.markdown(
@@ -1397,11 +1427,11 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
 
     # 8. RESUME BUILDER
     elif st.session_state.active_tool == "Resume Builder":
-        if st.button("← Back to Career Tools Dashboard", key="btn_back_bld"):
+        if st.button("← Back to Dashboard", key="btn_back_bld"):
             st.session_state.active_tool = "Dashboard"
             st.rerun()
 
-        st.markdown("### 📄 Professional Resume Builder")
+        st.markdown("### 📄 Resume Builder")
         rb_name = st.text_input("Full Name", value=st.session_state.username)
         rb_title = st.text_input("Professional Headline", value="Full Stack & AI Engineer")
         rb_skills = st.text_area("Core Skills", value="Python, FastAPI, React, SQL, Docker")
@@ -1412,7 +1442,7 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
 
     # 9. AI CAREER ASSISTANT
     elif st.session_state.active_tool == "AI Career Assistant":
-        if st.button("← Back to Career Tools Dashboard", key="btn_back_ast"):
+        if st.button("← Back to Dashboard", key="btn_back_ast"):
             st.session_state.active_tool = "Dashboard"
             st.rerun()
 
@@ -1433,35 +1463,35 @@ elif st.session_state.active_workspace == "Recruiter Workspace":
         f"""
         <div class="kpi-grid">
             <div class="kpi-card">
-                <div class="kpi-circle" style="background:#eff6ff; color:#2563eb;">👥</div>
+                <div class="kpi-icon-badge" style="background:#eff6ff; color:#2563eb;">👥</div>
                 <div>
-                    <div style="font-size:0.8rem; font-weight:700; color:#64748b; text-transform:uppercase;">Cohort Size</div>
+                    <div style="font-size:0.75rem; font-weight:700; color:#64748b; text-transform:uppercase;">Cohort Size</div>
                     <div style="font-size:1.45rem; font-weight:900; color:#0f172a;">{len(st.session_state.recruiter_candidates)}</div>
-                    <div style="font-size:0.75rem; color:#94a3b8;">Uploaded resumes</div>
+                    <span class="tag-badge tag-blue">Uploaded Profiles</span>
                 </div>
             </div>
             <div class="kpi-card">
-                <div class="kpi-circle" style="background:#faf5ff; color:#7c3aed;">📝</div>
+                <div class="kpi-icon-badge" style="background:#faf5ff; color:#7c3aed;">📝</div>
                 <div>
-                    <div style="font-size:0.8rem; font-weight:700; color:#64748b; text-transform:uppercase;">Assessments</div>
+                    <div style="font-size:0.75rem; font-weight:700; color:#64748b; text-transform:uppercase;">Assessments</div>
                     <div style="font-size:1.45rem; font-weight:900; color:#0f172a;">{len(st.session_state.recruiter_assessment_submissions)}</div>
-                    <div style="font-size:0.75rem; color:#94a3b8;">Submissions logged</div>
+                    <span class="tag-badge tag-purple">Completed</span>
                 </div>
             </div>
             <div class="kpi-card">
-                <div class="kpi-circle" style="background:#ecfdf5; color:#059669;">🎯</div>
+                <div class="kpi-icon-badge" style="background:#ecfdf5; color:#059669;">🎯</div>
                 <div>
-                    <div style="font-size:0.8rem; font-weight:700; color:#64748b; text-transform:uppercase;">Average Score</div>
+                    <div style="font-size:0.75rem; font-weight:700; color:#64748b; text-transform:uppercase;">Average Score</div>
                     <div style="font-size:1.45rem; font-weight:900; color:#0f172a;">82%</div>
-                    <div style="font-size:0.75rem; color:#94a3b8;">Across attempts</div>
+                    <span class="tag-badge tag-green">Cohort Metric</span>
                 </div>
             </div>
             <div class="kpi-card">
-                <div class="kpi-circle" style="background:#fffbeb; color:#d97706;">⚡</div>
+                <div class="kpi-icon-badge" style="background:#fffbeb; color:#d97706;">⚡</div>
                 <div>
-                    <div style="font-size:0.8rem; font-weight:700; color:#64748b; text-transform:uppercase;">Shortlist Status</div>
+                    <div style="font-size:0.75rem; font-weight:700; color:#64748b; text-transform:uppercase;">Shortlist Status</div>
                     <div style="font-size:1.45rem; font-weight:900; color:#0f172a;">Active</div>
-                    <div style="font-size:0.75rem; color:#94a3b8;">Ready to interview</div>
+                    <span class="tag-badge tag-amber">Ready to Interview</span>
                 </div>
             </div>
         </div>
@@ -1471,14 +1501,17 @@ elif st.session_state.active_workspace == "Recruiter Workspace":
 
     if st.session_state.active_tool == "Dashboard" or st.session_state.active_tool == "Bulk Screening":
         st.markdown("### 📤 Bulk Resume Screening & Automatic Candidate Intake")
+        st.markdown('<p style="color:#64748b;">Upload multiple candidate resumes. Email addresses and skills will be parsed automatically.</p>', unsafe_allow_html=True)
+        
         bulk_files = st.file_uploader(
             "Upload Candidate Resumes (PDF, DOCX, TXT):",
             type=["pdf", "docx", "txt"],
             accept_multiple_files=True,
-            key="rec_bulk_files"
+            key="rec_bulk_files",
+            label_visibility="collapsed"
         )
 
-        if bulk_files and st.button("Process Resumes & Extract Emails", use_container_width=True):
+        if bulk_files and st.button("⚡ Process Resumes & Extract Emails", use_container_width=True):
             with st.spinner("Extracting candidate profiles..."):
                 c_list = []
                 for f in bulk_files:
@@ -1497,7 +1530,7 @@ elif st.session_state.active_workspace == "Recruiter Workspace":
             df_cand = pd.DataFrame(st.session_state.recruiter_candidates)
             st.dataframe(df_cand, use_container_width=True, hide_index=True)
 
-            st.markdown("### 📧 Send Assessment Link")
+            st.markdown("### 📧 Send Pre-Interview Assessment Link")
             c_sel = st.selectbox("Select Candidate:", df_cand["email"].tolist())
             r_sel = st.selectbox("Assign Assessment Role:", IT_ROLES + NON_IT_ROLES)
             if st.button("Dispatch Assessment Link", use_container_width=True):
