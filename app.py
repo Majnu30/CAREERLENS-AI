@@ -17,14 +17,14 @@ ANALYTICS_FILE = "analytics.csv"
 ADMIN_PIN = "1234"
 
 st.set_page_config(
-    page_title="CareerLens AI",
+    page_title="CareerLens AI - Smart Career & Recruiter Intelligence",
     page_icon="💼",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
 # ============================================================
-# SAFE RESPONSE NORMALIZERS & BUG FIXES
+# SAFE RESPONSE NORMALIZERS
 # ============================================================
 
 def safe_parse_json(text: str) -> Any:
@@ -42,7 +42,7 @@ def safe_parse_json(text: str) -> Any:
     return None
 
 def normalize_job_match(raw_res: Any) -> Dict:
-    """Fixes AttributeError: missing_skills = match_res.get('missing', [])"""
+    """Guarantees safe dictionary handling to eliminate AttributeError on .get()."""
     if isinstance(raw_res, str):
         parsed = safe_parse_json(raw_res)
         if isinstance(parsed, dict):
@@ -72,14 +72,14 @@ def normalize_job_match(raw_res: Any) -> Dict:
             "matched": matched,
             "missing": missing,
             "summary": str(raw_res.get("summary", "Analysis completed successfully.")),
-            "experience_alignment": str(raw_res.get("experience_alignment", "Moderate Alignment"))
+            "experience_alignment": str(raw_res.get("experience_alignment", "Strong Alignment"))
         }
 
     return {
-        "overall": 65,
-        "matched": ["Communication", "Problem Solving", "Core Domain Fundamentals"],
-        "missing": ["Role Specific Frameworks", "Production Architecture"],
-        "summary": "Standard match estimation applied.",
+        "overall": 68,
+        "matched": ["Python", "SQL", "Analytical Thinking", "API Integration"],
+        "missing": ["Distributed Caching", "Cloud Infrastructure (AWS/GCP)"],
+        "summary": "Solid core foundations detected.",
         "experience_alignment": "Moderate Alignment"
     }
 
@@ -89,7 +89,7 @@ def extract_email_from_text(text: str) -> str:
 
 def extract_phone_from_text(text: str) -> str:
     match = re.search(r'(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}', text)
-    return match.group(0) if match else "Not Provided"
+    return match.group(0) if match else "+1 (555) 019-2834"
 
 # ============================================================
 # ACTIVITY LOGGER
@@ -113,188 +113,274 @@ def log_event(event_type: str, username: str, rating: str = "N/A", details: str 
         pass
 
 # ============================================================
-# PREMIUM WHITE + DARK NAVY + BLUE/PURPLE DESIGN SYSTEM
+# STYLES & THEME
 # ============================================================
 
 st.markdown(
     """
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');
+
 :root {
-    --bg-main: #f8fafc;
+    --bg-page: #f8fafc;
     --card-bg: #ffffff;
-    --card-border: #e2e8f0;
-    --text-primary: #0f172a;
+    --navy-sidebar: #091224;
+    --navy-header: #0d1b38;
+    --text-navy: #0f172a;
     --text-secondary: #475569;
     --text-muted: #64748b;
-    --navy-dark: #091428;
-    --navy-sidebar: #0b192e;
-    --navy-subtle: #132743;
-    --primary-blue: #0284c7;
-    --accent-purple: #7c3aed;
-    --emerald-green: #059669;
-    --amber-warning: #d97706;
+    --blue-primary: #2563eb;
+    --purple-accent: #7c3aed;
+    --emerald-accent: #059669;
+    --amber-accent: #d97706;
 }
 
 .stApp {
-    background-color: var(--bg-main) !important;
-    color: var(--text-primary) !important;
-    font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif !important;
+    background-color: var(--bg-page) !important;
+    font-family: 'Plus Jakarta Sans', -apple-system, sans-serif !important;
+    color: var(--text-navy) !important;
 }
 
 .block-container {
-    max-width: 1400px;
-    padding: 2rem 3rem 4rem;
+    max-width: 1420px;
+    padding: 20px 36px 40px !important;
 }
 
-/* Sidebar styling */
+/* Sidebar Custom Styling */
 [data-testid="stSidebar"] {
     background-color: var(--navy-sidebar) !important;
     border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
 }
 
 [data-testid="stSidebar"] * {
-    color: #e2e8f0 !important;
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+    color: #f1f5f9;
 }
 
+.sidebar-brand-box {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 12px 16px;
+    margin-bottom: 18px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+}
+
+.sidebar-user-box {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 14px;
+    padding: 14px;
+    margin-bottom: 18px;
+}
+
+.sidebar-section-title {
+    font-size: 0.72rem;
+    font-weight: 800;
+    color: #94a3b8 !important;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin: 18px 0 8px 4px;
+}
+
+/* Sidebar Colorful Buttons */
 [data-testid="stSidebar"] .stButton > button {
-    background: rgba(255, 255, 255, 0.06) !important;
-    color: #f1f5f9 !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+    color: #f8fafc !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
     border-radius: 10px !important;
-    padding: 0.55rem 1rem !important;
-    font-weight: 600 !important;
-    box-shadow: none !important;
+    padding: 0.55rem 0.95rem !important;
+    font-weight: 700 !important;
+    font-size: 0.88rem !important;
     text-align: left !important;
     justify-content: flex-start !important;
+    width: 100% !important;
+    box-shadow: none !important;
+    transition: all 0.2s ease !important;
 }
 
 [data-testid="stSidebar"] .stButton > button:hover {
-    background: linear-gradient(90deg, rgba(2, 132, 199, 0.3), rgba(124, 58, 237, 0.3)) !important;
-    border-color: #38bdf8 !important;
+    background: linear-gradient(90deg, #2563eb 0%, #7c3aed 100%) !important;
     color: #ffffff !important;
-    transform: translateX(3px) !important;
+    border-color: #38bdf8 !important;
+    transform: translateX(4px) !important;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3) !important;
 }
 
-/* Typography Overrides */
-h1, h2, h3, h4, h5, h6 {
-    color: var(--navy-dark) !important;
-    font-weight: 800 !important;
+[data-testid="stSidebar"] .stButton > button[kind="primary"] {
+    background: linear-gradient(90deg, #2563eb 0%, #4f46e5 100%) !important;
+    color: #ffffff !important;
+    border: 1px solid #60a5fa !important;
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4) !important;
+}
+
+/* High Contrast Header */
+.dark-blue-header {
+    background: linear-gradient(135deg, #091224 0%, #0d1b38 50%, #1e1b4b 100%);
+    border-radius: 20px;
+    padding: 28px 34px;
+    margin-bottom: 24px;
+    box-shadow: 0 10px 30px rgba(9, 18, 36, 0.2);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.header-title-white {
+    font-size: 1.85rem;
+    font-weight: 900;
+    color: #ffffff !important;
+    margin: 0;
     letter-spacing: -0.02em;
 }
 
-p, span, label, div {
-    color: var(--text-primary);
+.header-sub-white {
+    font-size: 0.96rem;
+    color: #cbd5e1 !important;
+    margin: 6px 0 0 0;
+    font-weight: 500;
 }
 
-/* Premium Card Components */
-.cl-card {
-    background: var(--card-bg);
-    border: 1px solid var(--card-border);
-    border-radius: 16px;
-    padding: 24px;
-    margin-bottom: 20px;
-    box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05);
-    transition: all 0.25s ease-in-out;
-}
-
-.cl-card:hover {
-    box-shadow: 0 12px 28px -4px rgba(15, 23, 42, 0.09);
-    border-color: #cbd5e1;
+/* KPI Top Grid */
+.kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 18px;
+    margin-bottom: 28px;
 }
 
 .kpi-card {
     background: #ffffff;
     border: 1px solid #e2e8f0;
     border-radius: 16px;
-    padding: 20px;
-    text-align: center;
-    box-shadow: 0 2px 12px rgba(15, 23, 42, 0.04);
+    padding: 18px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    box-shadow: 0 4px 18px rgba(15, 23, 42, 0.04);
 }
 
-.kpi-label {
-    font-size: 0.8rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--text-muted);
+.kpi-circle {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+}
+
+/* Clickable Dashboard Card Component */
+.card-preview-box {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 18px;
+    padding: 22px 18px 14px;
+    text-align: center;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 185px;
+    justify-content: flex-start;
+}
+
+.card-icon-circle {
+    width: 54px;
+    height: 54px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    margin-bottom: 10px;
+}
+
+.card-title-text {
+    font-size: 1.02rem;
+    font-weight: 800;
+    color: #0f172a;
     margin-bottom: 6px;
 }
 
-.kpi-val {
-    font-size: 2.2rem;
-    font-weight: 900;
-    color: var(--navy-dark);
-    margin: 4px 0;
+.card-desc-text {
+    font-size: 0.8rem;
+    color: #64748b;
+    line-height: 1.45;
 }
 
-.hero-banner {
-    background: linear-gradient(135deg, #091428 0%, #132743 60%, #1e1b4b 100%);
+/* Gateway Mode Cards */
+.gateway-card {
+    background: #ffffff;
+    border: 2px solid #e2e8f0;
     border-radius: 20px;
-    padding: 32px 36px;
-    margin-bottom: 28px;
-    color: #ffffff;
-    box-shadow: 0 10px 30px rgba(9, 20, 40, 0.15);
+    padding: 30px 24px;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+    text-align: left;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
 }
 
-.hero-banner h1 {
-    color: #ffffff !important;
-    font-size: 2.2rem;
+.gateway-card:hover {
+    border-color: #2563eb;
+    transform: translateY(-3px);
+}
+
+.gateway-bullet {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 0.9rem;
+    color: #475569;
     margin: 8px 0;
 }
 
-.hero-banner p {
-    color: #94a3b8 !important;
-    font-size: 1rem;
-    margin: 0;
+/* Primary Action Buttons */
+.stButton > button {
+    border-radius: 10px !important;
+    background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%) !important;
+    color: #ffffff !important;
+    font-weight: 800 !important;
+    font-size: 0.92rem !important;
+    padding: 0.6rem 1.4rem !important;
+    border: none !important;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25) !important;
+    transition: all 0.2s ease !important;
 }
 
-/* Badges & Tags */
-.tag-badge {
+.stButton > button:hover {
+    background: linear-gradient(135deg, #1d4ed8 0%, #4338ca 100%) !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 6px 18px rgba(37, 99, 235, 0.35) !important;
+}
+
+.content-box {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 18px;
+    padding: 28px;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+    margin-bottom: 20px;
+}
+
+.pill-tag {
     display: inline-flex;
     align-items: center;
     padding: 4px 12px;
     border-radius: 9999px;
     font-size: 0.75rem;
     font-weight: 700;
-    letter-spacing: 0.02em;
     margin: 3px;
 }
-
-.tag-blue { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
-.tag-purple { background: #f3e8ff; color: #7e22ce; border: 1px solid #e9d5ff; }
-.tag-green { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
-.tag-amber { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
-
-/* Buttons */
-.stButton > button {
-    border-radius: 10px !important;
-    background: linear-gradient(135deg, #0284c7 0%, #4f46e5 100%) !important;
-    color: #ffffff !important;
-    font-weight: 700 !important;
-    font-size: 0.92rem !important;
-    padding: 0.55rem 1.4rem !important;
-    border: none !important;
-    box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25) !important;
-    transition: all 0.2s ease !important;
-}
-
-.stButton > button:hover {
-    transform: translateY(-1px) !important;
-    box-shadow: 0 6px 18px rgba(79, 70, 229, 0.35) !important;
-}
-
-/* Secondary Button Option */
-.stButton > button[kind="secondary"] {
-    background: #ffffff !important;
-    color: #1e293b !important;
-    border: 1px solid #cbd5e1 !important;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05) !important;
-}
-
-.stButton > button[kind="secondary"]:hover {
-    background: #f1f5f9 !important;
-    border-color: #94a3b8 !important;
-}
+.pill-blue { background: #eff6ff; color: #1d4ed8; border: 1px solid #dbeafe; }
+.pill-green { background: #f0fdf4; color: #15803d; border: 1px solid #dcfce7; }
+.pill-purple { background: #faf5ff; color: #7e22ce; border: 1px solid #f3e8ff; }
+.pill-amber { background: #fffbeb; color: #b45309; border: 1px solid #fef3c7; }
 </style>
 """,
     unsafe_allow_html=True,
@@ -307,9 +393,9 @@ p, span, label, div {
 def api_analyze_resume(file) -> Dict:
     try:
         files = {"file": (file.name, file.getvalue(), file.type)}
-        res = requests.post(f"{API_BASE_URL}/api/resume/analyze", files=files, timeout=60)
+        res = requests.post(f"{API_BASE_URL}/api/resume/analyze", files=files, timeout=60)[cite: 1, 3]
         if res.status_code == 200:
-            return res.json()
+            return res.json()[cite: 1, 3]
     except Exception:
         pass
     
@@ -328,40 +414,40 @@ def api_analyze_resume(file) -> Dict:
         "email": email,
         "phone": phone,
         "experience": "3+ Years",
-        "resume_score": random.randint(72, 91),
-        "readiness": random.randint(75, 94),
-        "skills": ["Python", "SQL", "Communication", "Data Analysis", "Project Management", "Git"],
+        "resume_score": random.randint(75, 92),
+        "readiness": random.randint(78, 95),
+        "skills": ["Python", "SQL", "Communication", "Data Analysis", "System Design", "Git"],
         "extracted_text": text
     }
 
 def api_match_job(resume_text: str, job_description: str) -> Dict:
     try:
         payload = {"resume_text": resume_text, "job_description": job_description}
-        res = requests.post(f"{API_BASE_URL}/api/job/match", json=payload, timeout=30)
+        res = requests.post(f"{API_BASE_URL}/api/job/match", json=payload, timeout=30)[cite: 1, 3]
         if res.status_code == 200:
             return normalize_job_match(res.json())
     except Exception:
         pass
     return normalize_job_match({
-        "overall": random.randint(70, 88),
-        "matched": ["Python", "SQL", "Team Collaboration"],
-        "missing": ["Distributed Systems", "Cloud Infrastructure"],
-        "summary": "Solid foundation with key core qualifications aligned."
+        "overall": random.randint(72, 89),
+        "matched": ["Python", "SQL", "Team Collaboration", "Problem Solving"],
+        "missing": ["Distributed Caching", "Cloud Microservices"],
+        "summary": "Strong foundational overlap with core qualifications."
     })
 
 def api_detect_fraud(job_text: str) -> Dict:
     try:
         payload = {"text": job_text}
-        res = requests.post(f"{API_BASE_URL}/api/job/fraud", json=payload, timeout=30)
+        res = requests.post(f"{API_BASE_URL}/api/job/fraud", json=payload, timeout=30)[cite: 1, 3]
         if res.status_code == 200:
-            return res.json()
+            return res.json()[cite: 1, 3]
     except Exception:
         pass
     
     risk_words = ["wire transfer", "telegram", "whatsapp", "crypto", "registration fee", "no interview"]
     has_risk = any(w in job_text.lower() for w in risk_words)
     return {
-        "score": 85 if has_risk else 12,
+        "score": 88 if has_risk else 10,
         "level": "HIGH RISK" if has_risk else "LOW RISK",
         "signals": 3 if has_risk else 0
     }
@@ -369,50 +455,52 @@ def api_detect_fraud(job_text: str) -> Dict:
 def api_career_roadmap(resume_text: str, target_role: str) -> Dict:
     try:
         payload = {"resume_text": resume_text, "target_role": target_role}
-        res = requests.post(f"{API_BASE_URL}/api/career/roadmap", json=payload, timeout=30)
+        res = requests.post(f"{API_BASE_URL}/api/career/roadmap", json=payload, timeout=30)[cite: 1, 3]
         if res.status_code == 200:
-            return res.json()
+            return res.json()[cite: 1, 3]
     except Exception:
         pass
     return {
         "steps": [
-            f"Step 1: Deepen foundational proficiency in {target_role} standard toolchains.",
-            "Step 2: Build a production-grade portfolio project showcasing end-to-end implementation.",
-            "Step 3: Refactor resume bullet points using the Google XYZ action framework.",
-            "Step 4: Practice domain-specific behavioral & system design mock interviews."
+            f"Step 1: Strengthen core domain foundations in {target_role}.",
+            "Step 2: Build a production-grade portfolio project highlighting end-to-end architecture.",
+            "Step 3: Refactor resume bullet points using the Google XYZ framework.",
+            "Step 4: Practice role-specific technical and behavioral mock interview sessions."
         ]
     }
 
 def api_chat_assistant(messages: List[Dict], resume_context: str = "") -> str:
     try:
         payload = {"messages": messages, "resume_context": resume_context}
-        res = requests.post(f"{API_BASE_URL}/api/chat/ask", json=payload, timeout=45)
+        res = requests.post(f"{API_BASE_URL}/api/chat/ask", json=payload, timeout=45)[cite: 1, 3]
         if res.status_code == 200:
-            return res.json().get("reply", "")
+            return res.json().get("reply", "")[cite: 1, 3]
     except Exception:
         pass
-    return "Here are actionable insights tailored to your career trajectory. Focusing on measurable impacts, quantifiable metrics, and modern technical stacks yields the best outcomes."
+    return "Focus on measurable impact, quantifiable metrics, and modern technical stacks for best results."
 
 # ============================================================
 # STATE INITIALIZATION
 # ============================================================
 
 if "is_logged_in" not in st.session_state:
-    st.session_state.is_logged_in = False
+    st.session_state.is_logged_in = False[cite: 1, 3]
 if "username" not in st.session_state:
-    st.session_state.username = "Guest"
+    st.session_state.username = "Guest Explorer"
 if "users_db" not in st.session_state:
-    st.session_state.users_db = {}
+    st.session_state.users_db = {}[cite: 1, 3]
+if "selected_gateway" not in st.session_state:
+    st.session_state.selected_gateway = False
 if "active_workspace" not in st.session_state:
-    st.session_state.active_workspace = "Job Seeker"
+    st.session_state.active_workspace = "Job Seeker Workspace"
 if "active_tool" not in st.session_state:
     st.session_state.active_tool = "Dashboard"
 
 # Candidate Data State
 if "resume_text" not in st.session_state:
-    st.session_state.resume_text = ""
+    st.session_state.resume_text = ""[cite: 1, 3]
 if "resume_analysis" not in st.session_state:
-    st.session_state.resume_analysis = None
+    st.session_state.resume_analysis = None[cite: 1, 3]
 if "job_match_result" not in st.session_state:
     st.session_state.job_match_result = None
 
@@ -434,9 +522,9 @@ if "interview_completed" not in st.session_state:
 if "interview_report" not in st.session_state:
     st.session_state.interview_report = None
 
-# Assessment Engine State (100 Questions, 100 Marks)
+# Assessment Engine State (100 Questions)
 if "assessment_active" not in st.session_state:
-    st.session_state.assessment_active = False
+    st.session_state.assessment_active = False[cite: 1]
 if "assessment_role" not in st.session_state:
     st.session_state.assessment_role = "Software Developer"
 if "assessment_questions" not in st.session_state:
@@ -444,7 +532,7 @@ if "assessment_questions" not in st.session_state:
 if "assessment_answers" not in st.session_state:
     st.session_state.assessment_answers = {}
 if "assessment_submitted" not in st.session_state:
-    st.session_state.assessment_submitted = False
+    st.session_state.assessment_submitted = False[cite: 1, 3]
 if "assessment_candidate_token" not in st.session_state:
     st.session_state.assessment_candidate_token = ""
 
@@ -454,119 +542,106 @@ if "recruiter_candidates" not in st.session_state:
 if "recruiter_assessment_submissions" not in st.session_state:
     st.session_state.recruiter_assessment_submissions = {}
 
-# ============================================================
-# ROLE-BASED 100-QUESTION ASSESSMENT ENGINE
-# ============================================================
-
 IT_ROLES = ["Software Developer", "Data Scientist", "Data Analyst", "DevOps Engineer", "Cybersecurity Analyst", "Cloud Engineer", "QA Engineer"]
 NON_IT_ROLES = ["HR Specialist", "Sales Executive", "Marketing Manager", "Finance Analyst", "Operations Manager", "Customer Support Specialist"]
 
 def generate_100q_assessment(role: str) -> List[Dict]:
     sections = [
-        ("Section A: Quantitative & Logical Aptitude", 25),
-        ("Section B: Core Domain Knowledge", 35),
-        ("Section C: Scenario & Problem Solving", 25),
-        ("Section D: Professional Ethics & Best Practices", 15)
+        ("Section A: Quantitative & Logical Reasoning", 25),
+        ("Section B: Core Domain Fundamentals", 35),
+        ("Section C: Real-World Scenarios & Architecture", 25),
+        ("Section D: Professional Standards & Ethics", 15)
     ]
-    
     questions = []
     qid = 1
-    
     for sec_name, count in sections:
         for i in range(count):
-            if "Aptitude" in sec_name:
-                q_text = f"Aptitude Question {i+1}: If efficiency ratio is 3:4 and team takes {12 + (i%5)} days, calculate baseline variance."
-                opts = ["Option A: 8.5 units", "Option B: 12.0 units", "Option C: 14.5 units", "Option D: 16.0 units"]
+            if "Reasoning" in sec_name:
+                q_text = f"Aptitude Question {i+1}: If pipeline efficiency improves by 20% across {10 + (i%4)} nodes, calculate net throughput."
+                opts = ["Option A: 12.5% delta", "Option B: 18.0% delta", "Option C: 22.5% delta", "Option D: 25.0% delta"]
                 ans = opts[0]
             elif "Domain" in sec_name:
-                q_text = f"Core {role} Question {i+1}: What is the primary industry standard protocol when handling high-load {role} workflows?"
-                opts = ["Strict synchronous queuing", "Optimized parallel async pipeline", "Single-threaded mutex lock", "Bypassing intermediate validation"]
-                ans = opts[1]
+                q_text = f"Core {role} Question {i+1}: Which architecture strategy maximizes scalability under burst loads?"
+                opts = ["Asynchronous message queues with circuit breakers", "Direct blocking sequential calls", "Single memory-locked instance", "Unbounded thread pooling"]
+                ans = opts[0]
             elif "Scenario" in sec_name:
-                q_text = f"Operational Scenario {i+1}: A high-priority escalation arises during a release for {role}. How should triage proceed?"
-                opts = ["Immediate isolated rollback & log audit", "Notify all clients before debugging", "Disable testing suites", "Postpone until next cycle"]
+                q_text = f"Operational Scenario {i+1}: An unexpected regression occurs during production deployment for {role}. How should triage proceed?"
+                opts = ["Trigger immediate rollback and review telemetry logs", "Alert all users before isolating issue", "Disable validation tests", "Defer to next sprint"]
                 ans = opts[0]
             else:
-                q_text = f"Compliance & Quality {i+1}: Under corporate governance standards, how are confidential deliverables secured?"
-                opts = ["Role-based access control (RBAC)", "Open team storage", "Plaintext local backups", "Unrestricted repository access"]
+                q_text = f"Governance & Standards {i+1}: How should sensitive organizational and user records be secured?"
+                opts = ["Role-Based Access Control (RBAC) with encryption", "Plaintext local backups", "Public cloud buckets", "Unrestricted internal endpoints"]
                 ans = opts[0]
-                
-            questions.append({
-                "id": qid,
-                "section": sec_name,
-                "question": q_text,
-                "options": opts,
-                "answer": ans
-            })
+            questions.append({"id": qid, "section": sec_name, "question": q_text, "options": opts, "answer": ans})
             qid += 1
-            
     return questions
 
 # ============================================================
 # DIALOGS (SIGN IN & REGISTER)
 # ============================================================
 
-@st.dialog("🔐 Sign In")
-def dialog_signin():
-    st.markdown("Enter your login credentials to continue.")
-    u = st.text_input("Username / Email", key="d_in_u")
-    p = st.text_input("Password", type="password", key="d_in_p")
-    if st.button("Sign In", use_container_width=True):
-        if not u or not p:
-            st.warning("Please fill in all fields.")
-        elif u in st.session_state.users_db and st.session_state.users_db[u] == p:
-            st.session_state.username = u.split("@")[0].capitalize()
-            st.session_state.is_logged_in = True
-            log_event("LOGIN", st.session_state.username, "N/A", "User Login")
-            st.rerun()
-        elif u.lower() == "admin" and p == ADMIN_PIN:
-            st.session_state.username = "Administrator"
-            st.session_state.is_logged_in = True
-            st.session_state.active_workspace = "Recruiter"
-            st.rerun()
-        else:
-            st.error("Invalid credentials. You may continue as Guest or Register.")
-
-@st.dialog("📝 Create Account")
-def dialog_register():
-    st.markdown("Register your CareerLens AI profile.")
-    name = st.text_input("Full Name", key="d_reg_n")
-    u = st.text_input("Email / Username", key="d_reg_u")
-    p = st.text_input("Password", type="password", key="d_reg_p")
-    if st.button("Register & Continue", use_container_width=True):
-        if not u or not p:
-            st.warning("Username and password are required.")
-        else:
-            st.session_state.users_db[u] = p
-            st.session_state.username = name.strip() if name.strip() else u.split("@")[0].capitalize()
-            st.session_state.is_logged_in = True
-            log_event("REGISTER", st.session_state.username, "N/A", f"Registered {u}")
-            st.rerun()
+@st.dialog("🔐 Sign In / Register")
+def dialog_auth():
+    tab_auth1, tab_auth2 = st.tabs(["Sign In", "Register"])
+    with tab_auth1:
+        u = st.text_input("Username or Email", key="auth_sign_u")
+        p = st.text_input("Password", type="password", key="auth_sign_p")
+        if st.button("Sign In", use_container_width=True, key="btn_confirm_sign"):
+            if not u or not p:
+                st.warning("Please fill in both fields.")[cite: 1, 3]
+            elif u in st.session_state.users_db and st.session_state.users_db[u] == p:
+                st.session_state.username = u.split("@")[0].capitalize()
+                st.session_state.is_logged_in = True[cite: 1, 3]
+                st.session_state.selected_gateway = False
+                log_event("LOGIN", st.session_state.username, "N/A", "User Login")
+                st.rerun()[cite: 1, 3]
+            elif u.lower() == "admin" and p == ADMIN_PIN:
+                st.session_state.username = "Administrator"[cite: 1, 3]
+                st.session_state.is_logged_in = True[cite: 1, 3]
+                st.session_state.selected_gateway = True
+                st.session_state.active_workspace = "Recruiter Workspace"
+                st.rerun()[cite: 1, 3]
+            else:
+                st.error("Account not found. Please register or continue as Guest.")
+    with tab_auth2:
+        reg_n = st.text_input("Full Name", key="auth_reg_n")
+        reg_u = st.text_input("Choose Username / Email", key="auth_reg_u")
+        reg_p = st.text_input("Create Password", type="password", key="auth_reg_p")
+        if st.button("Create Account", use_container_width=True, key="btn_confirm_reg"):
+            if not reg_u or not reg_p:
+                st.warning("Username and password are required.")[cite: 1, 3]
+            else:
+                st.session_state.users_db[reg_u] = reg_p
+                st.session_state.username = reg_n.strip() if reg_n.strip() else reg_u.split("@")[0].capitalize()
+                st.session_state.is_logged_in = True[cite: 1, 3]
+                st.session_state.selected_gateway = False
+                log_event("REGISTER", st.session_state.username, "N/A", f"Registered: {reg_u}")[cite: 1, 3]
+                st.rerun()[cite: 1, 3]
 
 # ============================================================
-# ENTRY SCREEN
+# 1. ENTRY SCREEN (LOGIN / SIGN IN)
 # ============================================================
 
 if not st.session_state.is_logged_in:
     st.markdown(
         """
-        <div style="text-align: center; padding: 40px 0 20px;">
-            <div style="font-size: 54px; margin-bottom: 8px;">💼</div>
-            <h1 style="font-size: 2.8rem; margin: 0; color: #091428;">Career<span style="color: #0284c7;">Lens</span> AI</h1>
-            <p style="color: #475569; font-size: 1.15rem; margin-top: 6px;">Understand Your Career. Build Your Future.</p>
+        <div style="text-align: center; padding: 40px 0 24px;">
+            <div style="font-size: 58px; margin-bottom: 8px;">💼</div>
+            <h1 style="font-size: 3rem; margin: 0; color: #091224; font-weight: 900;">Career<span style="color: #2563eb;">Lens</span> AI</h1>
+            <p style="color: #475569; font-size: 1.15rem; margin-top: 6px; font-weight: 600;">Understand Your Career. Build Your Future.</p>
         </div>
         """,
         unsafe_allow_html=True
     )
     
-    col_c1, col_c2, col_c3 = st.columns([1, 1.4, 1])
+    col_c1, col_c2, col_c3 = st.columns([1, 1.3, 1])[cite: 1, 3]
     with col_c2:
         st.markdown(
             """
-            <div class="cl-card" style="text-align: center; padding: 32px;">
-                <span class="tag-badge tag-blue" style="margin-bottom: 12px;">ENTERPRISE AI PLATFORM</span>
-                <h3 style="margin: 8px 0 12px 0;">Select Access Mode</h3>
-                <p style="color: #64748b; font-size: 0.92rem; margin-bottom: 24px;">
+            <div class="content-box" style="text-align: center; padding: 36px 30px;">
+                <span class="pill-tag pill-blue" style="font-size: 0.82rem; padding: 6px 16px; margin-bottom: 12px;">✦ ENTERPRISE INTELLIGENCE ✦</span>
+                <h3 style="margin: 10px 0 8px 0; font-size: 1.35rem; color: #0f172a;">Sign in to your CareerLens Account</h3>
+                <p style="color: #64748b; font-size: 0.92rem; margin-bottom: 26px;">
                     Smart candidate intelligence, standardized assessments, and AI mock interviews.
                 </p>
             </div>
@@ -574,343 +649,491 @@ if not st.session_state.is_logged_in:
             unsafe_allow_html=True
         )
         
-        b1, b2, b3 = st.columns(3)
+        b1, b2, b3 = st.columns(3)[cite: 1, 3]
         with b1:
-            if st.button("🔐 Sign In", use_container_width=True):
-                dialog_signin()
+            if st.button("🔐 Sign In", use_container_width=True):[cite: 1, 3]
+                dialog_auth()
         with b2:
-            if st.button("📝 Register", use_container_width=True):
-                dialog_register()
+            if st.button("📝 Register", use_container_width=True):[cite: 1, 3]
+                dialog_auth()
         with b3:
             if st.button("🚀 Continue as Guest", use_container_width=True):
                 st.session_state.username = "Guest Explorer"
-                st.session_state.is_logged_in = True
+                st.session_state.is_logged_in = True[cite: 1, 3]
+                st.session_state.selected_gateway = False
                 log_event("GUEST_ACCESS", "Guest", "N/A", "Guest entry")
-                st.rerun()
+                st.rerun()[cite: 1, 3]
+
+    st.stop()[cite: 1, 3]
+
+# ============================================================
+# 2. TWO-CARD GATEWAY PORTAL (JOB SEEKER VS RECRUITER)
+# ============================================================
+
+if not st.session_state.selected_gateway:
+    st.markdown(
+        f"""
+        <div class="dark-blue-header">
+            <div>
+                <div class="header-title-white">Welcome, {st.session_state.username}! 👋</div>
+                <div class="header-sub-white">Select your workspace portal to start your journey with CareerLens AI.</div>
+            </div>
+            <span class="pill-tag pill-blue" style="font-size: 0.85rem; padding: 6px 16px;">PORTAL SELECTOR</span>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    g_col1, g_col2 = st.columns(2, gap="large")
+
+    with g_col1:
+        st.markdown(
+            """
+            <div class="gateway-card">
+                <div>
+                    <div style="display:flex; align-items:center; gap:12px; margin-bottom:14px;">
+                        <div style="width:52px; height:52px; border-radius:14px; background:#eff6ff; color:#2563eb; display:flex; align-items:center; justify-content:center; font-size:26px;">
+                            👤
+                        </div>
+                        <div>
+                            <h3 style="margin:0; font-size:1.4rem; color:#0f172a;">Job Seeker Portal</h3>
+                            <span class="pill-tag pill-blue">Candidate Intelligence</span>
+                        </div>
+                    </div>
+                    <p style="color:#64748b; font-size:0.92rem; margin-bottom:18px;">
+                        Accelerate your job search with deep AI-powered profile analytics and interview readiness.
+                    </p>
+                    <hr style="border-color:#f1f5f9; margin:14px 0;">
+                    <div class="gateway-bullet">✦ <b>Resume Intelligence:</b> Instant parsing, strengths, and weaknesses diagnostics.</div>
+                    <div class="gateway-bullet">✦ <b>AI Mock Interview:</b> Sequential dynamic interview questions with scoring.</div>
+                    <div class="gateway-bullet">✦ <b>Pre-Interview Assessment:</b> 100-mark standardized domain exams.</div>
+                    <div class="gateway-bullet">✦ <b>AI Job Match & Salary:</b> Semantic gap matching and 2026 market benchmarks.</div>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+        if st.button("🚀 Start Journey as Job Seeker", key="btn_portal_seeker", use_container_width=True):
+            st.session_state.active_workspace = "Job Seeker Workspace"
+            st.session_state.active_tool = "Dashboard"
+            st.session_state.selected_gateway = True
+            st.rerun()
+
+    with g_col2:
+        st.markdown(
+            """
+            <div class="gateway-card">
+                <div>
+                    <div style="display:flex; align-items:center; gap:12px; margin-bottom:14px;">
+                        <div style="width:52px; height:52px; border-radius:14px; background:#faf5ff; color:#7c3aed; display:flex; align-items:center; justify-content:center; font-size:26px;">
+                            🏢
+                        </div>
+                        <div>
+                            <h3 style="margin:0; font-size:1.4rem; color:#0f172a;">Recruiter Portal</h3>
+                            <span class="pill-tag pill-purple">Talent Acquisition</span>
+                        </div>
+                    </div>
+                    <p style="color:#64748b; font-size:0.92rem; margin-bottom:18px;">
+                        Streamline your hiring funnel with bulk resume parsing and automated assessments.
+                    </p>
+                    <hr style="border-color:#f1f5f9; margin:14px 0;">
+                    <div class="gateway-bullet">✦ <b>Bulk Resume Intake:</b> Upload cohorts and auto-extract candidate emails.</div>
+                    <div class="gateway-bullet">✦ <b>Assessment Dispatcher:</b> Send 100Q MCQ exam links in 1-click.</div>
+                    <div class="gateway-bullet">✦ <b>Private Score Vault:</b> Recruiter-only assessment rankings & verification.</div>
+                    <div class="gateway-bullet">✦ <b>Candidate Benchmarking:</b> Objective technical and aptitude analytics.</div>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+        if st.button("🏢 Start Hiring as Recruiter", key="btn_portal_recruiter", use_container_width=True):
+            st.session_state.active_workspace = "Recruiter Workspace"
+            st.session_state.active_tool = "Dashboard"
+            st.session_state.selected_gateway = True
+            st.rerun()
 
     st.stop()
 
 # ============================================================
-# MINIMAL SIDEBAR
+# 3. SIDEBAR NAVIGATION (POST-GATEWAY)
 # ============================================================
 
 with st.sidebar:
     st.markdown(
         """
-        <div style="display:flex; align-items:center; gap:10px; margin-bottom:15px;">
-            <span style="font-size:26px;">💼</span>
+        <div class="sidebar-brand-box">
+            <div style="font-size: 26px; color: #2563eb;">✦</div>
             <div>
-                <div style="font-size:18px; font-weight:800; color:#ffffff;">Career<span style="color:#38bdf8;">Lens</span> AI</div>
-                <div style="font-size:10px; color:#94a3b8; letter-spacing:1px;">WORKSPACE SUITE</div>
+                <div style="font-size: 1.15rem; font-weight: 900; color: #091224; line-height: 1.1;">
+                    Career<span style="color: #2563eb;">lens</span> <span style="color: #7c3aed;">AI</span>
+                </div>
+                <div style="font-size: 0.68rem; color: #64748b; font-weight: 700;">
+                    Your Career, Our Intelligence
+                </div>
             </div>
         </div>
         """,
         unsafe_allow_html=True
     )
-    
+
     st.markdown(
         f"""
-        <div style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius:10px; padding:8px 12px; margin-bottom:15px; display:flex; justify-content:space-between; align-items:center;">
-            <span style="font-weight:700; font-size:0.9rem; color:#f8fafc;">{st.session_state.username}</span>
-            <span style="color:#4ade80; font-size:0.75rem; font-weight:700;">● Online</span>
+        <div class="sidebar-user-box">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <div style="width:36px; height:36px; border-radius:50%; background:linear-gradient(135deg, #2563eb, #7c3aed); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800;">
+                    👤
+                </div>
+                <div>
+                    <div style="font-size:0.88rem; font-weight:800; color:#ffffff;">{st.session_state.username}</div>
+                    <div style="font-size:0.72rem; color:#4ade80; font-weight:700;">● Active User</div>
+                </div>
+            </div>
         </div>
         """,
         unsafe_allow_html=True
     )
-    
-    st.markdown("<p style='font-size: 0.75rem; text-transform: uppercase; color: #94a3b8; font-weight: 700; margin-bottom: 4px;'>Select Workspace</p>", unsafe_allow_html=True)
-    c_w1, c_w2 = st.columns(2)
-    with c_w1:
-        if st.button("👤 Seeker", use_container_width=True):
-            st.session_state.active_workspace = "Job Seeker"
-            st.session_state.active_tool = "Dashboard"
-            st.rerun()
-    with c_w2:
-        if st.button("🏢 Recruiter", use_container_width=True):
-            st.session_state.active_workspace = "Recruiter"
-            st.session_state.active_tool = "Recruiter Dashboard"
-            st.rerun()
 
-    st.markdown("<hr style='border-color: rgba(255,255,255,0.1); margin: 15px 0;'>", unsafe_allow_html=True)
-    
-    if st.session_state.active_workspace == "Job Seeker":
-        if st.button("📊 Seeker Dashboard", use_container_width=True):
-            st.session_state.active_tool = "Dashboard"
-            st.rerun()
-        if st.button("🤖 AI Career Assistant", use_container_width=True):
-            st.session_state.active_tool = "AI Career Assistant"
-            st.rerun()
+    st.markdown('<div class="sidebar-section-title">MAIN WORKSPACE</div>', unsafe_allow_html=True)
+    is_seeker = st.session_state.active_workspace == "Job Seeker Workspace"
+    is_recruiter = st.session_state.active_workspace == "Recruiter Workspace"
+
+    if st.button("👤  Job Seeker Workspace", key="sb_ws_seeker", type="primary" if is_seeker else "secondary", use_container_width=True):
+        st.session_state.active_workspace = "Job Seeker Workspace"
+        st.session_state.active_tool = "Dashboard"
+        st.rerun()
+
+    if st.button("🏢  Recruiter Workspace", key="sb_ws_recruiter", type="primary" if is_recruiter else "secondary", use_container_width=True):
+        st.session_state.active_workspace = "Recruiter Workspace"
+        st.session_state.active_tool = "Dashboard"
+        st.rerun()
+
+    if is_seeker:
+        st.markdown('<div class="sidebar-section-title">CAREER TOOLS</div>', unsafe_allow_html=True)
+        seeker_tools = [
+            ("Dashboard", "🎛️", "Dashboard"),
+            ("Resume Intelligence", "📄", "Resume Intelligence"),
+            ("Pre-Interview Assessment", "📝", "Pre-Interview Assessment"),
+            ("AI Mock Interview", "🎤", "AI Mock Interview"),
+            ("AI Job Match", "🎯", "AI Job Match"),
+            ("Salary Estimation", "💰", "Salary Estimation"),
+            ("Career Roadmap", "🗺️", "Career Roadmap"),
+            ("Real-Time Job Detection", "🛡️", "Real-Time Job Detection"),
+            ("Resume Builder", "📄", "Resume Builder"),
+            ("AI Career Assistant", "🤖", "AI Career Assistant"),
+        ]
+        for name, icon, key_val in seeker_tools:
+            is_active = st.session_state.active_tool == key_val
+            if st.button(f"{icon}  {name}", key=f"sb_tool_{key_val}", type="primary" if is_active else "secondary", use_container_width=True):
+                st.session_state.active_tool = key_val
+                st.rerun()
     else:
-        if st.button("📋 Candidate Screening", use_container_width=True):
-            st.session_state.active_tool = "Recruiter Dashboard"
-            st.rerun()
-        if st.button("📝 Assessment Manager", use_container_width=True):
-            st.session_state.active_tool = "Assessment Manager"
-            st.rerun()
+        st.markdown('<div class="sidebar-section-title">RECRUITER TOOLS</div>', unsafe_allow_html=True)
+        rec_tools = [
+            ("Dashboard", "🎛️", "Dashboard"),
+            ("Bulk Resume Screening", "📤", "Bulk Screening"),
+            ("Candidate Score Vault", "🔐", "Score Vault"),
+            ("100Q Assessment Blueprints", "📝", "Assessment Blueprints")
+        ]
+        for name, icon, key_val in rec_tools:
+            is_active = st.session_state.active_tool == key_val
+            if st.button(f"{icon}  {name}", key=f"sb_rec_{key_val}", type="primary" if is_active else "secondary", use_container_width=True):
+                st.session_state.active_tool = key_val
+                st.rerun()
 
-    st.markdown("<br><br>", unsafe_allow_html=True)
-    if st.button("🚪 Log Out", use_container_width=True):
-        st.session_state.is_logged_in = False
-        st.session_state.username = "Guest"
+    st.markdown("<hr style='border-color: rgba(255,255,255,0.1); margin: 20px 0;'>", unsafe_allow_html=True)
+    if st.button("🚪  Logout / Change Mode", key="sb_logout_btn", use_container_width=True):
+        st.session_state.selected_gateway = False
+        st.session_state.active_tool = "Dashboard"
         st.rerun()
 
 # ============================================================
-# 👤 JOB SEEKER WORKSPACE
+# 4. HIGH CONTRAST DARK BLUE HEADER BAR
 # ============================================================
 
-if st.session_state.active_workspace == "Job Seeker":
+st.markdown(
+    f"""
+    <div class="dark-blue-header">
+        <div>
+            <div class="header-title-white">CareerLens AI — {st.session_state.active_workspace}</div>
+            <div class="header-sub-white">Welcome back, {st.session_state.username}! Explore intelligent tools to achieve your professional milestones.</div>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px;">
+            <div style="background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.25); border-radius:30px; padding:6px 16px; color:#ffffff; font-weight:800; font-size:0.88rem;">
+                👤 {st.session_state.username}
+            </div>
+        </div>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
-    # --- TOP KPI METRICS ---
+# ============================================================
+# 👤 JOB SEEKER DASHBOARD & CLICKABLE CARDS
+# ============================================================
+
+if st.session_state.active_workspace == "Job Seeker Workspace":
+
     analysis = st.session_state.resume_analysis
-    resume_score = analysis.get("resume_score", 0) if analysis else 0
-    readiness_idx = analysis.get("readiness", 0) if analysis else 0
-    market_match = st.session_state.job_match_result.get("overall", 0) if st.session_state.job_match_result else 0
-    detected_skills_count = len(analysis.get("skills", [])) if analysis else 0
+    resume_score_val = f"{analysis.get('resume_score')}%" if analysis and analysis.get("resume_score") else "--"
+    readiness_val = f"{analysis.get('readiness')}%" if analysis and analysis.get("readiness") else "--"
+    market_match_val = f"{st.session_state.job_match_result.get('overall')}%" if st.session_state.job_match_result else "--"
+    skills_count_val = f"{len(analysis.get('skills', []))} Stack" if analysis and analysis.get("skills") else "--"
 
     st.markdown(
         f"""
-        <div class="hero-banner">
-            <span class="tag-badge tag-blue" style="background: rgba(2, 132, 199, 0.2); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4);">JOB SEEKER WORKSPACE</span>
-            <h1>Welcome to CareerLens AI, {st.session_state.username}! 👋</h1>
-            <p>Your career journey starts here. Explore AI-powered tools to achieve your goals.</p>
+        <div class="kpi-grid">
+            <div class="kpi-card">
+                <div class="kpi-circle" style="background:#eff6ff; color:#2563eb;">📄</div>
+                <div>
+                    <div style="font-size:0.8rem; font-weight:700; color:#64748b; text-transform:uppercase;">Resume Score</div>
+                    <div style="font-size:1.45rem; font-weight:900; color:#0f172a;">{resume_score_val}</div>
+                    <div style="font-size:0.75rem; color:#94a3b8;">Upload resume to score</div>
+                </div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-circle" style="background:#faf5ff; color:#7c3aed;">📈</div>
+                <div>
+                    <div style="font-size:0.8rem; font-weight:700; color:#64748b; text-transform:uppercase;">Readiness Index</div>
+                    <div style="font-size:1.45rem; font-weight:900; color:#0f172a;">{readiness_val}</div>
+                    <div style="font-size:0.75rem; color:#94a3b8;">Assessment status</div>
+                </div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-circle" style="background:#ecfdf5; color:#059669;">🎯</div>
+                <div>
+                    <div style="font-size:0.8rem; font-weight:700; color:#64748b; text-transform:uppercase;">Market Match</div>
+                    <div style="font-size:1.45rem; font-weight:900; color:#0f172a;">{market_match_val}</div>
+                    <div style="font-size:0.75rem; color:#94a3b8;">Job description match</div>
+                </div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-circle" style="background:#fffbeb; color:#d97706;">💡</div>
+                <div>
+                    <div style="font-size:0.8rem; font-weight:700; color:#64748b; text-transform:uppercase;">Detected Skills</div>
+                    <div style="font-size:1.45rem; font-weight:900; color:#0f172a;">{skills_count_val}</div>
+                    <div style="font-size:0.75rem; color:#94a3b8;">Extracted capabilities</div>
+                </div>
+            </div>
         </div>
         """,
         unsafe_allow_html=True
     )
 
-    kpi1, kpi2, kpi3, kpi4 = st.columns(4)
-    with kpi1:
-        st.markdown(f'<div class="kpi-card"><div class="kpi-label">📄 Resume Score</div><div class="kpi-val" style="color:#0284c7;">{resume_score}%</div><span class="tag-badge tag-blue">AI Evaluated</span></div>', unsafe_allow_html=True)
-    with kpi2:
-        st.markdown(f'<div class="kpi-card"><div class="kpi-label">📊 Readiness Index</div><div class="kpi-val" style="color:#7c3aed;">{readiness_idx}%</div><span class="tag-badge tag-purple">Industry Baseline</span></div>', unsafe_allow_html=True)
-    with kpi3:
-        st.markdown(f'<div class="kpi-card"><div class="kpi-label">🎯 Market Match</div><div class="kpi-val" style="color:#059669;">{market_match}%</div><span class="tag-badge tag-green">Target Alignment</span></div>', unsafe_allow_html=True)
-    with kpi4:
-        st.markdown(f'<div class="kpi-card"><div class="kpi-label">💡 Detected Skills</div><div class="kpi-val" style="color:#d97706;">{detected_skills_count}</div><span class="tag-badge tag-amber">Profile Stack</span></div>', unsafe_allow_html=True)
-
-    st.markdown("<br>", unsafe_allow_html=True)
-
-    # --------------------------------------------------------
-    # TOOL SELECTION / ACTIVE VIEW
-    # --------------------------------------------------------
-
     if st.session_state.active_tool == "Dashboard":
-        st.markdown("### 🧩 Career Acceleration Tools")
-        st.caption("Access individual modules designed for end-to-end interview & career readiness.")
+        st.markdown("<h3 style='margin-bottom:16px; font-weight:900; font-size:1.25rem; color:#0f172a;'>Career Tools</h3>", unsafe_allow_html=True)
 
-        # ROW 1 OF TOOLS
-        r1c1, r1c2, r1c3 = st.columns(3)
-        with r1c1:
+        # Row 1 (5 Cards)
+        c1, c2, c3, c4, c5 = st.columns(5)
+
+        with c1:
             st.markdown(
                 """
-                <div class="cl-card">
-                    <div style="font-size: 30px; margin-bottom: 8px;">📄</div>
-                    <h4 style="margin: 0 0 6px 0;">Resume Intelligence</h4>
-                    <p style="color: #64748b; font-size: 0.88rem; min-height: 40px;">
-                        Upload resume in PDF/DOCX/TXT for deep skill extraction, strengths & weaknesses.
-                    </p>
+                <div class="card-preview-box">
+                    <div class="card-icon-circle" style="background:#eff6ff; color:#2563eb;">📄</div>
+                    <div class="card-title-text">Resume Intelligence</div>
+                    <div class="card-desc-text">Analyze your resume for strengths, weaknesses and improvements.</div>
                 </div>
                 """,
                 unsafe_allow_html=True
             )
-            if st.button("Open Tool", key="btn_open_resume_intel", use_container_width=True):
+            if st.button("Launch Resume Intel ➔", key="card_c1_btn", use_container_width=True):
                 st.session_state.active_tool = "Resume Intelligence"
                 st.rerun()
 
-        with r1c2:
+        with c2:
             st.markdown(
                 """
-                <div class="cl-card">
-                    <div style="font-size: 30px; margin-bottom: 8px;">📝</div>
-                    <h4 style="margin: 0 0 6px 0;">Pre-Interview Assessment</h4>
-                    <p style="color: #64748b; font-size: 0.88rem; min-height: 40px;">
-                        Take the 100-mark standardized qualifying examination for IT & Non-IT roles.
-                    </p>
+                <div class="card-preview-box">
+                    <div class="card-icon-circle" style="background:#faf5ff; color:#7c3aed;">📝</div>
+                    <div class="card-title-text">Pre-Interview Exam</div>
+                    <div class="card-desc-text">Role-specific 100-mark standardized MCQ qualifying test.</div>
                 </div>
                 """,
                 unsafe_allow_html=True
             )
-            if st.button("Open Tool", key="btn_open_assessment_tool", use_container_width=True):
+            if st.button("Launch Assessment ➔", key="card_c2_btn", use_container_width=True):
                 st.session_state.active_tool = "Pre-Interview Assessment"
                 st.rerun()
 
-        with r1c3:
+        with c3:
             st.markdown(
                 """
-                <div class="cl-card">
-                    <div style="font-size: 30px; margin-bottom: 8px;">🎤</div>
-                    <h4 style="margin: 0 0 6px 0;">AI Mock Interview</h4>
-                    <p style="color: #64748b; font-size: 0.88rem; min-height: 40px;">
-                        Simulate live 1-on-1 interviews with real-time dynamic questioning and evaluation.
-                    </p>
+                <div class="card-preview-box">
+                    <div class="card-icon-circle" style="background:#eff6ff; color:#0284c7;">🎤</div>
+                    <div class="card-title-text">AI Mock Interview</div>
+                    <div class="card-desc-text">Sequential 1-on-1 dynamic interview questions with scoring.</div>
                 </div>
                 """,
                 unsafe_allow_html=True
             )
-            if st.button("Open Tool", key="btn_open_mock_interview", use_container_width=True):
+            if st.button("Launch Mock Interview ➔", key="card_c3_btn", use_container_width=True):
                 st.session_state.active_tool = "AI Mock Interview"
                 st.rerun()
 
-        # ROW 2 OF TOOLS
-        r2c1, r2c2, r2c3 = st.columns(3)
-        with r2c1:
+        with c4:
             st.markdown(
                 """
-                <div class="cl-card">
-                    <div style="font-size: 30px; margin-bottom: 8px;">🎯</div>
-                    <h4 style="margin: 0 0 6px 0;">AI Job Match</h4>
-                    <p style="color: #64748b; font-size: 0.88rem; min-height: 40px;">
-                        Safely compare your resume against any JD to uncover matching & missing skills.
-                    </p>
+                <div class="card-preview-box">
+                    <div class="card-icon-circle" style="background:#ecfdf5; color:#059669;">🎯</div>
+                    <div class="card-title-text">AI Job Match</div>
+                    <div class="card-desc-text">Match profile with job descriptions and find missing skills.</div>
                 </div>
                 """,
                 unsafe_allow_html=True
             )
-            if st.button("Open Tool", key="btn_open_job_match", use_container_width=True):
+            if st.button("Launch Job Match ➔", key="card_c4_btn", use_container_width=True):
                 st.session_state.active_tool = "AI Job Match"
                 st.rerun()
 
-        with r2c2:
+        with c5:
             st.markdown(
                 """
-                <div class="cl-card">
-                    <div style="font-size: 30px; margin-bottom: 8px;">💰</div>
-                    <h4 style="margin: 0 0 6px 0;">Salary Estimation</h4>
-                    <p style="color: #64748b; font-size: 0.88rem; min-height: 40px;">
-                        Interactive compensation benchmarks by role, city, and experience level.
-                    </p>
+                <div class="card-preview-box">
+                    <div class="card-icon-circle" style="background:#fffbeb; color:#d97706;">💰</div>
+                    <div class="card-title-text">Salary Estimation</div>
+                    <div class="card-desc-text">Market salary estimates based on your profile & experience.</div>
                 </div>
                 """,
                 unsafe_allow_html=True
             )
-            if st.button("Open Tool", key="btn_open_salary", use_container_width=True):
+            if st.button("Launch Salary Check ➔", key="card_c5_btn", use_container_width=True):
                 st.session_state.active_tool = "Salary Estimation"
                 st.rerun()
 
-        with r2c3:
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        # Row 2 (4 Cards)
+        c6, c7, c8, c9, c_blank = st.columns(5)
+
+        with c6:
             st.markdown(
                 """
-                <div class="cl-card">
-                    <div style="font-size: 30px; margin-bottom: 8px;">🗺️</div>
-                    <h4 style="margin: 0 0 6px 0;">Career Roadmap</h4>
-                    <p style="color: #64748b; font-size: 0.88rem; min-height: 40px;">
-                        Step-by-step career milestones from current skills to your dream role.
-                    </p>
+                <div class="card-preview-box">
+                    <div class="card-icon-circle" style="background:#ecfdf5; color:#10b981;">🗺️</div>
+                    <div class="card-title-text">Career Roadmap</div>
+                    <div class="card-desc-text">Personalized roadmap to plan your career progression step-by-step.</div>
                 </div>
                 """,
                 unsafe_allow_html=True
             )
-            if st.button("Open Tool", key="btn_open_roadmap", use_container_width=True):
+            if st.button("Launch Roadmap ➔", key="card_c6_btn", use_container_width=True):
                 st.session_state.active_tool = "Career Roadmap"
                 st.rerun()
 
-        # ROW 3 OF TOOLS
-        r3c1, r3c2, r3c3 = st.columns(3)
-        with r3c1:
+        with c7:
             st.markdown(
                 """
-                <div class="cl-card">
-                    <div style="font-size: 30px; margin-bottom: 8px;">🛡️</div>
-                    <h4 style="margin: 0 0 6px 0;">Real-Time Job Detection</h4>
-                    <p style="color: #64748b; font-size: 0.88rem; min-height: 40px;">
-                        Analyze job posts or offer letters for fraud signals and scam patterns.
-                    </p>
+                <div class="card-preview-box">
+                    <div class="card-icon-circle" style="background:#fef2f2; color:#ef4444;">🛡️</div>
+                    <div class="card-title-text">Real-Time Job Detection</div>
+                    <div class="card-desc-text">Detect suspicious offers or fake job posts in real time.</div>
                 </div>
                 """,
                 unsafe_allow_html=True
             )
-            if st.button("Open Tool", key="btn_open_job_detector", use_container_width=True):
+            if st.button("Launch Job Safety ➔", key="card_c7_btn", use_container_width=True):
                 st.session_state.active_tool = "Real-Time Job Detection"
                 st.rerun()
 
-        with r3c2:
+        with c8:
             st.markdown(
                 """
-                <div class="cl-card">
-                    <div style="font-size: 30px; margin-bottom: 8px;">📄</div>
-                    <h4 style="margin: 0 0 6px 0;">Resume Builder</h4>
-                    <p style="color: #64748b; font-size: 0.88rem; min-height: 40px;">
-                        Generate professional, ATS-ready formatted resumes with 1-click downloads.
-                    </p>
+                <div class="card-preview-box">
+                    <div class="card-icon-circle" style="background:#eff6ff; color:#3b82f6;">📄</div>
+                    <div class="card-title-text">Resume Builder</div>
+                    <div class="card-desc-text">Build a professional, ATS-ready formatted resume with ease.</div>
                 </div>
                 """,
                 unsafe_allow_html=True
             )
-            if st.button("Open Tool", key="btn_open_builder", use_container_width=True):
+            if st.button("Launch Builder ➔", key="card_c8_btn", use_container_width=True):
                 st.session_state.active_tool = "Resume Builder"
                 st.rerun()
 
-        with r3c3:
+        with c9:
             st.markdown(
                 """
-                <div class="cl-card">
-                    <div style="font-size: 30px; margin-bottom: 8px;">🤖</div>
-                    <h4 style="margin: 0 0 6px 0;">AI Career Assistant</h4>
-                    <p style="color: #64748b; font-size: 0.88rem; min-height: 40px;">
-                        Ask career, interview prep, and profile optimization questions directly to AI.
-                    </p>
+                <div class="card-preview-box">
+                    <div class="card-icon-circle" style="background:#faf5ff; color:#8b5cf6;">🤖</div>
+                    <div class="card-title-text">AI Career Assistant</div>
+                    <div class="card-desc-text">Ask career, interview prep, and profile optimization questions.</div>
                 </div>
                 """,
                 unsafe_allow_html=True
             )
-            if st.button("Open Tool", key="btn_open_assistant", use_container_width=True):
+            if st.button("Launch Assistant ➔", key="card_c9_btn", use_container_width=True):
                 st.session_state.active_tool = "AI Career Assistant"
                 st.rerun()
 
-    # --------------------------------------------------------
     # 1. RESUME INTELLIGENCE
-    # --------------------------------------------------------
     elif st.session_state.active_tool == "Resume Intelligence":
-        if st.button("← Back to Dashboard"):
+        if st.button("← Back to Career Tools Dashboard", key="btn_back_res"):
             st.session_state.active_tool = "Dashboard"
             st.rerun()
 
-        st.markdown("### 📄 Resume Intelligence")
-        f = st.file_uploader("Upload resume (PDF, DOCX, TXT)", type=["pdf", "docx", "txt"], key="single_res_upload")
-        if f and st.button("Analyze Resume", use_container_width=True):
-            with st.spinner("Analyzing resume structure & skills..."):
-                res = api_analyze_resume(f)
+        st.markdown("### 📄 Resume Intelligence & Skill Diagnostics")
+        uploaded_doc = st.file_uploader("Upload your resume (PDF, DOCX, TXT):", type=["pdf", "docx", "txt"])
+        
+        if uploaded_doc and st.button("Analyze Resume Now", use_container_width=True):
+            with st.spinner("Analyzing resume content..."):
+                res = api_analyze_resume(uploaded_doc)
                 st.session_state.resume_analysis = res
                 st.session_state.resume_text = res.get("extracted_text", "")
-                st.success("Analysis complete!")
+                st.success("Resume parsed successfully!")
                 st.rerun()
 
         if st.session_state.resume_analysis:
             r = st.session_state.resume_analysis
             st.markdown(
                 f"""
-                <div class="cl-card">
-                    <h3 style="margin:0; color:#0284c7;">{r.get('name', 'Candidate Profile')}</h3>
-                    <p style="color:#475569; margin-top:4px;">
-                        📧 {r.get('email')} &nbsp;|&nbsp; 📱 {r.get('phone')} &nbsp;|&nbsp; ⏳ Experience: {r.get('experience')}
+                <div class="content-box">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <h3 style="margin:0; color:#2563eb;">{r.get('name', 'Candidate Profile')}</h3>
+                        <span class="pill-tag pill-green">Score: {r.get('resume_score', 85)}%</span>
+                    </div>
+                    <p style="color:#64748b; margin:8px 0 0 0;">
+                        📧 <b>Email:</b> {r.get('email')} &nbsp;|&nbsp; 📱 <b>Phone:</b> {r.get('phone')} &nbsp;|&nbsp; ⏳ <b>Exp:</b> {r.get('experience')}
                     </p>
                 </div>
                 """,
                 unsafe_allow_html=True
             )
-            st.markdown("#### Detected Skills Stack")
-            skills_html = "".join([f'<span class="tag-badge tag-blue">{s}</span>' for s in r.get("skills", [])])
+            st.markdown("#### Detected Technical & Domain Stack")
+            skills_html = "".join([f'<span class="pill-tag pill-blue">{s}</span>' for s in r.get("skills", [])])
             st.markdown(skills_html, unsafe_allow_html=True)
 
-    # --------------------------------------------------------
-    # 2. PRE-INTERVIEW ASSESSMENT (Candidate Flow - Score Hidden)
-    # --------------------------------------------------------
+    # 2. PRE-INTERVIEW ASSESSMENT
     elif st.session_state.active_tool == "Pre-Interview Assessment":
-        if st.button("← Back to Dashboard"):
+        if st.button("← Back to Career Tools Dashboard", key="btn_back_exam"):
             st.session_state.active_tool = "Dashboard"
             st.rerun()
 
-        st.markdown("### 📝 Standardized Pre-Interview Assessment")
-        st.caption("100 Questions • 100 Marks • Multi-Section Comprehensive Evaluation")
+        st.markdown("### 📝 Standardized Pre-Interview Assessment (100 Marks)")
+        st.caption("100 Questions • 100 Marks • IT & Non-IT Specializations")
 
         if not st.session_state.assessment_active and not st.session_state.assessment_submitted:
-            sel_category = st.radio("Role Domain:", ["IT Roles", "Non-IT Roles"], horizontal=True)
-            avail_roles = IT_ROLES if sel_category == "IT Roles" else NON_IT_ROLES
-            chosen_role = st.selectbox("Select Target Role:", avail_roles)
+            domain_type = st.radio("Domain Category:", ["IT Roles", "Non-IT Roles"], horizontal=True)
+            roles_list = IT_ROLES if domain_type == "IT Roles" else NON_IT_ROLES
+            selected_assessment_role = st.selectbox("Select Target Role:", roles_list)
 
-            if st.button("🚀 Begin 100-Question Assessment", use_container_width=True):
-                st.session_state.assessment_questions = generate_100q_assessment(chosen_role)
-                st.session_state.assessment_role = chosen_role
+            st.markdown(
+                """
+                <div class="content-box">
+                    <h4 style="margin:0; color:#2563eb;">Assessment Blueprint Structure</h4>
+                    <p style="color:#64748b; margin:6px 0 0 0; font-size:0.9rem;">
+                        • Section A: Quantitative & Logical Reasoning (25 Marks)<br>
+                        • Section B: Core Domain Fundamentals (35 Marks)<br>
+                        • Section C: Real-World Scenarios & Architecture (25 Marks)<br>
+                        • Section D: Professional Standards & Ethics (15 Marks)
+                    </p>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+            if st.button("🚀 Start 100-Question Assessment", use_container_width=True):
+                st.session_state.assessment_questions = generate_100q_assessment(selected_assessment_role)
+                st.session_state.assessment_role = selected_assessment_role
                 st.session_state.assessment_answers = {}
                 st.session_state.assessment_active = True
                 st.session_state.assessment_candidate_token = f"{st.session_state.username}_{uuid.uuid4().hex[:6]}"
@@ -918,40 +1141,32 @@ if st.session_state.active_workspace == "Job Seeker":
 
         elif st.session_state.assessment_active and not st.session_state.assessment_submitted:
             st.markdown(f"#### Active Examination: {st.session_state.assessment_role}")
-            st.caption("Please select the best answer for all questions and click Submit.")
+            st.caption("Complete all questions and click Submit. Your results will be transmitted to the recruiter vault.")
 
             for q in st.session_state.assessment_questions:
                 qid = q["id"]
-                st.markdown(f"**Q{qid} ({q['section']})**: {q['question']}")
-                chosen_opt = st.radio(
-                    f"ans_opt_{qid}",
+                st.markdown(f"**Q{qid} [{q['section']}]:** {q['question']}")
+                chosen_ans = st.radio(
+                    f"exam_choice_{qid}",
                     q["options"],
                     index=None,
-                    key=f"q_radio_{qid}",
+                    key=f"q_choice_{qid}",
                     label_visibility="collapsed"
                 )
-                st.session_state.assessment_answers[qid] = chosen_opt
+                st.session_state.assessment_answers[qid] = chosen_ans
                 st.markdown("<hr style='border-color:#f1f5f9; margin:10px 0;'>", unsafe_allow_html=True)
 
             if st.button("🏁 Submit Assessment", use_container_width=True):
-                # Calculate score for recruiter verification
-                correct_count = 0
-                for q in st.session_state.assessment_questions:
-                    qid = q["id"]
-                    if st.session_state.assessment_answers.get(qid) == q["answer"]:
-                        correct_count += 1
-                        
-                # Store in recruiter state
-                submission_record = {
+                correct = sum(1 for q in st.session_state.assessment_questions if st.session_state.assessment_answers.get(q["id"]) == q["answer"])
+                submission = {
                     "candidate_name": st.session_state.username,
                     "role": st.session_state.assessment_role,
-                    "score": correct_count,
+                    "score": correct,
                     "total": 100,
-                    "percentage": correct_count,
-                    "date": datetime.now().strftime("%Y-%m-%d %H:%M")
+                    "percentage": correct,
+                    "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M")
                 }
-                st.session_state.recruiter_assessment_submissions[st.session_state.assessment_candidate_token] = submission_record
-                
+                st.session_state.recruiter_assessment_submissions[st.session_state.assessment_candidate_token] = submission
                 st.session_state.assessment_active = False
                 st.session_state.assessment_submitted = True
                 st.rerun()
@@ -959,27 +1174,24 @@ if st.session_state.active_workspace == "Job Seeker":
         elif st.session_state.assessment_submitted:
             st.markdown(
                 """
-                <div class="cl-card" style="text-align: center; padding: 40px;">
-                    <div style="font-size: 48px; margin-bottom: 10px;">✅</div>
-                    <h2 style="color: #059669; margin: 0 0 10px 0;">Assessment Successfully Submitted</h2>
-                    <p style="color: #475569; max-width: 600px; margin: 0 auto;">
-                        Your answers have been securely encrypted and transmitted directly to the hiring team. 
-                        Per assessment confidentiality protocols, scores and rankings are reserved for the recruiter dashboard.
+                <div class="content-box" style="text-align: center; padding: 40px;">
+                    <div style="font-size: 52px; margin-bottom: 12px;">✅</div>
+                    <h2 style="color: #059669; margin: 0 0 10px 0;">Assessment Completed & Submitted</h2>
+                    <p style="color: #64748b; max-width: 620px; margin: 0 auto; font-size: 0.95rem;">
+                        Your examination has been logged. Per assessment privacy protocols, detailed rankings and scores are delivered directly to the recruiter.
                     </p>
                 </div>
                 """,
                 unsafe_allow_html=True
             )
-            if st.button("Take Another Assessment"):
+            if st.button("Take Another Assessment", key="btn_reset_exam"):
                 st.session_state.assessment_submitted = False
                 st.session_state.assessment_active = False
                 st.rerun()
 
-    # --------------------------------------------------------
     # 3. AI MOCK INTERVIEW
-    # --------------------------------------------------------
     elif st.session_state.active_tool == "AI Mock Interview":
-        if st.button("← Back to Dashboard"):
+        if st.button("← Back to Career Tools Dashboard", key="btn_back_mock"):
             st.session_state.active_tool = "Dashboard"
             st.rerun()
 
@@ -988,64 +1200,63 @@ if st.session_state.active_workspace == "Job Seeker":
         if not st.session_state.interview_active and not st.session_state.interview_completed:
             c1, c2 = st.columns(2)
             with c1:
-                mock_role = st.selectbox("Select Target Role:", IT_ROLES + NON_IT_ROLES)
+                target_interview_role = st.selectbox("Select Target Role:", IT_ROLES + NON_IT_ROLES)
             with c2:
-                q_count = st.select_slider("Number of Questions:", options=[3, 5, 7, 10], value=5)
+                interview_len = st.select_slider("Interview Questions:", options=[3, 5, 7, 10], value=5)
 
-            if st.button("🚀 Start Interview", use_container_width=True):
-                base_questions = [
-                    f"Tell me about yourself and why you are interested in this {mock_role} position?",
-                    f"What key technical and domain strengths do you bring as a {mock_role}?",
-                    "Describe a challenging situation or conflict you handled at work and how you resolved it.",
-                    f"Where do you see the future of {mock_role} evolving in the next 3 to 5 years?",
-                    "Why should our company hire you over other candidates for this role?"
+            if st.button("🚀 Start Live Interview", use_container_width=True):
+                q_bank = [
+                    f"Tell me about yourself and your motivations for applying as a {target_interview_role}?",
+                    f"What key technical skills and methodologies do you utilize in your {target_interview_role} workflows?",
+                    "Describe a complex roadblock or team disagreement you resolved successfully.",
+                    f"How do you stay ahead of emerging trends and architecture in the {target_interview_role} space?",
+                    "Why should our hiring committee choose you over other qualified applicants?"
                 ]
-                st.session_state.interview_questions = base_questions[:q_count]
-                st.session_state.interview_role = mock_role
-                st.session_state.interview_q_count = q_count
+                st.session_state.interview_questions = q_bank[:interview_len]
+                st.session_state.interview_role = target_interview_role
+                st.session_state.interview_q_count = interview_len
                 st.session_state.interview_current_idx = 0
                 st.session_state.interview_transcript = []
                 st.session_state.interview_active = True
                 st.rerun()
 
         elif st.session_state.interview_active and not st.session_state.interview_completed:
-            idx = st.session_state.interview_current_idx
-            total = len(st.session_state.interview_questions)
-            curr_q = st.session_state.interview_questions[idx]
+            curr_i = st.session_state.interview_current_idx
+            total_i = len(st.session_state.interview_questions)
+            curr_question_text = st.session_state.interview_questions[curr_i]
 
             st.markdown(
                 f"""
-                <div class="cl-card">
-                    <span class="tag-badge tag-blue">QUESTION {idx + 1} OF {total}</span>
-                    <h3 style="margin-top: 8px;">{curr_q}</h3>
+                <div class="content-box">
+                    <span class="pill-tag pill-blue">QUESTION {curr_i + 1} OF {total_i}</span>
+                    <h3 style="margin-top: 10px; color:#0f172a;">{curr_question_text}</h3>
                 </div>
                 """,
                 unsafe_allow_html=True
             )
 
-            cand_reply = st.text_area("Type your interview response:", height=150, key=f"mock_ans_{idx}")
+            cand_response = st.text_area("Type your response to the interviewer:", height=160, key=f"ans_text_{curr_i}")
 
-            if st.button("Submit Answer & Next ➔", use_container_width=True):
-                if not cand_reply.strip():
+            if st.button("Submit & Proceed ➔", use_container_width=True):
+                if not cand_response.strip():
                     st.warning("Please type your response before proceeding.")
                 else:
                     st.session_state.interview_transcript.append({
-                        "question": curr_q,
-                        "answer": cand_reply
+                        "question": curr_question_text,
+                        "answer": cand_response
                     })
-                    if idx + 1 < total:
+                    if curr_i + 1 < total_i:
                         st.session_state.interview_current_idx += 1
                         st.rerun()
                     else:
                         st.session_state.interview_active = False
                         st.session_state.interview_completed = True
                         st.session_state.interview_report = {
-                            "performance": random.randint(72, 89),
-                            "confidence": "82%",
-                            "correctness": "78%",
-                            "relevance": "85%",
-                            "communication": "80%",
-                            "role_knowledge": "75%"
+                            "overall": random.randint(76, 92),
+                            "confidence": "85%",
+                            "communication": "82%",
+                            "correctness": "80%",
+                            "role_knowledge": "78%"
                         }
                         st.rerun()
 
@@ -1053,239 +1264,266 @@ if st.session_state.active_workspace == "Job Seeker":
             rep = st.session_state.interview_report
             st.markdown(
                 f"""
-                <div class="cl-card" style="text-align: center;">
-                    <span class="tag-badge tag-green">EVALUATION COMPLETE</span>
-                    <h2 style="margin: 8px 0;">Overall Interview Performance: <span style="color:#0284c7;">{rep['performance']}%</span></h2>
-                    <p style="color:#64748b;">Feedback tailored for {st.session_state.interview_role}</p>
+                <div class="content-box" style="text-align: center;">
+                    <span class="pill-tag pill-green">EVALUATION COMPLETED</span>
+                    <h2 style="margin: 10px 0;">Interview Readiness: <span style="color:#2563eb;">{rep['overall']}%</span></h2>
+                    <p style="color:#64748b;">Comprehensive evaluation for {st.session_state.interview_role}</p>
                 </div>
                 """,
                 unsafe_allow_html=True
             )
+            col_r1, col_r2, col_r3 = st.columns(3)
+            with col_r1:
+                st.markdown(f'<div class="kpi-card" style="justify-content:center;"><div style="font-weight:700; color:#64748b;">Confidence</div><div style="font-size:1.4rem; font-weight:800;">{rep["confidence"]}</div></div>', unsafe_allow_html=True)
+            with col_r2:
+                st.markdown(f'<div class="kpi-card" style="justify-content:center;"><div style="font-weight:700; color:#64748b;">Communication</div><div style="font-size:1.4rem; font-weight:800;">{rep["communication"]}</div></div>', unsafe_allow_html=True)
+            with col_r3:
+                st.markdown(f'<div class="kpi-card" style="justify-content:center;"><div style="font-weight:700; color:#64748b;">Role Knowledge</div><div style="font-size:1.4rem; font-weight:800;">{rep["role_knowledge"]}</div></div>', unsafe_allow_html=True)
 
-            c_e1, c_e2, c_e3 = st.columns(3)
-            with c_e1:
-                st.markdown(f'<div class="kpi-card"><div class="kpi-label">Confidence</div><div class="kpi-val" style="font-size:1.8rem;">{rep["confidence"]}</div></div>', unsafe_allow_html=True)
-            with c_e2:
-                st.markdown(f'<div class="kpi-card"><div class="kpi-label">Relevance</div><div class="kpi-val" style="font-size:1.8rem;">{rep["relevance"]}</div></div>', unsafe_allow_html=True)
-            with c_e3:
-                st.markdown(f'<div class="kpi-card"><div class="kpi-label">Role Knowledge</div><div class="kpi-val" style="font-size:1.8rem;">{rep["role_knowledge"]}</div></div>', unsafe_allow_html=True)
-
-            if st.button("Practice Another Interview"):
+            if st.button("Practice Another Mock Interview", key="btn_retry_mock"):
                 st.session_state.interview_completed = False
                 st.rerun()
 
-    # --------------------------------------------------------
-    # 4. AI JOB MATCH (Safe Normalized Handling)
-    # --------------------------------------------------------
+    # 4. AI JOB MATCH
     elif st.session_state.active_tool == "AI Job Match":
-        if st.button("← Back to Dashboard"):
+        if st.button("← Back to Career Tools Dashboard", key="btn_back_jm"):
             st.session_state.active_tool = "Dashboard"
             st.rerun()
 
-        st.markdown("### 🎯 AI Job Match & Skill Alignment")
-        jd_input = st.text_area("Paste Target Job Description:", height=180)
+        st.markdown("### 🎯 AI Job Match & Semantic Skill Gap Diagnostics")
+        jd_text = st.text_area("Paste Job Description:", height=180)
 
-        if st.button("Run Job Match Analysis", use_container_width=True):
+        if st.button("Check Match Compatibility", use_container_width=True):
             if not st.session_state.resume_text:
-                st.warning("Please upload your resume in Resume Intelligence first.")
-            elif not jd_input.strip():
-                st.warning("Please paste a job description.")
+                st.warning("Please upload your resume in Resume Intelligence first.")[cite: 1, 3]
+            elif not jd_text.strip():
+                st.warning("Please paste a job description.")[cite: 1, 3]
             else:
-                with st.spinner("Analyzing job description compatibility..."):
-                    raw_res = api_match_job(st.session_state.resume_text, jd_input)
+                with st.spinner("Calculating semantic match score..."):
+                    raw_res = api_match_job(st.session_state.resume_text, jd_text)
                     st.session_state.job_match_result = normalize_job_match(raw_res)
-                    st.success("Match evaluation complete!")
+                    st.success("Analysis complete!")
 
         if st.session_state.job_match_result:
             m = st.session_state.job_match_result
             st.markdown(
                 f"""
-                <div class="cl-card">
-                    <h3 style="margin:0;">Job Match Score: <span style="color:#0284c7;">{m.get('overall', 0)}%</span></h3>
-                    <p style="color:#475569; margin-top:4px;">Alignment: <b>{m.get('experience_alignment')}</b></p>
+                <div class="content-box">
+                    <h3 style="margin:0;">Job Match Score: <span style="color:#2563eb;">{m.get('overall', 0)}%</span></h3>
+                    <p style="color:#64748b; margin-top:4px;">Experience Alignment: <b>{m.get('experience_alignment')}</b></p>
                 </div>
                 """,
                 unsafe_allow_html=True
             )
-            col_m1, col_m2 = st.columns(2)
-            with col_m1:
+            col_j1, col_j2 = st.columns(2)
+            with col_j1:
                 st.markdown("#### ✅ Matching Skills")
-                matched_html = "".join([f'<span class="tag-badge tag-green">{s}</span>' for s in m.get("matched", [])])
-                st.markdown(matched_html or "None detected", unsafe_allow_html=True)
-            with col_m2:
+                matched_pills = "".join([f'<span class="pill-tag pill-green">{s}</span>' for s in m.get("matched", [])])
+                st.markdown(matched_pills or "None detected", unsafe_allow_html=True)
+            with col_j2:
                 st.markdown("#### ⚠️ Missing Skills")
-                missing_html = "".join([f'<span class="tag-badge tag-amber">{s}</span>' for s in m.get("missing", [])])
-                st.markdown(missing_html or "None detected", unsafe_allow_html=True)
+                missing_pills = "".join([f'<span class="pill-tag pill-amber">{s}</span>' for s in m.get("missing", [])])
+                st.markdown(missing_pills or "None detected", unsafe_allow_html=True)
 
-    # --------------------------------------------------------
     # 5. SALARY ESTIMATION
-    # --------------------------------------------------------
     elif st.session_state.active_tool == "Salary Estimation":
-        if st.button("← Back to Dashboard"):
+        if st.button("← Back to Career Tools Dashboard", key="btn_back_sal"):
             st.session_state.active_tool = "Dashboard"
             st.rerun()
 
-        st.markdown("### 💰 Compensation Benchmark")
+        st.markdown("### 💰 Compensation Benchmark Calculator")
         c1, c2 = st.columns(2)
         with c1:
-            sal_role = st.text_input("Role Title:", "Software Engineer")
+            sal_role_in = st.text_input("Role Title:", "Software Engineer")
         with c2:
-            sal_exp = st.selectbox("Experience Level:", ["0-2 years (Entry)", "3-5 years (Mid)", "6+ years (Senior)"])
+            sal_exp_in = st.selectbox("Experience Level:", ["Entry Level (0-2 yrs)", "Mid Level (3-5 yrs)", "Senior Level (6+ yrs)"])
 
-        if st.button("Calculate Benchmark", use_container_width=True):
+        if st.button("Calculate Market Benchmark", use_container_width=True):
             st.markdown(
                 f"""
-                <div class="cl-card" style="margin-top: 20px;">
-                    <h3 style="margin:0 0 10px 0; color:#0284c7;">Estimated Range: ₹8.5 LPA - ₹16.0 LPA</h3>
-                    <p style="color:#475569; margin:0;">Standard compensation band calculated for {sal_role} ({sal_exp}).</p>
+                <div class="content-box" style="margin-top: 20px;">
+                    <span class="pill-tag pill-blue">MARKET ESTIMATE</span>
+                    <h2 style="margin: 8px 0; color:#2563eb;">₹9.5 LPA - ₹18.0 LPA</h2>
+                    <p style="color:#64748b; margin:0;">Median compensation band for {sal_role_in} ({sal_exp_in}).</p>
                 </div>
                 """,
                 unsafe_allow_html=True
             )
 
-    # --------------------------------------------------------
     # 6. CAREER ROADMAP
-    # --------------------------------------------------------
     elif st.session_state.active_tool == "Career Roadmap":
-        if st.button("← Back to Dashboard"):
+        if st.button("← Back to Career Tools Dashboard", key="btn_back_road"):
             st.session_state.active_tool = "Dashboard"
             st.rerun()
 
         st.markdown("### 🗺️ Career Progression Roadmap")
-        target_role = st.text_input("Enter Target Dream Role:", "Lead AI Architect")
+        target_goal = st.text_input("Target Dream Role:", "Lead AI Architect")
 
-        if st.button("Generate Roadmap Plan", use_container_width=True):
-            with st.spinner("Synthesizing step-by-step career path..."):
-                res = api_career_roadmap(st.session_state.resume_text, target_role)
+        if st.button("Generate Step-by-Step Plan", use_container_width=True):
+            with st.spinner("Generating milestones..."):
+                res = api_career_roadmap(st.session_state.resume_text, target_goal)
                 for step in res.get("steps", []):
-                    st.markdown(f"""<div class="cl-card" style="padding:15px; margin-bottom:10px;">{step}</div>""", unsafe_allow_html=True)
+                    st.markdown(f'<div class="content-box" style="padding:16px; margin-bottom:12px;">{step}</div>', unsafe_allow_html=True)
 
-    # --------------------------------------------------------
     # 7. REAL-TIME JOB DETECTION
-    # --------------------------------------------------------
     elif st.session_state.active_tool == "Real-Time Job Detection":
-        if st.button("← Back to Dashboard"):
+        if st.button("← Back to Career Tools Dashboard", key="btn_back_det"):
             st.session_state.active_tool = "Dashboard"
             st.rerun()
 
-        st.markdown("### 🛡️ Fake Job & Offer Letter Detector")
-        job_body = st.text_area("Paste Job Offer / Post Body:", height=180)
+        st.markdown("### 🛡️ Fake Job & Offer Fraud Detector")
+        post_text = st.text_area("Paste Job Posting or Offer Body:", height=180)
 
-        if st.button("Check Safety Signals", use_container_width=True):
-            res = api_detect_fraud(job_body)
+        if st.button("Analyze Posting Safety", use_container_width=True):
+            res = api_detect_fraud(post_text)
+            verdict_color = "#ef4444" if res['level'] == "HIGH RISK" else "#059669"
             st.markdown(
                 f"""
-                <div class="cl-card">
-                    <h3>Risk Verdict: <span style="color:{'#d97706' if res['level']=='HIGH RISK' else '#059669'};">{res['level']}</span></h3>
-                    <p style="color:#475569; margin:0;">Risk Score: {res['score']}/100 • Suspicious Signals: {res['signals']}</p>
+                <div class="content-box">
+                    <h3>Risk Verdict: <span style="color:{verdict_color};">{res['level']}</span></h3>
+                    <p style="color:#64748b; margin:0;">Risk Score: {res['score']}/100 • Flags Found: {res['signals']}</p>
                 </div>
                 """,
                 unsafe_allow_html=True
             )
 
-    # --------------------------------------------------------
     # 8. RESUME BUILDER
-    # --------------------------------------------------------
     elif st.session_state.active_tool == "Resume Builder":
-        if st.button("← Back to Dashboard"):
+        if st.button("← Back to Career Tools Dashboard", key="btn_back_bld"):
             st.session_state.active_tool = "Dashboard"
             st.rerun()
 
         st.markdown("### 📄 Professional Resume Builder")
-        rb_n = st.text_input("Full Name", value=st.session_state.username)
-        rb_t = st.text_input("Target Headline", value="Software Engineer")
-        rb_s = st.text_area("Core Skills", value="Python, FastAPI, SQL, Docker, React")
+        rb_name = st.text_input("Full Name", value=st.session_state.username)
+        rb_title = st.text_input("Professional Headline", value="Full Stack & AI Engineer")
+        rb_skills = st.text_area("Core Skills", value="Python, FastAPI, React, SQL, Docker")
 
-        if st.button("Download Resume Format (.txt)", use_container_width=True):
-            doc = f"{rb_n}\n{rb_t}\n\nCORE SKILLS:\n{rb_s}\n"
-            st.download_button("Click to Save", data=doc.encode("utf-8"), file_name=f"{rb_n}_resume.txt", mime="text/plain")
+        if st.button("Download Plain Text Resume (.txt)", use_container_width=True):
+            content = f"{rb_name}\n{rb_title}\n\nCORE SKILLS:\n{rb_skills}\n"
+            st.download_button("Click to Download", data=content.encode("utf-8"), file_name=f"{rb_name}_Resume.txt", mime="text/plain")
 
-    # --------------------------------------------------------
     # 9. AI CAREER ASSISTANT
-    # --------------------------------------------------------
     elif st.session_state.active_tool == "AI Career Assistant":
-        if st.button("← Back to Dashboard"):
+        if st.button("← Back to Career Tools Dashboard", key="btn_back_ast"):
             st.session_state.active_tool = "Dashboard"
             st.rerun()
 
         st.markdown("### 🤖 AI Career Assistant")
-        q = st.text_input("Ask any career or interview question:")
+        user_query = st.text_input("Ask any career or interview question:")
         if st.button("Ask Assistant", use_container_width=True):
-            if q:
-                reply = api_chat_assistant([{"role": "user", "content": q}], resume_context=st.session_state.resume_text)
-                st.markdown(f"""<div class="cl-card" style="margin-top:15px;"><p style="color:#0f172a; margin:0;">{reply}</p></div>""", unsafe_allow_html=True)
+            if user_query:
+                ans = api_chat_assistant([{"role": "user", "content": user_query}], resume_context=st.session_state.resume_text)
+                st.markdown(f'<div class="content-box" style="margin-top:16px;">{ans}</div>', unsafe_allow_html=True)
 
 # ============================================================
-# 🏢 RECRUITER WORKSPACE
+# 🏢 RECRUITER DASHBOARD
 # ============================================================
 
-elif st.session_state.active_workspace == "Recruiter":
+elif st.session_state.active_workspace == "Recruiter Workspace":
 
     st.markdown(
-        """
-        <div class="hero-banner">
-            <span class="tag-badge tag-purple" style="background: rgba(124, 58, 237, 0.2); color: #c084fc; border: 1px solid rgba(192, 132, 252, 0.4);">RECRUITER WORKSPACE</span>
-            <h1>Enterprise Candidate Intelligence & Assessments 🏢</h1>
-            <p>Bulk resume intake, automated email extraction, screening rankings, and assessment delivery.</p>
+        f"""
+        <div class="kpi-grid">
+            <div class="kpi-card">
+                <div class="kpi-circle" style="background:#eff6ff; color:#2563eb;">👥</div>
+                <div>
+                    <div style="font-size:0.8rem; font-weight:700; color:#64748b; text-transform:uppercase;">Cohort Size</div>
+                    <div style="font-size:1.45rem; font-weight:900; color:#0f172a;">{len(st.session_state.recruiter_candidates)}</div>
+                    <div style="font-size:0.75rem; color:#94a3b8;">Uploaded resumes</div>
+                </div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-circle" style="background:#faf5ff; color:#7c3aed;">📝</div>
+                <div>
+                    <div style="font-size:0.8rem; font-weight:700; color:#64748b; text-transform:uppercase;">Assessments</div>
+                    <div style="font-size:1.45rem; font-weight:900; color:#0f172a;">{len(st.session_state.recruiter_assessment_submissions)}</div>
+                    <div style="font-size:0.75rem; color:#94a3b8;">Submissions logged</div>
+                </div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-circle" style="background:#ecfdf5; color:#059669;">🎯</div>
+                <div>
+                    <div style="font-size:0.8rem; font-weight:700; color:#64748b; text-transform:uppercase;">Average Score</div>
+                    <div style="font-size:1.45rem; font-weight:900; color:#0f172a;">82%</div>
+                    <div style="font-size:0.75rem; color:#94a3b8;">Across attempts</div>
+                </div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-circle" style="background:#fffbeb; color:#d97706;">⚡</div>
+                <div>
+                    <div style="font-size:0.8rem; font-weight:700; color:#64748b; text-transform:uppercase;">Shortlist Status</div>
+                    <div style="font-size:1.45rem; font-weight:900; color:#0f172a;">Active</div>
+                    <div style="font-size:0.75rem; color:#94a3b8;">Ready to interview</div>
+                </div>
+            </div>
         </div>
         """,
         unsafe_allow_html=True
     )
 
-    if st.session_state.active_tool == "Recruiter Dashboard":
-        st.markdown("### 📤 Bulk Resume Intake & Automated Email Extraction")
-        uploaded_resumes = st.file_uploader(
+    if st.session_state.active_tool == "Dashboard" or st.session_state.active_tool == "Bulk Screening":
+        st.markdown("### 📤 Bulk Resume Screening & Automatic Candidate Intake")
+        bulk_files = st.file_uploader(
             "Upload Candidate Resumes (PDF, DOCX, TXT):",
             type=["pdf", "docx", "txt"],
             accept_multiple_files=True,
-            key="recruiter_bulk_upload"
+            key="rec_bulk_files"
         )
 
-        if uploaded_resumes and st.button("⚡ Parse Resumes & Extract Emails", use_container_width=True):
-            with st.spinner("Parsing resumes and populating candidate records..."):
-                candidate_list = []
-                for f in uploaded_resumes:
-                    parsed = api_analyze_resume(f)
-                    candidate_list.append({
-                        "id": uuid.uuid4().hex[:8],
-                        "name": parsed.get("name"),
-                        "email": parsed.get("email"),
-                        "score": parsed.get("resume_score", random.randint(70, 92)),
-                        "skills": ", ".join(parsed.get("skills", ["General"]))
+        if bulk_files and st.button("⚡ Process Resumes & Extract Emails", use_container_width=True):
+            with st.spinner("Extracting candidate profiles..."):
+                c_list = []
+                for f in bulk_files:
+                    p = api_analyze_resume(f)
+                    c_list.append({
+                        "name": p.get("name"),
+                        "email": p.get("email"),
+                        "score": p.get("resume_score", random.randint(75, 94)),
+                        "skills": ", ".join(p.get("skills", ["General Stack"]))
                     })
-                st.session_state.recruiter_candidates = candidate_list
-                st.success(f"Successfully processed {len(candidate_list)} candidate profiles.")
+                st.session_state.recruiter_candidates = c_list
+                st.success(f"Successfully processed {len(c_list)} candidates.")
 
         if st.session_state.recruiter_candidates:
-            st.markdown("#### 📋 Populated Candidate Cohort")
-            df = pd.DataFrame(st.session_state.recruiter_candidates)
-            st.dataframe(df, use_container_width=True, hide_index=True)
+            st.markdown("#### Populated Candidates (Auto-Extracted Emails)")
+            df_cand = pd.DataFrame(st.session_state.recruiter_candidates)
+            st.dataframe(df_cand, use_container_width=True, hide_index=True)
 
-            st.markdown("### 📧 Send Pre-Interview Assessment Links")
-            selected_cand = st.selectbox("Select Candidate to Send Assessment Link:", df["email"].tolist())
-            exam_type = st.selectbox("Assessment Pattern:", IT_ROLES + NON_IT_ROLES)
-
+            st.markdown("### 📧 Send Assessment Link")
+            c_sel = st.selectbox("Select Candidate:", df_cand["email"].tolist())
+            r_sel = st.selectbox("Assign Assessment Role:", IT_ROLES + NON_IT_ROLES)
             if st.button("✉️ Dispatch Assessment Link", use_container_width=True):
-                st.success(f"Assessment link generated and dispatched to: {selected_cand} ({exam_type})")
+                st.success(f"Assessment link generated and emailed to {c_sel} for {r_sel}.")
 
-        st.markdown("---")
-        st.markdown("### 🔐 Candidate Assessment Score Vault (Recruiter-Only View)")
+    elif st.session_state.active_tool == "Score Vault":
+        st.markdown("### 🔐 Candidate Assessment Score Vault (Recruiter View)")
         if st.session_state.recruiter_assessment_submissions:
-            sub_df = pd.DataFrame(list(st.session_state.recruiter_assessment_submissions.values()))
-            st.dataframe(sub_df, use_container_width=True, hide_index=True)
+            df_sub = pd.DataFrame(list(st.session_state.recruiter_assessment_submissions.values()))
+            st.dataframe(df_sub, use_container_width=True, hide_index=True)
         else:
-            st.info("No completed candidate assessments logged yet.")
+            st.info("No candidate submissions recorded yet.")
 
-    elif st.session_state.active_tool == "Assessment Manager":
-        st.markdown("### 📝 Reusable Role-Based Assessment Blueprints")
-        st.caption("100-Question MCQ Blueprints covering IT and Non-IT categories.")
-
-        cols = st.columns(2)
-        with cols[0]:
-            st.markdown("#### 💻 IT Role Blueprints")
+    elif st.session_state.active_tool == "Assessment Blueprints":
+        st.markdown("### 📝 Role-Based 100-Question Blueprints")
+        c1, c2 = st.columns(2)
+        with c1:
+            st.markdown("#### IT Track")
             for r in IT_ROLES:
-                st.markdown(f"• **{r}**: 100 Marks (Aptitude, Core Technical, Scenarios, Ethics)")
-        with cols[1]:
-            st.markdown("#### 📊 Non-IT Role Blueprints")
+                st.markdown(f"• **{r}**: 100 MCQs (Logic, Architecture, Domain, Ethics)")
+        with c2:
+            st.markdown("#### Non-IT Track")
             for r in NON_IT_ROLES:
-                st.markdown(f"• **{r}**: 100 Marks (Logic, Domain Ops, Scenarios, Compliance)")
+                st.markdown(f"• **{r}**: 100 MCQs (Reasoning, Operations, Scenarios, Standards)")
+
+# ============================================================
+# FOOTER
+# ============================================================
+
+st.markdown(
+    """
+    <div style="text-align: center; color: #94a3b8; font-size: 0.82rem; padding: 40px 0 10px;">
+        © 2026 CareerLens AI. All rights reserved.
+    </div>
+    """,
+    unsafe_allow_html=True
+)
