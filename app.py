@@ -42,7 +42,6 @@ def safe_parse_json(text: str) -> Any:
     return None
 
 def normalize_job_match(raw_res: Any) -> Dict:
-    """Guarantees safe dictionary handling to eliminate AttributeError on .get()."""
     if isinstance(raw_res, str):
         parsed = safe_parse_json(raw_res)
         if isinstance(parsed, dict):
@@ -113,7 +112,7 @@ def log_event(event_type: str, username: str, rating: str = "N/A", details: str 
         pass
 
 # ============================================================
-# STYLES & THEME
+# MODERN DESIGN SYSTEM & CONTRAST FIXES
 # ============================================================
 
 st.markdown(
@@ -123,13 +122,13 @@ st.markdown(
 
 :root {
     --bg-page: #f8fafc;
+    --navy-sidebar: #070e1d;
+    --navy-header: #091326;
     --card-bg: #ffffff;
-    --navy-sidebar: #091224;
-    --navy-header: #0d1b38;
-    --text-navy: #0f172a;
-    --text-secondary: #475569;
+    --text-dark: #0f172a;
     --text-muted: #64748b;
     --blue-primary: #2563eb;
+    --blue-hover: #1d4ed8;
     --purple-accent: #7c3aed;
     --emerald-accent: #059669;
     --amber-accent: #d97706;
@@ -138,7 +137,7 @@ st.markdown(
 .stApp {
     background-color: var(--bg-page) !important;
     font-family: 'Plus Jakarta Sans', -apple-system, sans-serif !important;
-    color: var(--text-navy) !important;
+    color: var(--text-dark) !important;
 }
 
 .block-container {
@@ -146,7 +145,7 @@ st.markdown(
     padding: 20px 36px 40px !important;
 }
 
-/* Sidebar Custom Styling */
+/* Sidebar Styling & High Visibility */
 [data-testid="stSidebar"] {
     background-color: var(--navy-sidebar) !important;
     border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
@@ -154,26 +153,30 @@ st.markdown(
 
 [data-testid="stSidebar"] * {
     font-family: 'Plus Jakarta Sans', sans-serif !important;
-    color: #f1f5f9;
+    color: #ffffff !important;
 }
 
 .sidebar-brand-box {
     background: #ffffff;
     border-radius: 12px;
     padding: 12px 16px;
-    margin-bottom: 18px;
+    margin-bottom: 16px;
     display: flex;
     align-items: center;
     gap: 12px;
-    box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+    box-shadow: 0 4px 14px rgba(0,0,0,0.2);
+}
+
+.sidebar-brand-box * {
+    color: #070e1d !important;
 }
 
 .sidebar-user-box {
     background: rgba(255, 255, 255, 0.06);
     border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 14px;
-    padding: 14px;
-    margin-bottom: 18px;
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-bottom: 16px;
 }
 
 .sidebar-section-title {
@@ -182,14 +185,14 @@ st.markdown(
     color: #94a3b8 !important;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    margin: 18px 0 8px 4px;
+    margin: 16px 0 8px 4px;
 }
 
 /* Sidebar Colorful Buttons */
 [data-testid="stSidebar"] .stButton > button {
     background: rgba(255, 255, 255, 0.08) !important;
-    color: #f8fafc !important;
-    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
     border-radius: 10px !important;
     padding: 0.55rem 0.95rem !important;
     font-weight: 700 !important;
@@ -216,20 +219,20 @@ st.markdown(
     box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4) !important;
 }
 
-/* High Contrast Header */
+/* Dark Navy Header (High Contrast) */
 .dark-blue-header {
-    background: linear-gradient(135deg, #091224 0%, #0d1b38 50%, #1e1b4b 100%);
+    background: linear-gradient(135deg, #070e1d 0%, #0d1b38 60%, #1e1b4b 100%);
     border-radius: 20px;
-    padding: 28px 34px;
+    padding: 26px 32px;
     margin-bottom: 24px;
-    box-shadow: 0 10px 30px rgba(9, 18, 36, 0.2);
+    box-shadow: 0 8px 24px rgba(7, 14, 29, 0.18);
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
 
 .header-title-white {
-    font-size: 1.85rem;
+    font-size: 1.8rem;
     font-weight: 900;
     color: #ffffff !important;
     margin: 0;
@@ -237,34 +240,34 @@ st.markdown(
 }
 
 .header-sub-white {
-    font-size: 0.96rem;
-    color: #cbd5e1 !important;
-    margin: 6px 0 0 0;
+    font-size: 0.95rem;
+    color: #e2e8f0 !important;
+    margin: 4px 0 0 0;
     font-weight: 500;
 }
 
-/* KPI Top Grid */
+/* 4 KPI Top Cards */
 .kpi-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 18px;
-    margin-bottom: 28px;
+    gap: 16px;
+    margin-bottom: 26px;
 }
 
 .kpi-card {
     background: #ffffff;
     border: 1px solid #e2e8f0;
     border-radius: 16px;
-    padding: 18px 20px;
+    padding: 16px 18px;
     display: flex;
     align-items: center;
-    gap: 16px;
-    box-shadow: 0 4px 18px rgba(15, 23, 42, 0.04);
+    gap: 14px;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04);
 }
 
 .kpi-circle {
-    width: 48px;
-    height: 48px;
+    width: 46px;
+    height: 46px;
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -277,93 +280,67 @@ st.markdown(
 .card-preview-box {
     background: #ffffff;
     border: 1px solid #e2e8f0;
-    border-radius: 18px;
-    padding: 22px 18px 14px;
+    border-radius: 18px 18px 0 0;
+    padding: 24px 18px 14px;
     text-align: center;
-    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.03);
     display: flex;
     flex-direction: column;
     align-items: center;
-    height: 185px;
+    height: 160px;
     justify-content: flex-start;
 }
 
 .card-icon-circle {
-    width: 54px;
-    height: 54px;
+    width: 52px;
+    height: 52px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 24px;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
 }
 
 .card-title-text {
-    font-size: 1.02rem;
+    font-size: 1.05rem;
     font-weight: 800;
     color: #0f172a;
-    margin-bottom: 6px;
+    margin-bottom: 4px;
 }
 
 .card-desc-text {
     font-size: 0.8rem;
     color: #64748b;
-    line-height: 1.45;
+    line-height: 1.4;
 }
 
-/* Gateway Mode Cards */
-.gateway-card {
-    background: #ffffff;
-    border: 2px solid #e2e8f0;
-    border-radius: 20px;
-    padding: 30px 24px;
-    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
-    text-align: left;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-}
-
-.gateway-card:hover {
-    border-color: #2563eb;
-    transform: translateY(-3px);
-}
-
-.gateway-bullet {
-    display: flex;
-    align-items: flex-start;
-    gap: 8px;
-    font-size: 0.9rem;
-    color: #475569;
-    margin: 8px 0;
-}
-
-/* Primary Action Buttons */
-.stButton > button {
-    border-radius: 10px !important;
-    background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%) !important;
-    color: #ffffff !important;
+/* Card Button Integration (Direct Seamless Click) */
+div[data-testid="column"] .stButton > button {
+    border-radius: 0 0 16px 16px !important;
+    background: #ffffff !important;
+    color: #2563eb !important;
+    border: 1px solid #e2e8f0 !important;
+    border-top: none !important;
     font-weight: 800 !important;
-    font-size: 0.92rem !important;
-    padding: 0.6rem 1.4rem !important;
-    border: none !important;
-    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25) !important;
+    font-size: 0.86rem !important;
+    padding: 0.45rem 1rem !important;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03) !important;
     transition: all 0.2s ease !important;
 }
 
-.stButton > button:hover {
-    background: linear-gradient(135deg, #1d4ed8 0%, #4338ca 100%) !important;
-    transform: translateY(-1px) !important;
-    box-shadow: 0 6px 18px rgba(37, 99, 235, 0.35) !important;
+div[data-testid="column"] .stButton > button:hover {
+    background: #2563eb !important;
+    color: #ffffff !important;
+    border-color: #2563eb !important;
 }
 
+/* Content & Form Containers */
 .content-box {
     background: #ffffff;
     border: 1px solid #e2e8f0;
     border-radius: 18px;
-    padding: 28px;
+    padding: 26px;
     box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
     margin-bottom: 20px;
 }
@@ -381,6 +358,25 @@ st.markdown(
 .pill-green { background: #f0fdf4; color: #15803d; border: 1px solid #dcfce7; }
 .pill-purple { background: #faf5ff; color: #7e22ce; border: 1px solid #f3e8ff; }
 .pill-amber { background: #fffbeb; color: #b45309; border: 1px solid #fef3c7; }
+
+/* Gateway Cards */
+.gateway-card {
+    background: #ffffff;
+    border: 2px solid #e2e8f0;
+    border-radius: 20px;
+    padding: 28px 24px;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+    height: 100%;
+}
+
+.gateway-bullet {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 0.9rem;
+    color: #475569;
+    margin: 8px 0;
+}
 </style>
 """,
     unsafe_allow_html=True,
@@ -496,7 +492,6 @@ if "active_workspace" not in st.session_state:
 if "active_tool" not in st.session_state:
     st.session_state.active_tool = "Dashboard"
 
-# Candidate Data State
 if "resume_text" not in st.session_state:
     st.session_state.resume_text = ""
 if "resume_analysis" not in st.session_state:
@@ -619,7 +614,7 @@ def dialog_auth():
                 st.rerun()
 
 # ============================================================
-# 1. ENTRY SCREEN (LOGIN / SIGN IN)
+# 1. ENTRY SCREEN
 # ============================================================
 
 if not st.session_state.is_logged_in:
@@ -667,7 +662,7 @@ if not st.session_state.is_logged_in:
     st.stop()
 
 # ============================================================
-# 2. TWO-CARD GATEWAY PORTAL (JOB SEEKER VS RECRUITER)
+# 2. TWO-CARD GATEWAY PORTAL
 # ============================================================
 
 if not st.session_state.selected_gateway:
@@ -678,7 +673,7 @@ if not st.session_state.selected_gateway:
                 <div class="header-title-white">Welcome, {st.session_state.username}! 👋</div>
                 <div class="header-sub-white">Select your workspace portal to start your journey with CareerLens AI.</div>
             </div>
-            <span class="pill-tag pill-blue" style="font-size: 0.85rem; padding: 6px 16px;">PORTAL SELECTOR</span>
+            <span class="pill-tag pill-blue" style="font-size: 0.85rem; padding: 6px 16px; background:#ffffff; color:#2563eb;">PORTAL SELECTOR</span>
         </div>
         """,
         unsafe_allow_html=True
@@ -755,7 +750,7 @@ if not st.session_state.selected_gateway:
     st.stop()
 
 # ============================================================
-# 3. SIDEBAR NAVIGATION (POST-GATEWAY)
+# 3. SIDEBAR NAVIGATION
 # ============================================================
 
 with st.sidebar:
@@ -868,7 +863,7 @@ st.markdown(
 )
 
 # ============================================================
-# 👤 JOB SEEKER DASHBOARD & CLICKABLE CARDS
+# 👤 JOB SEEKER DASHBOARD
 # ============================================================
 
 if st.session_state.active_workspace == "Job Seeker Workspace":
@@ -922,7 +917,7 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
     if st.session_state.active_tool == "Dashboard":
         st.markdown("<h3 style='margin-bottom:16px; font-weight:900; font-size:1.25rem; color:#0f172a;'>Career Tools</h3>", unsafe_allow_html=True)
 
-        # Row 1 (5 Cards)
+        # Row 1
         c1, c2, c3, c4, c5 = st.columns(5)
 
         with c1:
@@ -931,12 +926,12 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
                 <div class="card-preview-box">
                     <div class="card-icon-circle" style="background:#eff6ff; color:#2563eb;">📄</div>
                     <div class="card-title-text">Resume Intelligence</div>
-                    <div class="card-desc-text">Analyze your resume for strengths, weaknesses and improvements.</div>
+                    <div class="card-desc-text">Analyze strengths, weaknesses and enhancements.</div>
                 </div>
                 """,
                 unsafe_allow_html=True
             )
-            if st.button("Launch Resume Intel ➔", key="card_c1_btn", use_container_width=True):
+            if st.button("Resume Intelligence", key="card_c1_btn", use_container_width=True):
                 st.session_state.active_tool = "Resume Intelligence"
                 st.rerun()
 
@@ -951,7 +946,7 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
                 """,
                 unsafe_allow_html=True
             )
-            if st.button("Launch Assessment ➔", key="card_c2_btn", use_container_width=True):
+            if st.button("Pre-Interview Exam", key="card_c2_btn", use_container_width=True):
                 st.session_state.active_tool = "Pre-Interview Assessment"
                 st.rerun()
 
@@ -961,12 +956,12 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
                 <div class="card-preview-box">
                     <div class="card-icon-circle" style="background:#eff6ff; color:#0284c7;">🎤</div>
                     <div class="card-title-text">AI Mock Interview</div>
-                    <div class="card-desc-text">Sequential 1-on-1 dynamic interview questions with scoring.</div>
+                    <div class="card-desc-text">Sequential dynamic interview questions with scoring.</div>
                 </div>
                 """,
                 unsafe_allow_html=True
             )
-            if st.button("Launch Mock Interview ➔", key="card_c3_btn", use_container_width=True):
+            if st.button("AI Mock Interview", key="card_c3_btn", use_container_width=True):
                 st.session_state.active_tool = "AI Mock Interview"
                 st.rerun()
 
@@ -976,12 +971,12 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
                 <div class="card-preview-box">
                     <div class="card-icon-circle" style="background:#ecfdf5; color:#059669;">🎯</div>
                     <div class="card-title-text">AI Job Match</div>
-                    <div class="card-desc-text">Match profile with job descriptions and find missing skills.</div>
+                    <div class="card-desc-text">Match profile with JDs and identify missing skills.</div>
                 </div>
                 """,
                 unsafe_allow_html=True
             )
-            if st.button("Launch Job Match ➔", key="card_c4_btn", use_container_width=True):
+            if st.button("AI Job Match", key="card_c4_btn", use_container_width=True):
                 st.session_state.active_tool = "AI Job Match"
                 st.rerun()
 
@@ -996,13 +991,13 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
                 """,
                 unsafe_allow_html=True
             )
-            if st.button("Launch Salary Check ➔", key="card_c5_btn", use_container_width=True):
+            if st.button("Salary Estimation", key="card_c5_btn", use_container_width=True):
                 st.session_state.active_tool = "Salary Estimation"
                 st.rerun()
 
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # Row 2 (4 Cards)
+        # Row 2
         c6, c7, c8, c9, c_blank = st.columns(5)
 
         with c6:
@@ -1011,12 +1006,12 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
                 <div class="card-preview-box">
                     <div class="card-icon-circle" style="background:#ecfdf5; color:#10b981;">🗺️</div>
                     <div class="card-title-text">Career Roadmap</div>
-                    <div class="card-desc-text">Personalized roadmap to plan your career progression step-by-step.</div>
+                    <div class="card-desc-text">Plan your career progression step-by-step.</div>
                 </div>
                 """,
                 unsafe_allow_html=True
             )
-            if st.button("Launch Roadmap ➔", key="card_c6_btn", use_container_width=True):
+            if st.button("Career Roadmap", key="card_c6_btn", use_container_width=True):
                 st.session_state.active_tool = "Career Roadmap"
                 st.rerun()
 
@@ -1031,7 +1026,7 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
                 """,
                 unsafe_allow_html=True
             )
-            if st.button("Launch Job Safety ➔", key="card_c7_btn", use_container_width=True):
+            if st.button("Job Detection", key="card_c7_btn", use_container_width=True):
                 st.session_state.active_tool = "Real-Time Job Detection"
                 st.rerun()
 
@@ -1041,12 +1036,12 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
                 <div class="card-preview-box">
                     <div class="card-icon-circle" style="background:#eff6ff; color:#3b82f6;">📄</div>
                     <div class="card-title-text">Resume Builder</div>
-                    <div class="card-desc-text">Build a professional, ATS-ready formatted resume with ease.</div>
+                    <div class="card-desc-text">Build professional, ATS-ready formatted resumes.</div>
                 </div>
                 """,
                 unsafe_allow_html=True
             )
-            if st.button("Launch Builder ➔", key="card_c8_btn", use_container_width=True):
+            if st.button("Resume Builder", key="card_c8_btn", use_container_width=True):
                 st.session_state.active_tool = "Resume Builder"
                 st.rerun()
 
@@ -1056,12 +1051,12 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
                 <div class="card-preview-box">
                     <div class="card-icon-circle" style="background:#faf5ff; color:#8b5cf6;">🤖</div>
                     <div class="card-title-text">AI Career Assistant</div>
-                    <div class="card-desc-text">Ask career, interview prep, and profile optimization questions.</div>
+                    <div class="card-desc-text">Ask career, interview prep, and profile questions.</div>
                 </div>
                 """,
                 unsafe_allow_html=True
             )
-            if st.button("Launch Assistant ➔", key="card_c9_btn", use_container_width=True):
+            if st.button("Career Assistant", key="card_c9_btn", use_container_width=True):
                 st.session_state.active_tool = "AI Career Assistant"
                 st.rerun()
 
