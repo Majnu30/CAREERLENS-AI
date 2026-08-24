@@ -12,16 +12,16 @@ import pandas as pd
 import requests
 import streamlit as st
 
-API_BASE_URL = os.getenv("API_URL", "https://careerlens-ai-9dx8.onrender.com")
-ANALYTICS_FILE = "analytics.csv"
-ADMIN_PIN = "1234"
+API_BASE_URL = os.getenv("API_URL", "https://careerlens-ai-9dx8.onrender.com")[cite: 1, 3]
+ANALYTICS_FILE = "analytics.csv"[cite: 1, 3]
+ADMIN_PIN = "1234"[cite: 1, 3]
 
 st.set_page_config(
     page_title="CareerLens AI - Smart Career & Recruiter Intelligence",
     page_icon="💼",
     layout="wide",
     initial_sidebar_state="expanded",
-)
+)[cite: 1, 3]
 
 # ============================================================
 # SAFE RESPONSE NORMALIZERS
@@ -95,19 +95,19 @@ def extract_phone_from_text(text: str) -> str:
 # ============================================================
 
 def log_event(event_type: str, username: str, rating: str = "N/A", details: str = ""):
-    file_exists = os.path.isfile(ANALYTICS_FILE)
+    file_exists = os.path.isfile(ANALYTICS_FILE)[cite: 1, 3]
     try:
-        with open(ANALYTICS_FILE, mode="a", newline="", encoding="utf-8") as f:
-            writer = csv.writer(f)
+        with open(ANALYTICS_FILE, mode="a", newline="", encoding="utf-8") as f:[cite: 1, 3]
+            writer = csv.writer(f)[cite: 1, 3]
             if not file_exists:
-                writer.writerow(["Timestamp", "Event", "Username", "Rating", "Details"])
+                writer.writerow(["Timestamp", "Event", "Username", "Rating", "Details"])[cite: 1, 3]
             writer.writerow([
                 datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 event_type,
                 username,
                 rating,
                 details
-            ])
+            ])[cite: 1, 3]
     except Exception:
         pass
 
@@ -122,8 +122,8 @@ st.markdown(
 
 :root {
     --bg-page: #f8fafc;
-    --navy-sidebar: #070e1d;
-    --navy-header: #091326;
+    --navy-sidebar: #0b1528;
+    --navy-header: #0f1f3d;
     --card-bg: #ffffff;
     --text-dark: #0f172a;
     --text-muted: #64748b;
@@ -145,30 +145,25 @@ st.markdown(
     padding: 20px 36px 40px !important;
 }
 
-/* Sidebar Styling & High Visibility */
+/* Sidebar Custom High-Contrast Styling */
 [data-testid="stSidebar"] {
     background-color: var(--navy-sidebar) !important;
     border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
 }
 
-[data-testid="stSidebar"] * {
+[data-testid="stSidebar"] p, [data-testid="stSidebar"] span, [data-testid="stSidebar"] div {
     font-family: 'Plus Jakarta Sans', sans-serif !important;
-    color: #ffffff !important;
 }
 
 .sidebar-brand-box {
     background: #ffffff;
     border-radius: 12px;
-    padding: 12px 16px;
+    padding: 14px 18px;
     margin-bottom: 16px;
     display: flex;
     align-items: center;
     gap: 12px;
     box-shadow: 0 4px 14px rgba(0,0,0,0.2);
-}
-
-.sidebar-brand-box * {
-    color: #070e1d !important;
 }
 
 .sidebar-user-box {
@@ -188,9 +183,9 @@ st.markdown(
     margin: 16px 0 8px 4px;
 }
 
-/* Sidebar Colorful Buttons */
+/* Sidebar Specific Button Styling */
 [data-testid="stSidebar"] .stButton > button {
-    background: rgba(255, 255, 255, 0.08) !important;
+    background-color: rgba(255, 255, 255, 0.08) !important;
     color: #ffffff !important;
     border: 1px solid rgba(255, 255, 255, 0.15) !important;
     border-radius: 10px !important;
@@ -205,23 +200,42 @@ st.markdown(
 }
 
 [data-testid="stSidebar"] .stButton > button:hover {
-    background: linear-gradient(90deg, #2563eb 0%, #7c3aed 100%) !important;
+    background-color: #2563eb !important;
     color: #ffffff !important;
-    border-color: #38bdf8 !important;
+    border-color: #60a5fa !important;
     transform: translateX(4px) !important;
-    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3) !important;
 }
 
 [data-testid="stSidebar"] .stButton > button[kind="primary"] {
-    background: linear-gradient(90deg, #2563eb 0%, #4f46e5 100%) !important;
+    background-color: #2563eb !important;
     color: #ffffff !important;
     border: 1px solid #60a5fa !important;
     box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4) !important;
 }
 
+/* Standard Main Area Buttons (Clean solid fill with no black glitch) */
+.stButton > button {
+    border-radius: 10px !important;
+    background-color: #2563eb !important;
+    color: #ffffff !important;
+    font-weight: 800 !important;
+    font-size: 0.92rem !important;
+    padding: 0.6rem 1.4rem !important;
+    border: none !important;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25) !important;
+    transition: all 0.2s ease !important;
+}
+
+.stButton > button:hover {
+    background-color: #1d4ed8 !important;
+    color: #ffffff !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 6px 18px rgba(37, 99, 235, 0.35) !important;
+}
+
 /* Dark Navy Header (High Contrast) */
 .dark-blue-header {
-    background: linear-gradient(135deg, #070e1d 0%, #0d1b38 60%, #1e1b4b 100%);
+    background: linear-gradient(135deg, #091224 0%, #0d1b38 60%, #1e1b4b 100%);
     border-radius: 20px;
     padding: 26px 32px;
     margin-bottom: 24px;
@@ -315,10 +329,10 @@ st.markdown(
     line-height: 1.4;
 }
 
-/* Card Button Integration (Direct Seamless Click) */
+/* Card Button Integration */
 div[data-testid="column"] .stButton > button {
     border-radius: 0 0 16px 16px !important;
-    background: #ffffff !important;
+    background-color: #ffffff !important;
     color: #2563eb !important;
     border: 1px solid #e2e8f0 !important;
     border-top: none !important;
@@ -326,11 +340,10 @@ div[data-testid="column"] .stButton > button {
     font-size: 0.86rem !important;
     padding: 0.45rem 1rem !important;
     box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03) !important;
-    transition: all 0.2s ease !important;
 }
 
 div[data-testid="column"] .stButton > button:hover {
-    background: #2563eb !important;
+    background-color: #2563eb !important;
     color: #ffffff !important;
     border-color: #2563eb !important;
 }
@@ -388,10 +401,10 @@ div[data-testid="column"] .stButton > button:hover {
 
 def api_analyze_resume(file) -> Dict:
     try:
-        files = {"file": (file.name, file.getvalue(), file.type)}
-        res = requests.post(f"{API_BASE_URL}/api/resume/analyze", files=files, timeout=60)
-        if res.status_code == 200:
-            return res.json()
+        files = {"file": (file.name, file.getvalue(), file.type)}[cite: 1, 3]
+        res = requests.post(f"{API_BASE_URL}/api/resume/analyze", files=files, timeout=60)[cite: 1, 3]
+        if res.status_code == 200:[cite: 1, 3]
+            return res.json()[cite: 1, 3]
     except Exception:
         pass
     
@@ -418,8 +431,8 @@ def api_analyze_resume(file) -> Dict:
 
 def api_match_job(resume_text: str, job_description: str) -> Dict:
     try:
-        payload = {"resume_text": resume_text, "job_description": job_description}
-        res = requests.post(f"{API_BASE_URL}/api/job/match", json=payload, timeout=30)
+        payload = {"resume_text": resume_text, "job_description": job_description}[cite: 1, 3]
+        res = requests.post(f"{API_BASE_URL}/api/job/match", json=payload, timeout=30)[cite: 1, 3]
         if res.status_code == 200:
             return normalize_job_match(res.json())
     except Exception:
@@ -433,10 +446,10 @@ def api_match_job(resume_text: str, job_description: str) -> Dict:
 
 def api_detect_fraud(job_text: str) -> Dict:
     try:
-        payload = {"text": job_text}
-        res = requests.post(f"{API_BASE_URL}/api/job/fraud", json=payload, timeout=30)
-        if res.status_code == 200:
-            return res.json()
+        payload = {"text": job_text}[cite: 1, 3]
+        res = requests.post(f"{API_BASE_URL}/api/job/fraud", json=payload, timeout=30)[cite: 1, 3]
+        if res.status_code == 200:[cite: 1, 3]
+            return res.json()[cite: 1, 3]
     except Exception:
         pass
     
@@ -450,10 +463,10 @@ def api_detect_fraud(job_text: str) -> Dict:
 
 def api_career_roadmap(resume_text: str, target_role: str) -> Dict:
     try:
-        payload = {"resume_text": resume_text, "target_role": target_role}
-        res = requests.post(f"{API_BASE_URL}/api/career/roadmap", json=payload, timeout=30)
-        if res.status_code == 200:
-            return res.json()
+        payload = {"resume_text": resume_text, "target_role": target_role}[cite: 1, 3]
+        res = requests.post(f"{API_BASE_URL}/api/career/roadmap", json=payload, timeout=30)[cite: 1, 3]
+        if res.status_code == 200:[cite: 1, 3]
+            return res.json()[cite: 1, 3]
     except Exception:
         pass
     return {
@@ -467,10 +480,10 @@ def api_career_roadmap(resume_text: str, target_role: str) -> Dict:
 
 def api_chat_assistant(messages: List[Dict], resume_context: str = "") -> str:
     try:
-        payload = {"messages": messages, "resume_context": resume_context}
-        res = requests.post(f"{API_BASE_URL}/api/chat/ask", json=payload, timeout=45)
-        if res.status_code == 200:
-            return res.json().get("reply", "")
+        payload = {"messages": messages, "resume_context": resume_context}[cite: 1, 3]
+        res = requests.post(f"{API_BASE_URL}/api/chat/ask", json=payload, timeout=45)[cite: 1, 3]
+        if res.status_code == 200:[cite: 1, 3]
+            return res.json().get("reply", "")[cite: 1, 3]
     except Exception:
         pass
     return "Focus on measurable impact, quantifiable metrics, and modern technical stacks for best results."
@@ -480,11 +493,11 @@ def api_chat_assistant(messages: List[Dict], resume_context: str = "") -> str:
 # ============================================================
 
 if "is_logged_in" not in st.session_state:
-    st.session_state.is_logged_in = False
+    st.session_state.is_logged_in = False[cite: 1, 3]
 if "username" not in st.session_state:
     st.session_state.username = "Guest Explorer"
 if "users_db" not in st.session_state:
-    st.session_state.users_db = {}
+    st.session_state.users_db = {}[cite: 1, 3]
 if "selected_gateway" not in st.session_state:
     st.session_state.selected_gateway = False
 if "active_workspace" not in st.session_state:
@@ -493,9 +506,9 @@ if "active_tool" not in st.session_state:
     st.session_state.active_tool = "Dashboard"
 
 if "resume_text" not in st.session_state:
-    st.session_state.resume_text = ""
+    st.session_state.resume_text = ""[cite: 1, 3]
 if "resume_analysis" not in st.session_state:
-    st.session_state.resume_analysis = None
+    st.session_state.resume_analysis = None[cite: 1, 3]
 if "job_match_result" not in st.session_state:
     st.session_state.job_match_result = None
 
@@ -519,7 +532,7 @@ if "interview_report" not in st.session_state:
 
 # Assessment Engine State (100 Questions)
 if "assessment_active" not in st.session_state:
-    st.session_state.assessment_active = False
+    st.session_state.assessment_active = False[cite: 1]
 if "assessment_role" not in st.session_state:
     st.session_state.assessment_role = "Software Developer"
 if "assessment_questions" not in st.session_state:
@@ -527,7 +540,7 @@ if "assessment_questions" not in st.session_state:
 if "assessment_answers" not in st.session_state:
     st.session_state.assessment_answers = {}
 if "assessment_submitted" not in st.session_state:
-    st.session_state.assessment_submitted = False
+    st.session_state.assessment_submitted = False[cite: 1, 3]
 if "assessment_candidate_token" not in st.session_state:
     st.session_state.assessment_candidate_token = ""
 
@@ -583,19 +596,19 @@ def dialog_auth():
         p = st.text_input("Password", type="password", key="auth_sign_p")
         if st.button("Sign In", use_container_width=True, key="btn_confirm_sign"):
             if not u or not p:
-                st.warning("Please fill in both fields.")
+                st.warning("Please fill in both fields.")[cite: 1, 3]
             elif u in st.session_state.users_db and st.session_state.users_db[u] == p:
                 st.session_state.username = u.split("@")[0].capitalize()
-                st.session_state.is_logged_in = True
+                st.session_state.is_logged_in = True[cite: 1, 3]
                 st.session_state.selected_gateway = False
                 log_event("LOGIN", st.session_state.username, "N/A", "User Login")
-                st.rerun()
+                st.rerun()[cite: 1, 3]
             elif u.lower() == "admin" and p == ADMIN_PIN:
-                st.session_state.username = "Administrator"
-                st.session_state.is_logged_in = True
+                st.session_state.username = "Administrator"[cite: 1, 3]
+                st.session_state.is_logged_in = True[cite: 1, 3]
                 st.session_state.selected_gateway = True
                 st.session_state.active_workspace = "Recruiter Workspace"
-                st.rerun()
+                st.rerun()[cite: 1, 3]
             else:
                 st.error("Account not found. Please register or continue as Guest.")
     with tab_auth2:
@@ -604,14 +617,14 @@ def dialog_auth():
         reg_p = st.text_input("Create Password", type="password", key="auth_reg_p")
         if st.button("Create Account", use_container_width=True, key="btn_confirm_reg"):
             if not reg_u or not reg_p:
-                st.warning("Username and password are required.")
+                st.warning("Username and password are required.")[cite: 1, 3]
             else:
                 st.session_state.users_db[reg_u] = reg_p
                 st.session_state.username = reg_n.strip() if reg_n.strip() else reg_u.split("@")[0].capitalize()
-                st.session_state.is_logged_in = True
+                st.session_state.is_logged_in = True[cite: 1, 3]
                 st.session_state.selected_gateway = False
-                log_event("REGISTER", st.session_state.username, "N/A", f"Registered: {reg_u}")
-                st.rerun()
+                log_event("REGISTER", st.session_state.username, "N/A", f"Registered: {reg_u}")[cite: 1, 3]
+                st.rerun()[cite: 1, 3]
 
 # ============================================================
 # 1. ENTRY SCREEN
@@ -629,7 +642,7 @@ if not st.session_state.is_logged_in:
         unsafe_allow_html=True
     )
     
-    col_c1, col_c2, col_c3 = st.columns([1, 1.3, 1])
+    col_c1, col_c2, col_c3 = st.columns([1, 1.3, 1])[cite: 1, 3]
     with col_c2:
         st.markdown(
             """
@@ -644,22 +657,22 @@ if not st.session_state.is_logged_in:
             unsafe_allow_html=True
         )
         
-        b1, b2, b3 = st.columns(3)
+        b1, b2, b3 = st.columns(3)[cite: 1, 3]
         with b1:
-            if st.button("🔐 Sign In", use_container_width=True):
+            if st.button("Sign In", key="btn_entry_sign_in", use_container_width=True):[cite: 1, 3]
                 dialog_auth()
         with b2:
-            if st.button("📝 Register", use_container_width=True):
+            if st.button("Register", key="btn_entry_register", use_container_width=True):[cite: 1, 3]
                 dialog_auth()
         with b3:
-            if st.button("🚀 Continue as Guest", use_container_width=True):
+            if st.button("Continue as Guest", key="btn_entry_guest", use_container_width=True):
                 st.session_state.username = "Guest Explorer"
-                st.session_state.is_logged_in = True
+                st.session_state.is_logged_in = True[cite: 1, 3]
                 st.session_state.selected_gateway = False
                 log_event("GUEST_ACCESS", "Guest", "N/A", "Guest entry")
-                st.rerun()
+                st.rerun()[cite: 1, 3]
 
-    st.stop()
+    st.stop()[cite: 1, 3]
 
 # ============================================================
 # 2. TWO-CARD GATEWAY PORTAL
@@ -708,7 +721,7 @@ if not st.session_state.selected_gateway:
             """,
             unsafe_allow_html=True
         )
-        if st.button("🚀 Start Journey as Job Seeker", key="btn_portal_seeker", use_container_width=True):
+        if st.button("Start Journey as Job Seeker", key="btn_portal_seeker", use_container_width=True):
             st.session_state.active_workspace = "Job Seeker Workspace"
             st.session_state.active_tool = "Dashboard"
             st.session_state.selected_gateway = True
@@ -741,7 +754,7 @@ if not st.session_state.selected_gateway:
             """,
             unsafe_allow_html=True
         )
-        if st.button("🏢 Start Hiring as Recruiter", key="btn_portal_recruiter", use_container_width=True):
+        if st.button("Start Hiring as Recruiter", key="btn_portal_recruiter", use_container_width=True):
             st.session_state.active_workspace = "Recruiter Workspace"
             st.session_state.active_tool = "Dashboard"
             st.session_state.selected_gateway = True
@@ -792,12 +805,12 @@ with st.sidebar:
     is_seeker = st.session_state.active_workspace == "Job Seeker Workspace"
     is_recruiter = st.session_state.active_workspace == "Recruiter Workspace"
 
-    if st.button("👤  Job Seeker Workspace", key="sb_ws_seeker", type="primary" if is_seeker else "secondary", use_container_width=True):
+    if st.button("Job Seeker Workspace", key="sb_ws_seeker", type="primary" if is_seeker else "secondary", use_container_width=True):
         st.session_state.active_workspace = "Job Seeker Workspace"
         st.session_state.active_tool = "Dashboard"
         st.rerun()
 
-    if st.button("🏢  Recruiter Workspace", key="sb_ws_recruiter", type="primary" if is_recruiter else "secondary", use_container_width=True):
+    if st.button("Recruiter Workspace", key="sb_ws_recruiter", type="primary" if is_recruiter else "secondary", use_container_width=True):
         st.session_state.active_workspace = "Recruiter Workspace"
         st.session_state.active_tool = "Dashboard"
         st.rerun()
@@ -805,38 +818,38 @@ with st.sidebar:
     if is_seeker:
         st.markdown('<div class="sidebar-section-title">CAREER TOOLS</div>', unsafe_allow_html=True)
         seeker_tools = [
-            ("Dashboard", "🎛️", "Dashboard"),
-            ("Resume Intelligence", "📄", "Resume Intelligence"),
-            ("Pre-Interview Assessment", "📝", "Pre-Interview Assessment"),
-            ("AI Mock Interview", "🎤", "AI Mock Interview"),
-            ("AI Job Match", "🎯", "AI Job Match"),
-            ("Salary Estimation", "💰", "Salary Estimation"),
-            ("Career Roadmap", "🗺️", "Career Roadmap"),
-            ("Real-Time Job Detection", "🛡️", "Real-Time Job Detection"),
-            ("Resume Builder", "📄", "Resume Builder"),
-            ("AI Career Assistant", "🤖", "AI Career Assistant"),
+            ("Dashboard", "Dashboard"),
+            ("Resume Intelligence", "Resume Intelligence"),
+            ("Pre-Interview Assessment", "Pre-Interview Assessment"),
+            ("AI Mock Interview", "AI Mock Interview"),
+            ("AI Job Match", "AI Job Match"),
+            ("Salary Estimation", "Salary Estimation"),
+            ("Career Roadmap", "Career Roadmap"),
+            ("Real-Time Job Detection", "Real-Time Job Detection"),
+            ("Resume Builder", "Resume Builder"),
+            ("AI Career Assistant", "AI Career Assistant"),
         ]
-        for name, icon, key_val in seeker_tools:
+        for name, key_val in seeker_tools:
             is_active = st.session_state.active_tool == key_val
-            if st.button(f"{icon}  {name}", key=f"sb_tool_{key_val}", type="primary" if is_active else "secondary", use_container_width=True):
+            if st.button(name, key=f"sb_tool_{key_val}", type="primary" if is_active else "secondary", use_container_width=True):
                 st.session_state.active_tool = key_val
                 st.rerun()
     else:
         st.markdown('<div class="sidebar-section-title">RECRUITER TOOLS</div>', unsafe_allow_html=True)
         rec_tools = [
-            ("Dashboard", "🎛️", "Dashboard"),
-            ("Bulk Resume Screening", "📤", "Bulk Screening"),
-            ("Candidate Score Vault", "🔐", "Score Vault"),
-            ("100Q Assessment Blueprints", "📝", "Assessment Blueprints")
+            ("Dashboard", "Dashboard"),
+            ("Bulk Resume Screening", "Bulk Screening"),
+            ("Candidate Score Vault", "Score Vault"),
+            ("100Q Assessment Blueprints", "Assessment Blueprints")
         ]
-        for name, icon, key_val in rec_tools:
+        for name, key_val in rec_tools:
             is_active = st.session_state.active_tool == key_val
-            if st.button(f"{icon}  {name}", key=f"sb_rec_{key_val}", type="primary" if is_active else "secondary", use_container_width=True):
+            if st.button(name, key=f"sb_rec_{key_val}", type="primary" if is_active else "secondary", use_container_width=True):
                 st.session_state.active_tool = key_val
                 st.rerun()
 
     st.markdown("<hr style='border-color: rgba(255,255,255,0.1); margin: 20px 0;'>", unsafe_allow_html=True)
-    if st.button("🚪  Logout / Change Mode", key="sb_logout_btn", use_container_width=True):
+    if st.button("Logout / Switch Mode", key="sb_logout_btn", use_container_width=True):
         st.session_state.selected_gateway = False
         st.session_state.active_tool = "Dashboard"
         st.rerun()
@@ -1073,9 +1086,9 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
             with st.spinner("Analyzing resume content..."):
                 res = api_analyze_resume(uploaded_doc)
                 st.session_state.resume_analysis = res
-                st.session_state.resume_text = res.get("extracted_text", "")
+                st.session_state.resume_text = res.get("extracted_text", "")[cite: 1, 3]
                 st.success("Resume parsed successfully!")
-                st.rerun()
+                st.rerun()[cite: 1, 3]
 
         if st.session_state.resume_analysis:
             r = st.session_state.resume_analysis
@@ -1126,13 +1139,13 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
                 unsafe_allow_html=True
             )
 
-            if st.button("🚀 Start 100-Question Assessment", use_container_width=True):
+            if st.button("Start 100-Question Assessment", use_container_width=True):
                 st.session_state.assessment_questions = generate_100q_assessment(selected_assessment_role)
-                st.session_state.assessment_role = selected_assessment_role
-                st.session_state.assessment_answers = {}
-                st.session_state.assessment_active = True
+                st.session_state.assessment_role = selected_assessment_role[cite: 1]
+                st.session_state.assessment_answers = {}[cite: 1]
+                st.session_state.assessment_active = True[cite: 1, 3]
                 st.session_state.assessment_candidate_token = f"{st.session_state.username}_{uuid.uuid4().hex[:6]}"
-                st.rerun()
+                st.rerun()[cite: 1, 3]
 
         elif st.session_state.assessment_active and not st.session_state.assessment_submitted:
             st.markdown(f"#### Active Examination: {st.session_state.assessment_role}")
@@ -1151,7 +1164,7 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
                 st.session_state.assessment_answers[qid] = chosen_ans
                 st.markdown("<hr style='border-color:#f1f5f9; margin:10px 0;'>", unsafe_allow_html=True)
 
-            if st.button("🏁 Submit Assessment", use_container_width=True):
+            if st.button("Submit Assessment", use_container_width=True):
                 correct = sum(1 for q in st.session_state.assessment_questions if st.session_state.assessment_answers.get(q["id"]) == q["answer"])
                 submission = {
                     "candidate_name": st.session_state.username,
@@ -1162,9 +1175,9 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
                     "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M")
                 }
                 st.session_state.recruiter_assessment_submissions[st.session_state.assessment_candidate_token] = submission
-                st.session_state.assessment_active = False
-                st.session_state.assessment_submitted = True
-                st.rerun()
+                st.session_state.assessment_active = False[cite: 1, 3]
+                st.session_state.assessment_submitted = True[cite: 1, 3]
+                st.rerun()[cite: 1, 3]
 
         elif st.session_state.assessment_submitted:
             st.markdown(
@@ -1180,9 +1193,9 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
                 unsafe_allow_html=True
             )
             if st.button("Take Another Assessment", key="btn_reset_exam"):
-                st.session_state.assessment_submitted = False
-                st.session_state.assessment_active = False
-                st.rerun()
+                st.session_state.assessment_submitted = False[cite: 1, 3]
+                st.session_state.assessment_active = False[cite: 1, 3]
+                st.rerun()[cite: 1, 3]
 
     # 3. AI MOCK INTERVIEW
     elif st.session_state.active_tool == "AI Mock Interview":
@@ -1199,7 +1212,7 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
             with c2:
                 interview_len = st.select_slider("Interview Questions:", options=[3, 5, 7, 10], value=5)
 
-            if st.button("🚀 Start Live Interview", use_container_width=True):
+            if st.button("Start Live Interview", use_container_width=True):
                 q_bank = [
                     f"Tell me about yourself and your motivations for applying as a {target_interview_role}?",
                     f"What key technical skills and methodologies do you utilize in your {target_interview_role} workflows?",
@@ -1213,7 +1226,7 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
                 st.session_state.interview_current_idx = 0
                 st.session_state.interview_transcript = []
                 st.session_state.interview_active = True
-                st.rerun()
+                st.rerun()[cite: 1, 3]
 
         elif st.session_state.interview_active and not st.session_state.interview_completed:
             curr_i = st.session_state.interview_current_idx
@@ -1232,7 +1245,7 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
 
             cand_response = st.text_area("Type your response to the interviewer:", height=160, key=f"ans_text_{curr_i}")
 
-            if st.button("Submit & Proceed ➔", use_container_width=True):
+            if st.button("Submit & Proceed", use_container_width=True):
                 if not cand_response.strip():
                     st.warning("Please type your response before proceeding.")
                 else:
@@ -1242,7 +1255,7 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
                     })
                     if curr_i + 1 < total_i:
                         st.session_state.interview_current_idx += 1
-                        st.rerun()
+                        st.rerun()[cite: 1, 3]
                     else:
                         st.session_state.interview_active = False
                         st.session_state.interview_completed = True
@@ -1253,7 +1266,7 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
                             "correctness": "80%",
                             "role_knowledge": "78%"
                         }
-                        st.rerun()
+                        st.rerun()[cite: 1, 3]
 
         elif st.session_state.interview_completed:
             rep = st.session_state.interview_report
@@ -1277,7 +1290,7 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
 
             if st.button("Practice Another Mock Interview", key="btn_retry_mock"):
                 st.session_state.interview_completed = False
-                st.rerun()
+                st.rerun()[cite: 1, 3]
 
     # 4. AI JOB MATCH
     elif st.session_state.active_tool == "AI Job Match":
@@ -1290,9 +1303,9 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
 
         if st.button("Check Match Compatibility", use_container_width=True):
             if not st.session_state.resume_text:
-                st.warning("Please upload your resume in Resume Intelligence first.")
+                st.warning("Please upload your resume in Resume Intelligence first.")[cite: 1, 3]
             elif not jd_text.strip():
-                st.warning("Please paste a job description.")
+                st.warning("Please paste a job description.")[cite: 1, 3]
             else:
                 with st.spinner("Calculating semantic match score..."):
                     raw_res = api_match_job(st.session_state.resume_text, jd_text)
@@ -1465,7 +1478,7 @@ elif st.session_state.active_workspace == "Recruiter Workspace":
             key="rec_bulk_files"
         )
 
-        if bulk_files and st.button("⚡ Process Resumes & Extract Emails", use_container_width=True):
+        if bulk_files and st.button("Process Resumes & Extract Emails", use_container_width=True):
             with st.spinner("Extracting candidate profiles..."):
                 c_list = []
                 for f in bulk_files:
@@ -1487,7 +1500,7 @@ elif st.session_state.active_workspace == "Recruiter Workspace":
             st.markdown("### 📧 Send Assessment Link")
             c_sel = st.selectbox("Select Candidate:", df_cand["email"].tolist())
             r_sel = st.selectbox("Assign Assessment Role:", IT_ROLES + NON_IT_ROLES)
-            if st.button("✉️ Dispatch Assessment Link", use_container_width=True):
+            if st.button("Dispatch Assessment Link", use_container_width=True):
                 st.success(f"Assessment link generated and emailed to {c_sel} for {r_sel}.")
 
     elif st.session_state.active_tool == "Score Vault":
