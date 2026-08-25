@@ -23,7 +23,9 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# --- Activity Logger ---
+# ============================================================
+# ACTIVITY LOGGER
+# ============================================================
 def log_event(event_type: str, username: str, rating: str = "N/A", details: str = ""):
     file_exists = os.path.isfile(ANALYTICS_FILE)
     with open(ANALYTICS_FILE, mode="a", newline="", encoding="utf-8") as f:
@@ -38,7 +40,9 @@ def log_event(event_type: str, username: str, rating: str = "N/A", details: str 
             details
         ])
 
-# --- Custom Styling (Including Highlighted Selected Buttons) ---
+# ============================================================
+# SCI-FI STYLING
+# ============================================================
 st.markdown(
     """
 <style>
@@ -254,7 +258,6 @@ p,label,.stMarkdown{
     border: 1px solid rgba(244, 63, 94, 0.35);
 }
 
-/* Default Action Buttons */
 .stButton > button {
     border-radius: 50px !important;
     background: linear-gradient(135deg, #0284c7 0%, #4f46e5 50%, #7c3aed 100%) !important;
@@ -273,7 +276,6 @@ p,label,.stMarkdown{
     border-color: rgba(255, 255, 255, 0.35) !important;
 }
 
-/* Selected Exam Option Highlight (Solid White Accent) */
 .stButton > button[kind="primary"] {
     background: #ffffff !important;
     color: #07111f !important;
@@ -436,7 +438,7 @@ def get_accurate_salary_estimate(role_query: str, exp_level: str, city: str) -> 
     }
 
 # ============================================================
-# EXAMINATION ENGINE
+# ROLE ASSESSMENT BLUEPRINTS & GENERATORS
 # ============================================================
 ROLE_EXAM_BLUEPRINTS = {
     "Software Engineer / Full Stack Developer": [
@@ -1144,7 +1146,7 @@ if st.session_state.workspace == "Job Seeker":
                 <div class="gauge-box">
                     <div class="gauge-label">Top Tier Target</div>
                     <div style="font-size: 2.2rem; font-weight: 900; color: #c084fc; margin: 6px 0;">₹{sr['high']} LPA</div>
-                    <span class="tag-bubble tag-purple">90th Percentile</span>
+                    <span class="tag-purple tag-bubble">90th Percentile</span>
                 </div>
                 """, unsafe_allow_html=True)
 
