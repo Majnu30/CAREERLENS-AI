@@ -30,49 +30,11 @@ from reportlab.lib.units import mm
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle, KeepTogether
 
 # SendGrid Dispatcher Integration
-try:
-    from engine.email_dispatcher import send_assessment_email
-except ImportError:
-    from sendgrid import SendGridAPIClient
-    from sendgrid.helpers.mail import Mail
+# Keep email delivery in one service so the UI never contains credentials or a
+# second implementation of the mail provider.
+from email_dispatcher import send_assessment_email
 
-    def send_assessment_email(to_email: str, candidate_name: str, role: str, test_link: str) -> tuple[bool, str]:
-        api_key = os.getenv("SENDGRID_API_KEY", "")
-        from_email = os.getenv("SENDGRID_FROM_EMAIL", "noreply@careerlens.ai")
-        if not to_email or not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", to_email.strip()):
-            return False, "Candidate email is invalid or missing."
-        if not api_key:
-            return False, "SendGrid API Key is not configured in environment variables."
-        
-        subject = f"CareerLens AI — Assessment Invitation for {role}"
-        html_content = f"""
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px;">
-            <h2 style="color: #2563eb; margin-top: 0;">CareerLens AI Assessment</h2>
-            <p>Hello <strong>{candidate_name or 'Candidate'}</strong>,</p>
-            <p>Congratulations! You have been shortlisted for the <strong>{role}</strong> role.</p>
-            <p>Please complete your online pre-interview qualifying assessment by clicking the link below:</p>
-            <div style="text-align: center; margin: 30px 0;">
-                <a href="{test_link}" style="background-color: #2563eb; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
-                    Start Assessment Now →
-                </a>
-            </div>
-            <p style="color: #64748b; font-size: 13px;">If the button doesn't work, copy and paste this URL into your browser:<br>
-            <a href="{test_link}" style="color: #2563eb;">{test_link}</a></p>
-            <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;">
-            <p style="color: #94a3b8; font-size: 12px;">CareerLens AI Recruitment Intelligence. Please do not reply directly to this automated email.</p>
-        </div>
-        """
-        message = Mail(from_email=from_email, to_emails=to_email.strip(), subject=subject, html_content=html_content)
-        try:
-            sg = SendGridAPIClient(api_key)
-            response = sg.send(message)
-            if response.status_code in [200, 201, 202]:
-                return True, "Email delivered successfully via SendGrid."
-            return False, f"SendGrid returned status code: {response.status_code}"
-        except Exception as e:
-            return False, f"SendGrid Delivery failed: {str(e)}"
-
-API_BASE_URL = os.getenv("API_URL", "https://careerlens-ai-9dx8.onrender.com")
+API_BASE_URL = os.getenv("API_URL", "http://localhost:8000").rstrip("/")
 ANALYTICS_FILE = "analytics.csv"
 APP_DB_FILE = os.getenv("CAREERLENS_DB", "careerlens.db")
 ADMIN_PIN = os.getenv("ADMIN_PIN", "")
@@ -144,13 +106,50 @@ def normalize_job_match(raw_res: Any) -> Dict:
         "experience_alignment": "Moderate Alignment"
     }
 
+EMAIL_RE = re.compile(r"[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+")
+
 def extract_email_from_text(text: str) -> str:
-    match = re.search(r'[\w\.-]+@[\w\.-]+\.\w+', text)
-    return match.group(0) if match else f"candidate_{uuid.uuid4().hex[:6]}@domain.com"
+    """Return a real email found in resume text; never invent a placeholder."""
+    for raw in EMAIL_RE.findall(text or ""):
+        email = raw.strip(".,;:()[]{}<>\"").lower()
+        if len(email) <= 254:
+            return email
+    return ""
+
+def extract_emails_from_text(text: str) -> List[str]:
+    """Extract all unique valid-looking email addresses from resume text."""
+    seen = set()
+    result = []
+    for raw in EMAIL_RE.findall(text or ""):
+        email = raw.strip(".,;:()[]{}<>\"").lower()
+        if len(email) <= 254 and email not in seen:
+            seen.add(email)
+            result.append(email)
+    return result
 
 def extract_phone_from_text(text: str) -> str:
-    match = re.search(r'(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}', text)
-    return match.group(0) if match else "+1 (555) 019-2834"
+    match = re.search(r'(?:\+?\d[\d .()\-]{8,}\d)', text or "")
+    return re.sub(r"\s+", " ", match.group(0)).strip() if match else ""
+
+def _candidate_identity_key(candidate: Dict[str, Any]) -> str:
+    email = (candidate.get("email") or "").strip().lower()
+    if email:
+        return f"email:{email}"
+    name = re.sub(r"\W+", "", (candidate.get("name") or "").lower())
+    phone = re.sub(r"\D+", "", (candidate.get("phone") or ""))
+    return f"identity:{name}|{phone}"
+
+def dedupe_candidates(candidates: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Remove duplicate candidates by email, then name+phone when email is absent."""
+    unique = []
+    seen = set()
+    for candidate in candidates:
+        key = _candidate_identity_key(candidate)
+        if key in seen:
+            continue
+        seen.add(key)
+        unique.append(candidate)
+    return unique
 
 # ============================================================
 # ACTIVITY LOGGER
@@ -811,11 +810,66 @@ defaults = {
     "job_detection_text": "",
     "resume_builder": {},
     "resume_template": "Executive",
+    "recruiter_nav_history": ["Dashboard"],
+    "recruiter_nav_index": 0,
+    "recruiter_selected_ids": [],
 }
 
 for key, val in defaults.items():
     if key not in st.session_state:
         st.session_state[key] = val
+
+RECRUITER_TOOLS = [
+    "Dashboard",
+    "Hiring Campaign",
+    "Bulk Screening",
+    "Shortlisted Candidates",
+    "Assessment Builder",
+    "Score Vault",
+    "Interview Pipeline",
+]
+
+def recruiter_navigate(tool: str, record_history: bool = True) -> None:
+    """Navigate recruiter pages with desktop-style back/forward history."""
+    if tool not in RECRUITER_TOOLS:
+        tool = "Dashboard"
+    history = list(st.session_state.get("recruiter_nav_history", ["Dashboard"]))
+    index = int(st.session_state.get("recruiter_nav_index", 0))
+    current = history[index] if history and 0 <= index < len(history) else st.session_state.get("active_tool", "Dashboard")
+    if record_history:
+        history = history[: index + 1]
+        if current != tool:
+            history.append(tool)
+        index = len(history) - 1
+    else:
+        if tool in history:
+            index = history.index(tool)
+        else:
+            history.append(tool)
+            index = len(history) - 1
+    st.session_state.recruiter_nav_history = history
+    st.session_state.recruiter_nav_index = index
+    st.session_state.active_tool = tool
+
+def recruiter_go_back() -> bool:
+    history = st.session_state.get("recruiter_nav_history", ["Dashboard"])
+    index = int(st.session_state.get("recruiter_nav_index", 0))
+    if index <= 0:
+        return False
+    index -= 1
+    st.session_state.recruiter_nav_index = index
+    st.session_state.active_tool = history[index]
+    return True
+
+def recruiter_go_forward() -> bool:
+    history = st.session_state.get("recruiter_nav_history", ["Dashboard"])
+    index = int(st.session_state.get("recruiter_nav_index", 0))
+    if index >= len(history) - 1:
+        return False
+    index += 1
+    st.session_state.recruiter_nav_index = index
+    st.session_state.active_tool = history[index]
+    return True
 
 def _load_recruiter_data() -> Dict[str, Any]:
     default = {"campaign": None, "candidates": [], "assessments": [], "submissions": []}
@@ -1389,7 +1443,7 @@ with st.sidebar:
         for name, key_val in rec_tools:
             is_active = st.session_state.active_tool == key_val
             if st.button(name, key=f"sb_rec_{key_val}", type="primary" if is_active else "secondary", use_container_width=True):
-                st.session_state.active_tool = key_val
+                recruiter_navigate(key_val)
                 st.rerun()
 
     st.markdown("<hr style='border-color: rgba(255,255,255,0.1); margin: 20px 0;'>", unsafe_allow_html=True)
@@ -1411,6 +1465,9 @@ with st.sidebar:
         st.session_state.username = "Guest Explorer"
         st.session_state.active_workspace = "Job Seeker Workspace"
         st.session_state.active_tool = "Dashboard"
+        st.session_state.recruiter_nav_history = ["Dashboard"]
+        st.session_state.recruiter_nav_index = 0
+        st.session_state.recruiter_selected_ids = []
         st.session_state.resume_text = ""
         st.session_state.resume_analysis = None
         st.session_state.job_match_result = None
@@ -1851,9 +1908,33 @@ elif st.session_state.active_workspace == "Recruiter Workspace":
         st.session_state.recruiter_data = data
         _save_recruiter_data(data)
 
-    def recruiter_nav(tool: str):
-        st.session_state.active_tool = tool
-        st.rerun()
+    if st.session_state.active_tool not in RECRUITER_TOOLS:
+        recruiter_navigate("Dashboard", record_history=False)
+
+    # Desktop-style recruiter navigation. These are app-level controls rather
+    # than browser-history controls, so they work reliably after Streamlit reruns.
+    nav_index = int(st.session_state.get("recruiter_nav_index", 0))
+    nav_history = st.session_state.get("recruiter_nav_history", ["Dashboard"])
+    can_back = nav_index > 0
+    can_forward = nav_index < len(nav_history) - 1
+
+    nav1, nav2, nav3, nav4 = st.columns([0.8, 0.8, 3.6, 1.2])
+    with nav1:
+        if st.button("← Back", disabled=not can_back, use_container_width=True, key="rec_back_btn"):
+            recruiter_go_back()
+            st.rerun()
+    with nav2:
+        if st.button("Forward →", disabled=not can_forward, use_container_width=True, key="rec_forward_btn"):
+            recruiter_go_forward()
+            st.rerun()
+    with nav3:
+        st.caption(f"Recruiter workflow  •  {st.session_state.active_tool}")
+    with nav4:
+        if st.button("🏠 Dashboard", use_container_width=True, key="rec_home_btn"):
+            recruiter_navigate("Dashboard")
+            st.rerun()
+
+    st.markdown("### Recruiter Command Suite")
 
     if st.session_state.active_tool == "Dashboard":
         st.markdown("### 📊 Recruiter Dashboard")
@@ -1865,122 +1946,238 @@ elif st.session_state.active_workspace == "Recruiter Workspace":
 
         st.markdown("#### Actions")
         c1, c2, c3 = st.columns(3)
-        if c1.button("🎯 Setup Campaign", use_container_width=True): recruiter_nav("Hiring Campaign")
-        if c2.button("📤 Screen Resumes", use_container_width=True): recruiter_nav("Bulk Screening")
-        if c3.button("✉️ Dispatch Assessments (SendGrid)", use_container_width=True): recruiter_nav("Assessment Builder")
+        if c1.button("🎯 Setup Campaign", use_container_width=True, key="rec_action_campaign"):
+            recruiter_navigate("Hiring Campaign")
+            st.rerun()
+        if c2.button("📤 Screen Resumes", use_container_width=True, key="rec_action_screen"):
+            recruiter_navigate("Bulk Screening")
+            st.rerun()
+        if c3.button("✉️ Dispatch Assessments", use_container_width=True, key="rec_action_dispatch"):
+            recruiter_navigate("Assessment Builder")
+            st.rerun()
 
     elif st.session_state.active_tool == "Hiring Campaign":
         st.markdown("### 🎯 Hiring Campaign")
         role_options = IT_ROLES + NON_IT_ROLES
-        role = st.selectbox("Target Role", role_options, index=0)
-        job_description = st.text_area("Job Description / Assessment Context", value=campaign.get("job_description", ""), height=130)
-        
-        if st.button("💾 Save Campaign", type="primary", use_container_width=True):
+        saved_role = campaign.get("role", role_options[0])
+        role_index = role_options.index(saved_role) if saved_role in role_options else 0
+        role = st.selectbox("Target Role", role_options, index=role_index, key="campaign_role")
+        job_description = st.text_area(
+            "Job Description / Assessment Context",
+            value=campaign.get("job_description", ""),
+            height=160,
+            key="campaign_job_description",
+        )
+        if st.button("💾 Save Campaign", type="primary", use_container_width=True, key="save_campaign"):
             data["campaign"] = {"role": role, "job_description": job_description.strip()}
             persist_recruiter()
-            st.success("Campaign configured successfully!")
+            st.success("Campaign configured successfully.")
 
     elif st.session_state.active_tool == "Bulk Screening":
         st.markdown("### 📤 Bulk Resume Screening")
-        files = st.file_uploader("Upload candidate resumes", type=["pdf", "docx", "txt"], accept_multiple_files=True)
-        
-        if files and st.button("⚡ Screen All Resumes", type="primary", use_container_width=True):
-            processed = []
-            campaign_jd = campaign.get("job_description", "")
-            for f in files:
-                profile = api_analyze_resume(f)
-                r_text = profile.get("extracted_text", "")
-                match = normalize_job_match(api_match_job(r_text, campaign_jd)) if campaign_jd else {"overall": 75}
-                cid = uuid.uuid4().hex[:8]
-                name = profile.get("name") or Path(f.name).stem.title()
-                email = profile.get("email") or extract_email_from_text(r_text)
-                
-                processed.append({
-                    "id": cid,
-                    "name": name,
-                    "email": email,
-                    "resume_score": profile.get("resume_score", 0),
-                    "role_match": match.get("overall", 0),
-                    "status": "Shortlisted",
-                    "assessment_status": "Not Sent",
-                })
-            st.session_state.recruiter_candidates = processed
-            persist_recruiter()
-            st.success(f"Screened and ranked {len(processed)} candidate(s)!")
-            st.rerun()
+        st.caption("Upload a cohort. CareerLens extracts real contact details, ranks candidates, and removes duplicate candidates.")
+        files = st.file_uploader(
+            "Upload candidate resumes",
+            type=["pdf", "docx", "txt"],
+            accept_multiple_files=True,
+            key="recruiter_bulk_files",
+        )
 
+        if files and st.button("⚡ Screen All Resumes", type="primary", use_container_width=True, key="screen_all_resumes"):
+            campaign_jd = campaign.get("job_description", "")
+            if not campaign_jd.strip():
+                st.warning("Create and save a hiring campaign with a job description before screening resumes.")
+            else:
+                processed = []
+                with st.spinner(f"Screening {len(files)} resume(s)…"):
+                    for f in files:
+                        try:
+                            profile = api_analyze_resume(f)
+                            r_text = profile.get("extracted_text", "")
+                            match = normalize_job_match(api_match_job(r_text, campaign_jd))
+                            email = (profile.get("email") or extract_email_from_text(r_text) or "").strip().lower()
+                            phone = (profile.get("phone") or extract_phone_from_text(r_text) or "").strip()
+                            name = profile.get("name") or Path(f.name).stem.replace("_", " ").replace("-", " ").title()
+                            processed.append({
+                                "id": uuid.uuid4().hex[:16],
+                                "name": name,
+                                "email": email,
+                                "phone": phone,
+                                "resume_score": profile.get("resume_score", 0),
+                                "role_match": match.get("overall", 0),
+                                "status": "Screened",
+                                "assessment_status": "Not Sent",
+                                "email_status": "Found" if email else "Missing",
+                                "skills": profile.get("skills", []),
+                                "missing_skills": match.get("missing", []),
+                                "source_file": f.name,
+                            })
+                        except Exception as exc:
+                            st.warning(f"Could not process {f.name}: {exc}")
+
+                processed = dedupe_candidates(processed)
+                processed.sort(key=lambda c: float(c.get("role_match", 0)), reverse=True)
+                st.session_state.recruiter_candidates = processed
+                st.session_state.recruiter_selected_ids = []
+                persist_recruiter()
+                st.success(f"Screened {len(processed)} unique candidate(s). Duplicate resumes were removed.")
+                st.rerun()
+
+        candidates = st.session_state.recruiter_candidates
         if candidates:
-            st.dataframe(pd.DataFrame(candidates), use_container_width=True)
+            selected_ids = set(st.session_state.get("recruiter_selected_ids", []))
+            st.markdown("#### Candidate Selection")
+            a1, a2, a3, a4 = st.columns(4)
+            if a1.button("☑️ Select All", use_container_width=True, key="select_all_candidates"):
+                st.session_state.recruiter_selected_ids = [c.get("id") for c in candidates if c.get("id")]
+                st.rerun()
+            if a2.button("☐ Clear Selection", use_container_width=True, key="clear_candidate_selection"):
+                st.session_state.recruiter_selected_ids = []
+                st.rerun()
+            if a3.button("🏆 Shortlist Selected", type="primary", use_container_width=True, key="shortlist_selected"):
+                if not selected_ids:
+                    st.warning("Select at least one candidate first.")
+                else:
+                    for candidate in candidates:
+                        if candidate.get("id") in selected_ids:
+                            candidate["status"] = "Shortlisted"
+                    persist_recruiter()
+                    st.success(f"Shortlisted {len(selected_ids)} candidate(s).")
+                    st.rerun()
+            if a4.button("➡️ Shortlist Page", use_container_width=True, key="go_shortlist"):
+                recruiter_navigate("Shortlisted Candidates")
+                st.rerun()
+
+            st.caption(f"Selected: {len(selected_ids)}  •  Shortlisted: {sum(1 for c in candidates if c.get('status') == 'Shortlisted')}  •  Unique: {len(candidates)}")
+
+            for idx, candidate in enumerate(candidates):
+                cid = candidate.get("id", str(idx))
+                default = cid in selected_ids
+                check = st.checkbox(
+                    f"{candidate.get('name', 'Candidate')}  ·  {candidate.get('role_match', 0)}% match  ·  {candidate.get('email') or 'Email Missing'}",
+                    value=default,
+                    key=f"bulk_select_{cid}",
+                )
+                if check:
+                    selected_ids.add(cid)
+                else:
+                    selected_ids.discard(cid)
+                badge = "Shortlisted" if candidate.get("status") == "Shortlisted" else "Screened"
+                email_label = candidate.get("email") or "Email Missing"
+                st.markdown(
+                    f"<div class='content-box' style='padding:12px 16px;margin-bottom:8px;'>"
+                    f"<b>{html.escape(str(candidate.get('name') or 'Candidate'))}</b>"
+                    f" &nbsp;·&nbsp; Match <b>{candidate.get('role_match', 0)}%</b>"
+                    f" &nbsp;·&nbsp; Resume {candidate.get('resume_score', 0)}"
+                    f" &nbsp;·&nbsp; 📧 {html.escape(str(email_label))}"
+                    f" &nbsp;·&nbsp; <span class='tag-badge tag-blue'>{badge}</span></div>",
+                    unsafe_allow_html=True,
+                )
+            st.session_state.recruiter_selected_ids = list(selected_ids)
 
     elif st.session_state.active_tool == "Shortlisted Candidates":
         st.markdown("### 🏆 Shortlisted Candidates")
         shortlisted = [c for c in candidates if c.get("status") == "Shortlisted"]
         if not shortlisted:
-            st.info("No candidates currently shortlisted. Screen resumes first.")
+            st.info("No candidates are shortlisted yet. Go to Bulk Resume Screening and use Select All or select individual candidates.")
         else:
-            st.dataframe(pd.DataFrame(shortlisted), use_container_width=True)
-            if st.button("Proceed to Assessment Dispatcher →", type="primary", use_container_width=True):
-                recruiter_nav("Assessment Builder")
+            st.caption(f"{len(shortlisted)} shortlisted candidate(s). Only these candidates are eligible for assessment dispatch.")
+            table = pd.DataFrame([
+                {
+                    "Name": c.get("name"),
+                    "Email": c.get("email") or "Email Missing",
+                    "Match": f"{c.get('role_match', 0)}%",
+                    "Email Status": c.get("email_status", "Missing"),
+                    "Assessment": c.get("assessment_status", "Not Sent"),
+                }
+                for c in shortlisted
+            ])
+            st.dataframe(table, use_container_width=True, hide_index=True)
+            b1, b2 = st.columns(2)
+            if b1.button("⬅️ Back to Bulk Screening", use_container_width=True, key="shortlist_back"):
+                recruiter_navigate("Bulk Screening")
+                st.rerun()
+            if b2.button("Proceed to Assessment Dispatcher →", type="primary", use_container_width=True, key="shortlist_next"):
+                recruiter_navigate("Assessment Builder")
+                st.rerun()
 
     elif st.session_state.active_tool == "Assessment Builder":
-        st.markdown("### 🚀 Automated Assessment Dispatcher (SendGrid)")
-        st.caption("Sends automated test invitations directly to shortlisted candidates via SendGrid.")
-        
-        eligible = [c for c in candidates if c.get("email")]
-        if not eligible:
-            st.warning("No candidates with valid email addresses found. Please upload resumes under Bulk Screening first.")
-        else:
-            role_target = campaign.get("role", "Software Developer")
-            st.write(f"Target Role: **{role_target}**")
-            
-            if st.button("✉️ Send Assessment Invitations via SendGrid", type="primary", use_container_width=True):
-                progress = st.progress(0, text="Dispatching emails via SendGrid...")
+        st.markdown("### 📝 Assessment Dispatcher")
+        st.caption("Only shortlisted candidates with real email addresses are eligible. Duplicate email addresses are removed before dispatch.")
+        shortlisted = [c for c in candidates if c.get("status") == "Shortlisted"]
+        eligible = []
+        seen_emails = set()
+        for candidate in shortlisted:
+            email = (candidate.get("email") or "").strip().lower()
+            if not email or email in seen_emails:
+                continue
+            seen_emails.add(email)
+            eligible.append(candidate)
+
+        role_target = campaign.get("role", "Software Developer")
+        st.write(f"Target Role: **{role_target}**")
+        st.metric("Shortlisted", len(shortlisted))
+        st.metric("Ready to Email", len(eligible))
+
+        missing_email = [c for c in shortlisted if not c.get("email")]
+        if missing_email:
+            st.warning(f"{len(missing_email)} shortlisted candidate(s) have no email address in their resume and will not receive an invitation.")
+
+        if eligible:
+            st.dataframe(
+                pd.DataFrame([
+                    {"Candidate": c.get("name"), "Email": c.get("email"), "Match": c.get("role_match", 0)}
+                    for c in eligible
+                ]),
+                use_container_width=True,
+                hide_index=True,
+            )
+            if st.button("✉️ Send Assessment Invitations", type="primary", use_container_width=True, key="send_assessment_invitations"):
+                progress = st.progress(0, text="Dispatching assessment emails…")
                 rows = []
-                
                 for idx, candidate in enumerate(eligible):
                     token = _make_assessment_token()
                     test_link = _assessment_public_url(token)
-                    
-                    # Call SendGrid automated email dispatcher
-                    sent, msg = send_assessment_email(candidate["email"], candidate["name"], role_target, test_link)
-                    
+                    sent, msg = send_assessment_email(candidate["email"], candidate.get("name", "Candidate"), role_target, test_link)
                     candidate["assessment_token"] = token
                     candidate["assessment_link"] = test_link
                     candidate["assessment_status"] = "Sent" if sent else "Failed"
-                    candidate["status"] = "Assessment Sent" if sent else candidate.get("status")
-                    
+                    if sent:
+                        candidate["status"] = "Assessment Sent"
                     rows.append({
                         "Candidate": candidate.get("name"),
                         "Email": candidate.get("email"),
-                        "SendGrid Status": "Delivered" if sent else "Failed",
-                        "Delivery Log": msg,
-                        "Exam Link": test_link
+                        "Status": "Sent" if sent else "Failed",
+                        "Details": msg,
                     })
-                    progress.progress((idx + 1) / len(eligible))
-                
-                # Save assessment event
+                    progress.progress((idx + 1) / max(1, len(eligible)))
+
                 data.setdefault("assessments", []).append({
                     "id": uuid.uuid4().hex,
                     "role": role_target,
                     "questions": generate_assessment_questions(role_target, 20),
                     "created_at": datetime.now().isoformat(timespec="seconds"),
-                    "candidate_tokens": {c["id"]: c.get("assessment_token") for c in eligible}
+                    "candidate_tokens": {c["id"]: c.get("assessment_token") for c in eligible},
                 })
                 persist_recruiter()
-                
-                st.success("All automated emails processed through SendGrid API!")
-                st.dataframe(pd.DataFrame(rows), use_container_width=True)
+                st.success("Assessment dispatch completed. Review the delivery table below.")
+                st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+        else:
+            st.info("No shortlisted candidate with a valid resume email is ready for dispatch.")
 
     elif st.session_state.active_tool == "Score Vault":
         st.markdown("### 📊 Assessment Score Vault")
         if not submissions:
             st.info("No assessment submissions recorded yet.")
         else:
-            st.dataframe(pd.DataFrame(submissions), use_container_width=True)
+            st.dataframe(pd.DataFrame(submissions), use_container_width=True, hide_index=True)
 
     elif st.session_state.active_tool == "Interview Pipeline":
         st.markdown("### 🎤 Interview Pipeline")
-        st.dataframe(pd.DataFrame(candidates), use_container_width=True)
+        if candidates:
+            st.dataframe(pd.DataFrame(candidates), use_container_width=True, hide_index=True)
+        else:
+            st.info("No candidates in the pipeline yet.")
 
 # ============================================================
 # STATE PERSISTENCE & FOOTER
