@@ -1117,21 +1117,30 @@ def _make_assessment_token() -> str:
 
 
 def _assessment_public_url(token: str) -> str:
-    base = os.getenv("PUBLIC_APP_URL", "").strip().rstrip("/")
+    base = _deployment_secret("PUBLIC_APP_URL").strip().rstrip("/")
     if not base:
         base = "http://localhost:8501"
     return f"{base}/?assessment={quote(token)}"
 
 
+def _deployment_secret(name: str, default: str = "") -> str:
+    try:
+        value = st.secrets.get(name, default)
+    except Exception:
+        value = os.getenv(name, default)
+    return str(value or default)
+
+
 def _smtp_settings() -> Dict[str, Any]:
-    cfg = st.session_state.get("smtp_config", {}) or {}
+    # Recruiters never configure SMTP in the UI. These values belong in
+    # Streamlit Secrets or deployment environment variables only.
     return {
-        "host": str(cfg.get("host") or os.getenv("SMTP_HOST", "")).strip(),
-        "port": int(cfg.get("port") or os.getenv("SMTP_PORT", "587")),
-        "username": str(cfg.get("username") or os.getenv("SMTP_USERNAME", "")).strip(),
-        "password": str(cfg.get("password") or os.getenv("SMTP_PASSWORD", "")),
-        "sender": str(cfg.get("sender") or os.getenv("SMTP_FROM", "")).strip(),
-        "use_ssl": bool(cfg.get("use_ssl", False)) or os.getenv("SMTP_SSL", "0").lower() in {"1", "true", "yes"},
+        "host": _deployment_secret("SMTP_HOST"),
+        "port": int(_deployment_secret("SMTP_PORT", "587")),
+        "username": _deployment_secret("SMTP_USERNAME"),
+        "password": _deployment_secret("SMTP_PASSWORD"),
+        "sender": _deployment_secret("SMTP_FROM"),
+        "use_ssl": _deployment_secret("SMTP_SSL", "0").lower() in {"1", "true", "yes"},
     }
 
 def _send_assessment_email(to_email: str, candidate_name: str, role: str, link: str) -> tuple[bool, str]:
@@ -1149,10 +1158,12 @@ def _send_assessment_email(to_email: str, candidate_name: str, role: str, link: 
         msg["To"] = to_email
         msg.set_content(
             f"Hello {candidate_name or 'Candidate'},\n\n"
-            f"You have been invited to complete the {role} assessment.\n\n"
-            f"Open your assessment here:\n{link}\n\n"
-            "Your score and answer key are not displayed after submission. The recruiter will review your result.\n\n"
-            "Regards,\nCareerLens AI"
+            f"Congratulations! You have been shortlisted for the next stage of the {role} hiring process.\n\n"
+            "Please complete the online assessment using the secure link below.\n\n"
+            f"Take Assessment: {link}\n\n"
+            "Your score and answer key will not be displayed after submission. The recruiting team will review your assessment.\n\n"
+            "Please complete the assessment before the deadline shown in your invitation.\n\n"
+            "Best regards,\nRecruitment Team\nCareerLens AI"
         )
         if cfg["use_ssl"] or cfg["port"] == 465:
             with smtplib.SMTP_SSL(cfg["host"], cfg["port"], timeout=25) as server:
@@ -1723,7 +1734,6 @@ with st.sidebar:
             ("🏆 Shortlisted Candidates", "Shortlisted Candidates"),
             ("📝 Assessment Builder", "Assessment Builder"),
             ("📊 Assessment Results", "Score Vault"),
-            ("📧 Email Delivery", "Email Delivery"),
             ("🎤 Interview Pipeline", "Interview Pipeline")
         ]
         for name, key_val in rec_tools:
@@ -2482,6 +2492,27 @@ elif st.session_state.active_workspace == "Recruiter Workspace":
         st.session_state.active_tool = tool
         st.rerun()
 
+    recruiter_steps = [
+        ("Dashboard", "Command Center"),
+        ("Hiring Campaign", "Campaign"),
+        ("Bulk Screening", "Screening"),
+        ("Shortlisted Candidates", "Shortlist"),
+        ("Assessment Builder", "Assessment"),
+        ("Score Vault", "Results"),
+        ("Interview Pipeline", "Interview"),
+    ]
+    current_index = next((i for i, (key, _) in enumerate(recruiter_steps) if key == st.session_state.active_tool), 0)
+    nav_left, nav_center, nav_right = st.columns([1, 5, 1])
+    with nav_left:
+        if current_index > 0 and st.button("← Back", key="recruiter_back", use_container_width=True):
+            recruiter_nav(recruiter_steps[current_index - 1][0])
+    with nav_center:
+        labels = "  →  ".join([f"**{label}**" if i == current_index else label for i, (_, label) in enumerate(recruiter_steps)])
+        st.markdown(f"<div style='text-align:center;color:#64748b;font-size:.82rem;padding-top:8px'>{labels}</div>", unsafe_allow_html=True)
+    with nav_right:
+        if current_index < len(recruiter_steps) - 1 and st.button("Next →", key="recruiter_next", use_container_width=True):
+            recruiter_nav(recruiter_steps[current_index + 1][0])
+
     # Professional, compact command center header.
     st.markdown(
         f"""
@@ -2564,19 +2595,35 @@ elif st.session_state.active_workspace == "Recruiter Workspace":
             required_skills = st.text_input("Required skills", value=campaign.get("required_skills", "Python, SQL, Git"))
             openings = st.number_input("Number of openings", min_value=1, max_value=500, value=int(campaign.get("openings", 1)))
         with c2:
-            job_description = st.text_area("Job description", value=campaign.get("job_description", ""), height=185)
+            company = st.text_input("Company name", value=campaign.get("company", ""), placeholder="Your company")
+            job_description = st.text_area("What is this examination about? / Job description", value=campaign.get("job_description", ""), height=130)
+            exam_instructions = st.text_area("Candidate instructions (optional)", value=campaign.get("exam_instructions", ""), height=80)
+        d1, d2, d3 = st.columns(3)
+        with d1:
+            exam_date = st.date_input("Assessment deadline", value=datetime.fromisoformat(campaign.get("exam_date")).date() if campaign.get("exam_date") else datetime.now().date())
+        with d2:
+            exam_time = st.time_input("Assessment deadline time", value=datetime.fromisoformat(campaign.get("exam_datetime")).time() if campaign.get("exam_datetime") else datetime.now().replace(hour=18, minute=0, second=0, microsecond=0).time())
+        with d3:
+            exam_duration = st.number_input("Duration (minutes)", min_value=5, max_value=240, value=int(campaign.get("exam_duration", 30)))
         if st.button("💾 Save campaign", type="primary", use_container_width=True):
             if not final_role or not job_description.strip():
                 st.error("Role and job description are required.")
             else:
                 data["campaign"] = {
                     "role": final_role, "custom_role": custom_role,
+                    "company": company.strip(),
                     "experience": experience.strip(), "required_skills": required_skills.strip(),
                     "openings": int(openings), "job_description": job_description.strip(),
+                    "exam_instructions": exam_instructions.strip(),
+                    "exam_date": exam_date.isoformat(),
+                    "exam_datetime": datetime.combine(exam_date, exam_time).isoformat(timespec="minutes"),
+                    "exam_duration": int(exam_duration),
                     "updated_at": datetime.now().isoformat(timespec="seconds"),
                 }
                 persist_recruiter()
-                st.success("Hiring campaign saved. Upload candidate resumes next.")
+                st.success("Hiring campaign saved. Next: upload resumes for AI screening.")
+                if st.button("Continue to Resume Screening →", type="primary", use_container_width=True):
+                    recruiter_nav("Bulk Screening")
 
     elif st.session_state.active_tool == "Bulk Screening":
         st.markdown("### 📤 Bulk resume screening")
@@ -2667,17 +2714,23 @@ elif st.session_state.active_workspace == "Recruiter Workspace":
             if not eligible:
                 st.info("No shortlisted candidates with valid email addresses are ready. Return to Shortlisted Candidates after screening.")
             else:
+                st.markdown("#### Assessment details")
+                st.caption("These details are used automatically in the candidate invitation. Recruiters do not need to configure SMTP.")
+                company_name = st.text_input("Company", value=campaign.get("company", ""), key="assessment_company")
+                duration = st.number_input("Duration (minutes)", min_value=5, max_value=240, value=int(campaign.get("exam_duration", 30)), key="assessment_duration")
+                deadline_label = st.text_input("Deadline", value=campaign.get("exam_datetime", ""), key="assessment_deadline")
+                instructions = st.text_area("What is the examination about?", value=campaign.get("exam_instructions", ""), key="assessment_instructions", height=90)
                 count = st.select_slider("Questions", options=list(range(10,51,5)), value=20)
                 difficulty = st.selectbox("Difficulty", ["Standard", "Advanced", "Mixed"])
                 ids_default = st.session_state.pop("assessment_selected_ids", [c["id"] for c in eligible])
                 ids_default = [x for x in ids_default if any(c["id"] == x for c in eligible)]
                 selected_ids = st.multiselect("Candidates to invite", [c["id"] for c in eligible], default=ids_default, format_func=lambda x: next((c.get("name",x) for c in eligible if c["id"]==x),x))
-                if st.button("🔗 Generate links + send emails", type="primary", use_container_width=True):
+                if st.button("🚀 Generate Assessment & Send to Shortlisted Candidates", type="primary", use_container_width=True):
                     if not selected_ids:
                         st.error("Select at least one candidate.")
                     else:
                         questions = generate_assessment_questions(campaign["role"], int(count))
-                        assessment = {"id": uuid.uuid4().hex, "role": campaign["role"], "difficulty": difficulty, "question_count": int(count), "questions": questions, "created_at": datetime.now().isoformat(timespec="seconds"), "candidate_tokens": {}}
+                        assessment = {"id": uuid.uuid4().hex, "role": campaign["role"], "company": company_name.strip(), "difficulty": difficulty, "question_count": int(count), "duration_minutes": int(duration), "deadline": deadline_label.strip(), "instructions": instructions.strip(), "questions": questions, "created_at": datetime.now().isoformat(timespec="seconds"), "candidate_tokens": {}}
                         rows=[]
                         for cid in selected_ids:
                             candidate=next((x for x in candidates if x.get("id")==cid),None)
@@ -2692,10 +2745,21 @@ elif st.session_state.active_workspace == "Recruiter Workspace":
                         data.setdefault("assessments",[]).append(assessment)
                         st.session_state.last_generated_assessment=assessment
                         persist_recruiter()
-                        st.success("Assessment generated. Delivery results are shown below.")
+                        sent_count = sum(1 for r in rows if r["Delivery"] == "Sent")
+                        failed_count = len(rows) - sent_count
+                        if sent_count == len(rows):
+                            st.success(f"Assessment generated and sent to all {sent_count} shortlisted candidate(s).")
+                        elif sent_count:
+                            st.warning(f"Assessment generated. {sent_count} email(s) sent; {failed_count} could not be delivered. Copy the affected candidate links below.")
+                        else:
+                            st.error("Assessment links were generated, but no emails were delivered. Configure SMTP in deployment secrets, then resend.")
                         st.dataframe(pd.DataFrame(rows),use_container_width=True,hide_index=True)
                         for r in rows:
-                            st.code(r["Link"],language="text")
+                            if r["Delivery"] != "Sent":
+                                st.markdown(f"**{html.escape(str(r['Candidate']))}** — copy this candidate-specific link")
+                                st.code(r["Link"],language="text")
+                        if st.button("Continue to Assessment Results →", use_container_width=True):
+                            recruiter_nav("Score Vault")
 
     elif st.session_state.active_tool == "Score Vault":
         st.markdown("### 📊 Assessment results")
@@ -2733,26 +2797,6 @@ elif st.session_state.active_workspace == "Recruiter Workspace":
                     if st.button("✅ Select",key=f"sel_{c['id']}"): c["status"]="Selected"; persist_recruiter(); st.rerun()
                 with d:
                     if st.button("❌ Reject",key=f"rej_{c['id']}"): c["status"]="Rejected"; persist_recruiter(); st.rerun()
-
-    elif st.session_state.active_tool == "Email Delivery":
-        st.markdown("### 📧 Email delivery")
-        st.caption("Assessment links are sent through SMTP. Use your organization's SMTP server or Gmail/Outlook SMTP credentials.")
-        env = _smtp_settings()
-        c1,c2=st.columns(2)
-        with c1:
-            host=st.text_input("SMTP host",value=st.session_state.smtp_config.get("host",env["host"]))
-            port=st.number_input("SMTP port",min_value=1,max_value=65535,value=st.session_state.smtp_config.get("port",env["port"]))
-            username=st.text_input("SMTP username",value=st.session_state.smtp_config.get("username",env["username"]))
-        with c2:
-            password=st.text_input("SMTP password / app password",type="password",value=st.session_state.smtp_config.get("password",env["password"]))
-            sender=st.text_input("From email",value=st.session_state.smtp_config.get("sender",env["sender"]))
-            ssl_mode=st.checkbox("Use SSL (port 465)",value=st.session_state.smtp_config.get("use_ssl",env["use_ssl"]))
-        public_url=st.text_input("Public app URL",value=os.getenv("PUBLIC_APP_URL","").strip(),help="Must be the deployed Streamlit URL. Example: https://your-app.streamlit.app")
-        if st.button("💾 Save email settings",type="primary",use_container_width=True):
-            st.session_state.smtp_config={"host":host.strip(),"port":int(port),"username":username.strip(),"password":password,"sender":sender.strip(),"use_ssl":ssl_mode}
-            if public_url.strip(): os.environ["PUBLIC_APP_URL"]=public_url.strip().rstrip("/")
-            st.success("Email settings loaded for this session. Use 'Send assessment' to deliver invitations.")
-        st.warning("For production, put SMTP credentials and PUBLIC_APP_URL in Streamlit Secrets/environment variables instead of source code.")
 
 def _persist_current_user_state():
     uid = st.session_state.get("user_id", "")
