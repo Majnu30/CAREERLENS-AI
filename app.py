@@ -12,37 +12,33 @@ import pandas as pd
 import requests
 import streamlit as st
 
-API_BASE_URL = os.getenv("API_URL", "https://careerlens-ai-9dx8.onrender.com")[cite: 1]
-ANALYTICS_FILE = "analytics.csv"[cite: 1]
-ADMIN_PIN = "1234"[cite: 1]
+API_BASE_URL = os.getenv("API_URL", "https://careerlens-ai-9dx8.onrender.com")
+ANALYTICS_FILE = "analytics.csv"
+ADMIN_PIN = "1234"
 
 st.set_page_config(
     page_title="CareerLens AI",
     page_icon="💼",
     layout="wide",
     initial_sidebar_state="expanded",
-)[cite: 1]
+)
 
-# ============================================================
-# ACTIVITY LOGGER
-# ============================================================
+# --- Activity Logger ---
 def log_event(event_type: str, username: str, rating: str = "N/A", details: str = ""):
-    file_exists = os.path.isfile(ANALYTICS_FILE)[cite: 1]
-    with open(ANALYTICS_FILE, mode="a", newline="", encoding="utf-8") as f:[cite: 1]
-        writer = csv.writer(f)[cite: 1]
-        if not file_exists:[cite: 1]
-            writer.writerow(["Timestamp", "Event", "Username", "Rating", "Details"])[cite: 1]
+    file_exists = os.path.isfile(ANALYTICS_FILE)
+    with open(ANALYTICS_FILE, mode="a", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        if not file_exists:
+            writer.writerow(["Timestamp", "Event", "Username", "Rating", "Details"])
         writer.writerow([
             datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             event_type,
             username,
             rating,
             details
-        ])[cite: 1]
+        ])
 
-# ============================================================
-# SCI-FI STYLING
-# ============================================================
+# --- Custom Styling (Including Highlighted Selected Buttons) ---
 st.markdown(
     """
 <style>
@@ -258,6 +254,7 @@ p,label,.stMarkdown{
     border: 1px solid rgba(244, 63, 94, 0.35);
 }
 
+/* Default Action Buttons */
 .stButton > button {
     border-radius: 50px !important;
     background: linear-gradient(135deg, #0284c7 0%, #4f46e5 50%, #7c3aed 100%) !important;
@@ -276,6 +273,7 @@ p,label,.stMarkdown{
     border-color: rgba(255, 255, 255, 0.35) !important;
 }
 
+/* Selected Exam Option Highlight (Solid White Accent) */
 .stButton > button[kind="primary"] {
     background: #ffffff !important;
     color: #07111f !important;
@@ -438,7 +436,7 @@ def get_accurate_salary_estimate(role_query: str, exp_level: str, city: str) -> 
     }
 
 # ============================================================
-# ROLE ASSESSMENT BLUEPRINTS & GENERATORS
+# EXAMINATION ENGINE
 # ============================================================
 ROLE_EXAM_BLUEPRINTS = {
     "Software Engineer / Full Stack Developer": [
@@ -485,10 +483,10 @@ ROLE_EXAM_BLUEPRINTS = {
         ("System Design & Architecture", 5),
         ("Reliability & Security Scenarios", 4),
     ],
-}[cite: 1]
+}
 
 def get_exam_blueprint(role: str):
-    return ROLE_EXAM_BLUEPRINTS.get(role, ROLE_EXAM_BLUEPRINTS["Software Engineer / Full Stack Developer"])[cite: 1]
+    return ROLE_EXAM_BLUEPRINTS.get(role, ROLE_EXAM_BLUEPRINTS["Software Engineer / Full Stack Developer"])
 
 def synthesize_dynamic_questions(role: str, blueprint: List, attempt_seed: str) -> List[Dict]:
     rng = random.Random(attempt_seed)
@@ -555,11 +553,11 @@ def synthesize_dynamic_questions(role: str, blueprint: List, attempt_seed: str) 
     return exam_paper
 
 def generate_examination_suite(role: str, attempt_id: str, resume_context: str = "") -> List[Dict]:
-    blueprint = get_exam_blueprint(role)[cite: 1]
+    blueprint = get_exam_blueprint(role)
     system_prompt = (
         "You are the Lead Assessment Director for IT hiring. Generate a JSON array of multiple choice questions. "
         "Each question must have keys: id, section, question, options (array of 4 strings), answer (exact match of correct option)."
-    )[cite: 1]
+    )
 
     user_prompt = f"""
 ROLE: {role}
@@ -576,26 +574,26 @@ Format as raw JSON:
         reply = api_chat_assistant(
             [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}],
             resume_context=resume_context
-        )[cite: 1]
-        json_match = re.search(r"\[\s*\{.*\}\s*\]", reply or "", re.DOTALL)[cite: 1]
+        )
+        json_match = re.search(r"\[\s*\{.*\}\s*\]", reply or "", re.DOTALL)
         if json_match:
-            parsed = json.loads(json_match.group(0))[cite: 1]
-            if isinstance(parsed, list) and len(parsed) >= 20:[cite: 1]
-                cleaned = [][cite: 1]
+            parsed = json.loads(json_match.group(0))
+            if isinstance(parsed, list) and len(parsed) >= 20:
+                cleaned = []
                 for idx, q in enumerate(parsed[:50], start=1):
-                    opts = [str(o).strip() for o in q.get("options", ["A", "B", "C", "D"])][cite: 1]
-                    ans = str(q.get("answer", opts[0])).strip()[cite: 1]
-                    if ans not in opts:[cite: 1]
-                        opts[0] = ans[cite: 1]
-                    random.shuffle(opts)[cite: 1]
+                    opts = [str(o).strip() for o in q.get("options", ["A", "B", "C", "D"])]
+                    ans = str(q.get("answer", opts[0])).strip()
+                    if ans not in opts:
+                        opts[0] = ans
+                    random.shuffle(opts)
                     cleaned.append({
                         "id": idx,
                         "section": str(q.get("section", "Technical Assessment")).strip(),
                         "question": str(q.get("question", f"Question {idx}")).strip(),
                         "options": opts,
                         "answer": ans
-                    })[cite: 1]
-                return cleaned[cite: 1]
+                    })
+                return cleaned
     except Exception:
         pass
 
@@ -605,23 +603,23 @@ Format as raw JSON:
 # STATE & DATA ARCHITECTURE (PIPELINE & CAMPAIGNS)
 # ============================================================
 if "users_db" not in st.session_state:
-    st.session_state.users_db = {}[cite: 1]
+    st.session_state.users_db = {}
 if "is_logged_in" not in st.session_state:
-    st.session_state.is_logged_in = False[cite: 1]
+    st.session_state.is_logged_in = False
 if "is_admin_auth" not in st.session_state:
-    st.session_state.is_admin_auth = False[cite: 1]
+    st.session_state.is_admin_auth = False
 if "username" not in st.session_state:
-    st.session_state.username = "Guest"[cite: 1]
+    st.session_state.username = "Guest"
 if "workspace" not in st.session_state:
-    st.session_state.workspace = "Job Seeker"[cite: 1]
+    st.session_state.workspace = "Job Seeker"
 if "resume_text" not in st.session_state:
-    st.session_state.resume_text = ""[cite: 1]
+    st.session_state.resume_text = ""
 if "resume_analysis" not in st.session_state:
-    st.session_state.resume_analysis = None[cite: 1]
+    st.session_state.resume_analysis = None
 if "custom_action_plan" not in st.session_state:
-    st.session_state.custom_action_plan = None[cite: 1]
+    st.session_state.custom_action_plan = None
 if "ats_generated_bullets" not in st.session_state:
-    st.session_state.ats_generated_bullets = None[cite: 1]
+    st.session_state.ats_generated_bullets = None
 
 # Recruiter Enterprise State
 if "campaigns" not in st.session_state:
@@ -633,134 +631,134 @@ if "recruiter_candidates" not in st.session_state:
 if "recruiter_assessments" not in st.session_state:
     st.session_state.recruiter_assessments = {}
 if "recruiter_outreach_email" not in st.session_state:
-    st.session_state.recruiter_outreach_email = None[cite: 1]
+    st.session_state.recruiter_outreach_email = None
 
 # Job Seeker Assessment State (Blind Exam - No Scores Shown to Candidate)
 if "exam_active" not in st.session_state:
-    st.session_state.exam_active = False[cite: 1]
+    st.session_state.exam_active = False
 if "exam_questions" not in st.session_state:
-    st.session_state.exam_questions = [][cite: 1]
+    st.session_state.exam_questions = []
 if "exam_answers" not in st.session_state:
-    st.session_state.exam_answers = {}[cite: 1]
+    st.session_state.exam_answers = {}
 if "exam_submitted" not in st.session_state:
-    st.session_state.exam_submitted = False[cite: 1]
+    st.session_state.exam_submitted = False
 if "exam_role" not in st.session_state:
-    st.session_state.exam_role = ""[cite: 1]
+    st.session_state.exam_role = ""
 if "exam_attempt_id" not in st.session_state:
-    st.session_state.exam_attempt_id = ""[cite: 1]
+    st.session_state.exam_attempt_id = ""
 if "exam_campaign_id" not in st.session_state:
     st.session_state.exam_campaign_id = None
 if "exam_candidate_email" not in st.session_state:
     st.session_state.exam_candidate_email = ""
 
 def show_skills(skills, tag_style="tag-cyan"):
-    if not skills:[cite: 1]
-        st.caption("No skills detected.")[cite: 1]
+    if not skills:
+        st.caption("No skills detected.")
         return
-    html = "".join(f'<span class="tag-bubble {tag_style}">{skill}</span>' for skill in skills)[cite: 1]
-    st.markdown(html, unsafe_allow_html=True)[cite: 1]
+    html = "".join(f'<span class="tag-bubble {tag_style}">{skill}</span>' for skill in skills)
+    st.markdown(html, unsafe_allow_html=True)
 
 def render_radial_gauge(percentage: int, label: str, badge_text: str, color_hex: str = "#38bdf8"):
-    val = max(0, min(100, int(percentage)))[cite: 1]
-    circumference = 2 * 3.14159 * 42[cite: 1]
-    offset = circumference - (val / 100) * circumference[cite: 1]
+    val = max(0, min(100, int(percentage)))
+    circumference = 2 * 3.14159 * 42
+    offset = circumference - (val / 100) * circumference
     
-    html = f"""<div class="gauge-box"><div class="gauge-label">{label}</div><svg width="105" height="105" viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" stroke="#16273e" stroke-width="8" fill="transparent" /><circle cx="50" cy="50" r="42" stroke="{color_hex}" stroke-width="8" fill="transparent" stroke-dasharray="{circumference}" stroke-dashoffset="{offset}" stroke-linecap="round" transform="rotate(-90 50 50)" style="filter: drop-shadow(0 0 6px {color_hex}88);" /><text x="50" y="55" fill="#f4f7fb" font-size="18" font-weight="900" text-anchor="middle" dominant-baseline="middle">{val}%</text></svg><span class="tag-bubble" style="color: {color_hex}; border-color: {color_hex}55; background: {color_hex}15; margin-top: 8px;">{badge_text}</span></div>"""[cite: 1]
-    st.markdown(html, unsafe_allow_html=True)[cite: 1]
+    html = f"""<div class="gauge-box"><div class="gauge-label">{label}</div><svg width="105" height="105" viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" stroke="#16273e" stroke-width="8" fill="transparent" /><circle cx="50" cy="50" r="42" stroke="{color_hex}" stroke-width="8" fill="transparent" stroke-dasharray="{circumference}" stroke-dashoffset="{offset}" stroke-linecap="round" transform="rotate(-90 50 50)" style="filter: drop-shadow(0 0 6px {color_hex}88);" /><text x="50" y="55" fill="#f4f7fb" font-size="18" font-weight="900" text-anchor="middle" dominant-baseline="middle">{val}%</text></svg><span class="tag-bubble" style="color: {color_hex}; border-color: {color_hex}55; background: {color_hex}15; margin-top: 8px;">{badge_text}</span></div>"""
+    st.markdown(html, unsafe_allow_html=True)
 
 # ============================================================
 # DIALOGS
 # ============================================================
 @st.dialog("🔐 Sign In")
 def open_signin_dialog():
-    st.markdown("Enter your login credentials to continue.")[cite: 1]
-    login_user = st.text_input("Username or Email", key="popup_login_user")[cite: 1]
-    login_pass = st.text_input("Password", type="password", key="popup_login_pass")[cite: 1]
+    st.markdown("Enter your login credentials to continue.")
+    login_user = st.text_input("Username or Email", key="popup_login_user")
+    login_pass = st.text_input("Password", type="password", key="popup_login_pass")
 
-    if st.button("Sign In", use_container_width=True, key="btn_confirm_signin"):[cite: 1]
-        if not login_user.strip() or not login_pass.strip():[cite: 1]
-            st.warning("Please fill in both fields.")[cite: 1]
-        elif login_user.strip().lower() == "admin" and login_pass == ADMIN_PIN:[cite: 1]
-            st.session_state.username = "Administrator"[cite: 1]
-            st.session_state.is_logged_in = True[cite: 1]
-            st.session_state.is_admin_auth = True[cite: 1]
-            st.session_state.workspace = "Analytics"[cite: 1]
-            log_event("ADMIN_LOGIN", "Administrator", "N/A", "Master Admin Session")[cite: 1]
-            st.rerun()[cite: 1]
-        elif login_user not in st.session_state.users_db:[cite: 1]
-            st.error("Account not found. Please click 'Register' first.")[cite: 1]
-        elif st.session_state.users_db[login_user] != login_pass:[cite: 1]
-            st.error("Incorrect password. Please try again.")[cite: 1]
+    if st.button("Sign In", use_container_width=True, key="btn_confirm_signin"):
+        if not login_user.strip() or not login_pass.strip():
+            st.warning("Please fill in both fields.")
+        elif login_user.strip().lower() == "admin" and login_pass == ADMIN_PIN:
+            st.session_state.username = "Administrator"
+            st.session_state.is_logged_in = True
+            st.session_state.is_admin_auth = True
+            st.session_state.workspace = "Analytics"
+            log_event("ADMIN_LOGIN", "Administrator", "N/A", "Master Admin Session")
+            st.rerun()
+        elif login_user not in st.session_state.users_db:
+            st.error("Account not found. Please click 'Register' first.")
+        elif st.session_state.users_db[login_user] != login_pass:
+            st.error("Incorrect password. Please try again.")
         else:
-            st.session_state.username = login_user.split("@")[0].capitalize()[cite: 1]
-            st.session_state.is_logged_in = True[cite: 1]
-            log_event("LOGIN", st.session_state.username, "N/A", "Successful Login")[cite: 1]
-            st.success("Signed in successfully!")[cite: 1]
-            st.rerun()[cite: 1]
+            st.session_state.username = login_user.split("@")[0].capitalize()
+            st.session_state.is_logged_in = True
+            log_event("LOGIN", st.session_state.username, "N/A", "Successful Login")
+            st.success("Signed in successfully!")
+            st.rerun()
 
 @st.dialog("📝 Create Account")
 def open_register_dialog():
-    st.markdown("Create an account to save your resume and career roadmaps.")[cite: 1]
-    reg_name = st.text_input("Full Name", placeholder="e.g. Alex Mercer", key="popup_reg_name")[cite: 1]
-    reg_user = st.text_input("Choose Username / Email", placeholder="e.g. alex.mercer", key="popup_reg_user")[cite: 1]
-    reg_pass = st.text_input("Create Password", type="password", placeholder="••••••••", key="popup_reg_pass")[cite: 1]
+    st.markdown("Create an account to save your resume and career roadmaps.")
+    reg_name = st.text_input("Full Name", placeholder="e.g. Alex Mercer", key="popup_reg_name")
+    reg_user = st.text_input("Choose Username / Email", placeholder="e.g. alex.mercer", key="popup_reg_user")
+    reg_pass = st.text_input("Create Password", type="password", placeholder="••••••••", key="popup_reg_pass")
 
-    if st.button("Register & Continue", use_container_width=True, key="btn_confirm_register"):[cite: 1]
-        if not reg_user.strip() or not reg_pass.strip():[cite: 1]
-            st.warning("Username and password are required.")[cite: 1]
-        elif reg_user.strip().lower() == "admin":[cite: 1]
-            st.warning("Reserved username. Please choose another username.")[cite: 1]
-        elif reg_user in st.session_state.users_db:[cite: 1]
-            st.warning("Username already registered. Please sign in.")[cite: 1]
+    if st.button("Register & Continue", use_container_width=True, key="btn_confirm_register"):
+        if not reg_user.strip() or not reg_pass.strip():
+            st.warning("Username and password are required.")
+        elif reg_user.strip().lower() == "admin":
+            st.warning("Reserved username. Please choose another username.")
+        elif reg_user in st.session_state.users_db:
+            st.warning("Username already registered. Please sign in.")
         else:
-            st.session_state.users_db[reg_user] = reg_pass[cite: 1]
-            st.session_state.username = reg_name.strip() if reg_name.strip() else reg_user.split("@")[0].capitalize()[cite: 1]
-            st.session_state.is_logged_in = True[cite: 1]
-            log_event("REGISTER", st.session_state.username, "N/A", f"Registered account: {reg_user}")[cite: 1]
-            st.success("Account created successfully!")[cite: 1]
-            st.rerun()[cite: 1]
+            st.session_state.users_db[reg_user] = reg_pass
+            st.session_state.username = reg_name.strip() if reg_name.strip() else reg_user.split("@")[0].capitalize()
+            st.session_state.is_logged_in = True
+            log_event("REGISTER", st.session_state.username, "N/A", f"Registered account: {reg_user}")
+            st.success("Account created successfully!")
+            st.rerun()
 
 @st.dialog("⭐ Rate & Log Out")
 def open_logout_feedback_dialog():
-    st.markdown("### How was your experience?")[cite: 1]
-    st.markdown("Please leave a rating before exiting.")[cite: 1]
-    rating = st.feedback("stars")[cite: 1]
-    feedback_text = st.text_area("Feedback or suggestions (optional):", placeholder="Let us know what you think...")[cite: 1]
+    st.markdown("### How was your experience?")
+    st.markdown("Please leave a rating before exiting.")
+    rating = st.feedback("stars")
+    feedback_text = st.text_area("Feedback or suggestions (optional):", placeholder="Let us know what you think...")
     
-    col_out1, col_out2 = st.columns(2)[cite: 1]
+    col_out1, col_out2 = st.columns(2)
     with col_out1:
-        if st.button("Submit & Exit 🚪", use_container_width=True, key="btn_submit_feedback_logout"):[cite: 1]
-            stars_rated = f"{rating + 1} Stars" if rating is not None else "No Rating"[cite: 1]
-            log_event("LOGOUT_WITH_RATING", st.session_state.username, stars_rated, feedback_text.strip() or "No comment")[cite: 1]
-            st.toast("Thank you for your rating!")[cite: 1]
-            st.session_state.is_logged_in = False[cite: 1]
-            st.session_state.is_admin_auth = False[cite: 1]
-            st.session_state.username = "Guest"[cite: 1]
-            st.session_state.resume_text = ""[cite: 1]
-            st.session_state.resume_analysis = None[cite: 1]
-            st.session_state.custom_action_plan = None[cite: 1]
-            st.rerun()[cite: 1]
+        if st.button("Submit & Exit 🚪", use_container_width=True, key="btn_submit_feedback_logout"):
+            stars_rated = f"{rating + 1} Stars" if rating is not None else "No Rating"
+            log_event("LOGOUT_WITH_RATING", st.session_state.username, stars_rated, feedback_text.strip() or "No comment")
+            st.toast("Thank you for your rating!")
+            st.session_state.is_logged_in = False
+            st.session_state.is_admin_auth = False
+            st.session_state.username = "Guest"
+            st.session_state.resume_text = ""
+            st.session_state.resume_analysis = None
+            st.session_state.custom_action_plan = None
+            st.rerun()
     with col_out2:
-        if st.button("Skip & Exit", use_container_width=True, key="btn_skip_feedback_logout"):[cite: 1]
-            log_event("LOGOUT_SKIPPED", st.session_state.username, "Skipped", "No feedback provided")[cite: 1]
-            st.session_state.is_logged_in = False[cite: 1]
-            st.session_state.is_admin_auth = False[cite: 1]
-            st.session_state.username = "Guest"[cite: 1]
-            st.session_state.resume_text = ""[cite: 1]
-            st.session_state.resume_analysis = None[cite: 1]
-            st.session_state.custom_action_plan = None[cite: 1]
-            st.rerun()[cite: 1]
+        if st.button("Skip & Exit", use_container_width=True, key="btn_skip_feedback_logout"):
+            log_event("LOGOUT_SKIPPED", st.session_state.username, "Skipped", "No feedback provided")
+            st.session_state.is_logged_in = False
+            st.session_state.is_admin_auth = False
+            st.session_state.username = "Guest"
+            st.session_state.resume_text = ""
+            st.session_state.resume_analysis = None
+            st.session_state.custom_action_plan = None
+            st.rerun()
 
 @st.dialog("🚀 Boost Score & Skills")
 def open_improvement_dialog():
-    st.markdown("Generate a personalized study and project plan to reach a 90%+ match score.")[cite: 1]
-    target_role_goal = st.text_input("Target Role:", "Senior AI / Backend Engineer", key="dialog_target_role")[cite: 1]
-    weekly_hours = st.select_slider("Weekly study commitment:", options=["3-5 hrs", "5-10 hrs", "10-15 hrs", "15+ hrs"], value="5-10 hrs")[cite: 1]
+    st.markdown("Generate a personalized study and project plan to reach a 90%+ match score.")
+    target_role_goal = st.text_input("Target Role:", "Senior AI / Backend Engineer", key="dialog_target_role")
+    weekly_hours = st.select_slider("Weekly study commitment:", options=["3-5 hrs", "5-10 hrs", "10-15 hrs", "15+ hrs"], value="5-10 hrs")
     
-    if st.button("Create Action Plan ⚡", use_container_width=True, key="btn_gen_custom_plan"):[cite: 1]
-        with st.spinner("Building your improvement roadmap..."):[cite: 1]
+    if st.button("Create Action Plan ⚡", use_container_width=True, key="btn_gen_custom_plan"):
+        with st.spinner("Building your improvement roadmap..."):
             try:
-                res = api_career_roadmap(st.session_state.resume_text, target_role_goal)[cite: 1]
+                res = api_career_roadmap(st.session_state.resume_text, target_role_goal)
                 st.session_state.custom_action_plan = {
                     "role": target_role_goal,
                     "commitment": weekly_hours,
@@ -769,11 +767,11 @@ def open_improvement_dialog():
                         "Phase 2: Build a production-ready GitHub portfolio project targeting your missing skills.",
                         "Phase 3: Optimize ATS keywords and highlight measurable business impact."
                     ])
-                }[cite: 1]
-                st.success("Action plan ready!")[cite: 1]
-                st.rerun()[cite: 1]
+                }
+                st.success("Action plan ready!")
+                st.rerun()
             except Exception as e:
-                st.error(f"Could not generate plan: {e}")[cite: 1]
+                st.error(f"Could not generate plan: {e}")
 
 # ============================================================
 # LANDING SCREEN
@@ -788,9 +786,9 @@ if not st.session_state.is_logged_in:
         </div>
         """,
         unsafe_allow_html=True,
-    )[cite: 1]
+    )
 
-    col_l1, col_l2, col_l3 = st.columns([1, 1.6, 1])[cite: 1]
+    col_l1, col_l2, col_l3 = st.columns([1, 1.6, 1])
     with col_l2:
         st.markdown(
             """
@@ -803,28 +801,28 @@ if not st.session_state.is_logged_in:
             </div>
             """,
             unsafe_allow_html=True,
-        )[cite: 1]
+        )
 
-        col_b1, col_b2, col_b3 = st.columns(3)[cite: 1]
+        col_b1, col_b2, col_b3 = st.columns(3)
         with col_b1:
-            if st.button("🔐 Sign In", use_container_width=True, key="btn_open_signin"):[cite: 1]
-                open_signin_dialog()[cite: 1]
+            if st.button("🔐 Sign In", use_container_width=True, key="btn_open_signin"):
+                open_signin_dialog()
         with col_b2:
-            if st.button("📝 Register", use_container_width=True, key="btn_open_register"):[cite: 1]
-                open_register_dialog()[cite: 1]
+            if st.button("📝 Register", use_container_width=True, key="btn_open_register"):
+                open_register_dialog()
         with col_b3:
-            if st.button("🚀 Guest", use_container_width=True, key="btn_direct_guest"):[cite: 1]
-                st.session_state.username = "Guest Explorer"[cite: 1]
-                st.session_state.is_logged_in = True[cite: 1]
-                log_event("GUEST_ACCESS", "Guest Explorer", "N/A", "Direct Guest Entry")[cite: 1]
-                st.rerun()[cite: 1]
+            if st.button("🚀 Guest", use_container_width=True, key="btn_direct_guest"):
+                st.session_state.username = "Guest Explorer"
+                st.session_state.is_logged_in = True
+                log_event("GUEST_ACCESS", "Guest Explorer", "N/A", "Direct Guest Entry")
+                st.rerun()
 
     st.markdown("""
     <div class="footer">
         <b>CareerLens AI by Batch 2</b>
     </div>
-    """, unsafe_allow_html=True)[cite: 1]
-    st.stop()[cite: 1]
+    """, unsafe_allow_html=True)
+    st.stop()
 
 # ============================================================
 # SIDEBAR
@@ -841,7 +839,7 @@ with st.sidebar:
         </div>
         """,
         unsafe_allow_html=True,
-    )[cite: 1]
+    )
     
     st.markdown(
         f"""
@@ -854,38 +852,38 @@ with st.sidebar:
         </div>
         """,
         unsafe_allow_html=True,
-    )[cite: 1]
+    )
 
-    if st.button("Log Out", use_container_width=True, key="btn_logout_sidebar"):[cite: 1]
-        open_logout_feedback_dialog()[cite: 1]
+    if st.button("Log Out", use_container_width=True, key="btn_logout_sidebar"):
+        open_logout_feedback_dialog()
 
-    st.divider()[cite: 1]
+    st.divider()
 
-    col_w1, col_w2 = st.columns(2)[cite: 1]
+    col_w1, col_w2 = st.columns(2)
     with col_w1:
-        if st.button("👨‍💻 Candidate", use_container_width=True):[cite: 1]
-            st.session_state.workspace = "Job Seeker"[cite: 1]
+        if st.button("👨‍💻 Candidate", use_container_width=True):
+            st.session_state.workspace = "Job Seeker"
     with col_w2:
-        if st.button("🏢 Recruiter", use_container_width=True):[cite: 1]
-            st.session_state.workspace = "Recruiter"[cite: 1]
+        if st.button("🏢 Recruiter", use_container_width=True):
+            st.session_state.workspace = "Recruiter"
 
-    st.markdown("<br>", unsafe_allow_html=True)[cite: 1]
+    st.markdown("<br>", unsafe_allow_html=True)
     
-    if st.button("📝 Pre-Interview Assessment", use_container_width=True):[cite: 1]
-        st.session_state.workspace = "Assessment Exam"[cite: 1]
+    if st.button("📝 Pre-Interview Assessment", use_container_width=True):
+        st.session_state.workspace = "Assessment Exam"
 
-    if st.button("📄 Resume Builder", use_container_width=True):[cite: 1]
-        st.session_state.workspace = "Resume Builder"[cite: 1]
+    if st.button("📄 Resume Builder", use_container_width=True):
+        st.session_state.workspace = "Resume Builder"
 
-    if st.button("💼 Career Assistant", use_container_width=True):[cite: 1]
-        st.session_state.workspace = "Assistant"[cite: 1]
+    if st.button("💼 Career Assistant", use_container_width=True):
+        st.session_state.workspace = "Assistant"
 
-    if st.session_state.is_admin_auth:[cite: 1]
-        st.markdown("<br>", unsafe_allow_html=True)[cite: 1]
-        if st.button("📊 Analytics & Telemetry", use_container_width=True):[cite: 1]
-            st.session_state.workspace = "Analytics"[cite: 1]
+    if st.session_state.is_admin_auth:
+        st.markdown("<br>", unsafe_allow_html=True)
+        if st.button("📊 Analytics & Telemetry", use_container_width=True):
+            st.session_state.workspace = "Analytics"
 
-    st.markdown("<br><br>", unsafe_allow_html=True)[cite: 1]
+    st.markdown("<br><br>", unsafe_allow_html=True)
 
     st.markdown(
         """
@@ -894,7 +892,7 @@ with st.sidebar:
         </div>
         """,
         unsafe_allow_html=True,
-    )[cite: 1]
+    )
 
 # ============================================================
 # 1. CANDIDATE WORKSPACE
@@ -914,19 +912,19 @@ if st.session_state.workspace == "Job Seeker":
         </section>
         """,
         unsafe_allow_html=True,
-    )[cite: 1]
+    )
 
-    analysis = st.session_state.resume_analysis[cite: 1]
-    score_raw = int(analysis.get("resume_score", 0)) if analysis and analysis.get("resume_score") else 0[cite: 1]
-    readiness_raw = int(analysis.get("readiness", 0)) if analysis and analysis.get("readiness") else 0[cite: 1]
-    skills_count = len(analysis.get("skills", [])) if analysis else 0[cite: 1]
+    analysis = st.session_state.resume_analysis
+    score_raw = int(analysis.get("resume_score", 0)) if analysis and analysis.get("resume_score") else 0
+    readiness_raw = int(analysis.get("readiness", 0)) if analysis and analysis.get("readiness") else 0
+    skills_count = len(analysis.get("skills", [])) if analysis else 0
 
-    col_m1, col_m2, col_m3 = st.columns(3)[cite: 1]
+    col_m1, col_m2, col_m3 = st.columns(3)
     with col_m1:
-        gauge_color = "#38bdf8" if score_raw >= 75 else "#fbbf24"[cite: 1]
-        render_radial_gauge(score_raw if analysis else 0, "Resume Score", "AI Evaluated", gauge_color)[cite: 1]
+        gauge_color = "#38bdf8" if score_raw >= 75 else "#fbbf24"
+        render_radial_gauge(score_raw if analysis else 0, "Resume Score", "AI Evaluated", gauge_color)
     with col_m2:
-        render_radial_gauge(readiness_raw if analysis else 0, "Readiness Index", "Market Match", "#818cf8")[cite: 1]
+        render_radial_gauge(readiness_raw if analysis else 0, "Readiness Index", "Market Match", "#818cf8")
     with col_m3:
         st.markdown(f"""
         <div class="gauge-box" style="height: 100%; justify-content: center;">
@@ -934,12 +932,12 @@ if st.session_state.workspace == "Job Seeker":
             <div style="font-size: 2.8rem; font-weight: 900; color: #c084fc; margin: 12px 0;">{skills_count}</div>
             <span class="tag-bubble tag-purple">Extracted Stack</span>
         </div>
-        """, unsafe_allow_html=True)[cite: 1]
+        """, unsafe_allow_html=True)
 
-    is_low_score = analysis and score_raw < 75[cite: 1]
-    is_low_skills = analysis and skills_count < 5[cite: 1]
+    is_low_score = analysis and score_raw < 75
+    is_low_skills = analysis and skills_count < 5
     
-    if is_low_score or is_low_skills or (analysis is not None):[cite: 1]
+    if is_low_score or is_low_skills or (analysis is not None):
         st.markdown(
             f"""
             <div class="improve-card">
@@ -958,12 +956,12 @@ if st.session_state.workspace == "Job Seeker":
             </div>
             """,
             unsafe_allow_html=True,
-        )[cite: 1]
-        if st.button("🚀 Boost My Score & Skills", key="btn_open_upgrade_dialog"):[cite: 1]
-            open_improvement_dialog()[cite: 1]
+        )
+        if st.button("🚀 Boost My Score & Skills", key="btn_open_upgrade_dialog"):
+            open_improvement_dialog()
 
-    if st.session_state.custom_action_plan:[cite: 1]
-        plan = st.session_state.custom_action_plan[cite: 1]
+    if st.session_state.custom_action_plan:
+        plan = st.session_state.custom_action_plan
         st.markdown(f"""
         <div class="panel" style="border-color: rgba(56, 189, 248, 0.4); margin-top: 14px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
@@ -972,9 +970,9 @@ if st.session_state.workspace == "Job Seeker":
             </div>
             {''.join([f'<div style="margin: 8px 0; color: #f4f7fb; font-size: 0.95rem;">• {step}</div>' for step in plan.get('steps', [])])}
         </div>
-        """, unsafe_allow_html=True)[cite: 1]
+        """, unsafe_allow_html=True)
 
-    st.divider()[cite: 1]
+    st.divider()
 
     tabs = st.tabs([
         "📄 Analyse Resume",
@@ -982,29 +980,29 @@ if st.session_state.workspace == "Job Seeker":
         "💰 Salary Estimate",
         "🗺️ Career Road Map",
         "🛡️ Real Time Job Detection"
-    ])[cite: 1]
+    ])
 
     # 1. Analyse Resume
     with tabs[0]:
-        st.subheader("Analyse Resume")[cite: 1]
+        st.subheader("Analyse Resume")
         resume_file = st.file_uploader(
             "Upload your resume", type=["pdf", "docx", "txt"], key="resume_upload"
-        )[cite: 1]
+        )
 
-        if resume_file and st.button("Analyse Resume", use_container_width=True):[cite: 1]
-            with st.spinner("Analysing your resume..."):[cite: 1]
+        if resume_file and st.button("Analyse Resume", use_container_width=True):
+            with st.spinner("Analysing your resume..."):
                 try:
-                    result = api_analyze_resume(resume_file)[cite: 1]
-                    st.session_state.resume_analysis = result[cite: 1]
-                    st.session_state.resume_text = result.get("extracted_text", "")[cite: 1]
-                    log_event("RESUME_ANALYZED", st.session_state.username, "N/A", f"Skills: {len(result.get('skills', []))}")[cite: 1]
-                    st.success("Resume analysed successfully!")[cite: 1]
-                    st.rerun()[cite: 1]
+                    result = api_analyze_resume(resume_file)
+                    st.session_state.resume_analysis = result
+                    st.session_state.resume_text = result.get("extracted_text", "")
+                    log_event("RESUME_ANALYZED", st.session_state.username, "N/A", f"Skills: {len(result.get('skills', []))}")
+                    st.success("Resume analysed successfully!")
+                    st.rerun()
                 except Exception as exc:
-                    st.error(f"Error: {exc}")[cite: 1]
+                    st.error(f"Error: {exc}")
 
-        if st.session_state.resume_analysis:[cite: 1]
-            res = st.session_state.resume_analysis[cite: 1]
+        if st.session_state.resume_analysis:
+            res = st.session_state.resume_analysis
             st.markdown(
                 f"""
                 <div class="panel">
@@ -1017,62 +1015,62 @@ if st.session_state.workspace == "Job Seeker":
                 </div>
                 """,
                 unsafe_allow_html=True,
-            )[cite: 1]
+            )
 
-            st.markdown("#### Detected Skills")[cite: 1]
-            show_skills(res.get("skills", []), "tag-cyan")[cite: 1]
+            st.markdown("#### Detected Skills")
+            show_skills(res.get("skills", []), "tag-cyan")
 
     # 2. Job Match
     with tabs[1]:
-        st.subheader("Job Match")[cite: 1]
-        job_desc = st.text_area("Paste Job Description", height=180, key="jobmatch")[cite: 1]
+        st.subheader("Job Match")
+        job_desc = st.text_area("Paste Job Description", height=180, key="jobmatch")
 
-        if st.button("Check Match", use_container_width=True):[cite: 1]
-            if not st.session_state.resume_text:[cite: 1]
-                st.warning("Please upload and analyse your resume first.")[cite: 1]
-            elif not job_desc.strip():[cite: 1]
-                st.warning("Please paste a job description.")[cite: 1]
+        if st.button("Check Match", use_container_width=True):
+            if not st.session_state.resume_text:
+                st.warning("Please upload and analyse your resume first.")
+            elif not job_desc.strip():
+                st.warning("Please paste a job description.")
             else:
-                with st.spinner("Checking job match..."):[cite: 1]
+                with st.spinner("Checking job match..."):
                     try:
-                        result = api_match_job(st.session_state.resume_text, job_desc)[cite: 1]
-                        st.session_state.current_job_match = result[cite: 1]
-                        overall_score = result.get("overall", 0)[cite: 1]
+                        result = api_match_job(st.session_state.resume_text, job_desc)
+                        st.session_state.current_job_match = result
+                        overall_score = result.get("overall", 0)
                         
-                        col_s1, col_s2 = st.columns([1, 2])[cite: 1]
+                        col_s1, col_s2 = st.columns([1, 2])
                         with col_s1:
-                            render_radial_gauge(overall_score, "Job Match", "Overall Score", "#38bdf8")[cite: 1]
+                            render_radial_gauge(overall_score, "Job Match", "Overall Score", "#38bdf8")
                         with col_s2:
-                            st.markdown("#### Matching Skills")[cite: 1]
-                            show_skills(result.get("matched", []), "tag-cyan")[cite: 1]
-                            st.markdown("#### Missing Skills")[cite: 1]
-                            show_skills(result.get("missing", []), "tag-purple")[cite: 1]
+                            st.markdown("#### Matching Skills")
+                            show_skills(result.get("matched", []), "tag-cyan")
+                            st.markdown("#### Missing Skills")
+                            show_skills(result.get("missing", []), "tag-purple")
                     except Exception as exc:
-                        st.error(f"Error: {exc}")[cite: 1]
+                        st.error(f"Error: {exc}")
 
-        if "current_job_match" in st.session_state:[cite: 1]
-            match_res = st.session_state.current_job_match[cite: 1]
-            missing_skills = match_res.get("missing", [])[cite: 1]
+        if "current_job_match" in st.session_state:
+            match_res = st.session_state.current_job_match
+            missing_skills = match_res.get("missing", [])
             
-            st.markdown("---")[cite: 1]
-            st.markdown("#### ⚡ Improve Resume Bullet Points")[cite: 1]
+            st.markdown("---")
+            st.markdown("#### ⚡ Improve Resume Bullet Points")
             
-            if st.button("Generate Bullet Points for This Job", use_container_width=True):[cite: 1]
-                with st.spinner("Writing bullet points..."):[cite: 1]
+            if st.button("Generate Bullet Points for This Job", use_container_width=True):
+                with st.spinner("Writing bullet points..."):
                     prompt = [
                         {"role": "system", "content": "Write 3 high-impact resume bullet points using the format: Accomplished [X], measured by [Y], by doing [Z]. Incorporate missing skills naturally."},
                         {"role": "user", "content": f"Candidate Skills: {st.session_state.resume_analysis.get('skills', []) if st.session_state.resume_analysis else ''}\nMissing Skills: {missing_skills}\nJob: {job_desc}"}
-                    ][cite: 1]
-                    rewritten = api_chat_assistant(prompt, resume_context=st.session_state.resume_text)[cite: 1]
-                    st.session_state.ats_generated_bullets = rewritten[cite: 1]
+                    ]
+                    rewritten = api_chat_assistant(prompt, resume_context=st.session_state.resume_text)
+                    st.session_state.ats_generated_bullets = rewritten
 
-            if st.session_state.ats_generated_bullets:[cite: 1]
+            if st.session_state.ats_generated_bullets:
                 st.markdown("""
                 <div class="panel" style="border: 1px solid rgba(56, 189, 248, 0.4);">
                     <div style="font-weight: 800; color: #38bdf8; margin-bottom: 6px;">Suggested Bullet Points:</div>
                 </div>
-                """, unsafe_allow_html=True)[cite: 1]
-                st.code(st.session_state.ats_generated_bullets, language="markdown")[cite: 1]
+                """, unsafe_allow_html=True)
+                st.code(st.session_state.ats_generated_bullets, language="markdown")
 
     # 3. Accurate Dynamic Salary Estimate
     with tabs[2]:
@@ -1146,21 +1144,21 @@ if st.session_state.workspace == "Job Seeker":
                 <div class="gauge-box">
                     <div class="gauge-label">Top Tier Target</div>
                     <div style="font-size: 2.2rem; font-weight: 900; color: #c084fc; margin: 6px 0;">₹{sr['high']} LPA</div>
-                    <span class="tag-purple tag-bubble">90th Percentile</span>
+                    <span class="tag-bubble tag-purple">90th Percentile</span>
                 </div>
                 """, unsafe_allow_html=True)
 
     # 4. Career Road Map
     with tabs[3]:
-        st.subheader("Career Road Map")[cite: 1]
-        role = st.text_input("Target Dream Role", "Machine Learning Engineer", key="roadmap_target_input")[cite: 1]
+        st.subheader("Career Road Map")
+        role = st.text_input("Target Dream Role", "Machine Learning Engineer", key="roadmap_target_input")
 
-        if st.button("Build Career Road Map", use_container_width=True):[cite: 1]
-            with st.spinner("Creating your road map..."):[cite: 1]
+        if st.button("Build Career Road Map", use_container_width=True):
+            with st.spinner("Creating your road map..."):
                 try:
-                    res = api_career_roadmap(st.session_state.resume_text, role)[cite: 1]
-                    steps = res.get("steps", [])[cite: 1]
-                    for idx, step in enumerate(steps, 1):[cite: 1]
+                    res = api_career_roadmap(st.session_state.resume_text, role)
+                    steps = res.get("steps", [])
+                    for idx, step in enumerate(steps, 1):
                         st.markdown(
                             f"""
                             <div class="panel">
@@ -1169,41 +1167,41 @@ if st.session_state.workspace == "Job Seeker":
                             </div>
                             """,
                             unsafe_allow_html=True,
-                        )[cite: 1]
+                        )
                 except Exception as exc:
-                    st.error(f"Error: {exc}")[cite: 1]
+                    st.error(f"Error: {exc}")
 
     # 5. Real Time Job Detection
     with tabs[4]:
-        st.subheader("Real Time Job Detection")[cite: 1]
-        jobrisk = st.text_area("Paste Job Post or Offer to Check", height=180, key="risk")[cite: 1]
+        st.subheader("Real Time Job Detection")
+        jobrisk = st.text_area("Paste Job Post or Offer to Check", height=180, key="risk")
 
-        if st.button("Check Safety", use_container_width=True):[cite: 1]
-            if not jobrisk.strip():[cite: 1]
-                st.warning("Please paste text to check.")[cite: 1]
+        if st.button("Check Safety", use_container_width=True):
+            if not jobrisk.strip():
+                st.warning("Please paste text to check.")
             else:
-                with st.spinner("Checking posting in real time..."):[cite: 1]
+                with st.spinner("Checking posting in real time..."):
                     try:
-                        res = api_detect_fraud(jobrisk)[cite: 1]
-                        score_risk = res.get('score', 0)[cite: 1]
-                        level_risk = res.get('level', 'LOW RISK')[cite: 1]
+                        res = api_detect_fraud(jobrisk)
+                        score_risk = res.get('score', 0)
+                        level_risk = res.get('level', 'LOW RISK')
                         
-                        col_f1, col_f2 = st.columns([1, 2])[cite: 1]
+                        col_f1, col_f2 = st.columns([1, 2])
                         with col_f1:
-                            render_radial_gauge(score_risk, "Risk Score", level_risk, "#fbbf24" if level_risk == "HIGH RISK" else "#4ade80")[cite: 1]
+                            render_radial_gauge(score_risk, "Risk Score", level_risk, "#fbbf24" if level_risk == "HIGH RISK" else "#4ade80")
                         with col_f2:
                             st.markdown(f"""
                             <div class="panel">
                                 <h4 style="margin: 0; color: {'#fbbf24' if level_risk == 'HIGH RISK' else '#4ade80'};">Verdict: {level_risk}</h4>
                                 <p style="margin: 6px 0 0 0; color: #cbd5e1;">Flags found: <b>{res.get('signals', 0)}</b></p>
                             </div>
-                            """, unsafe_allow_html=True)[cite: 1]
-                            if level_risk == "HIGH RISK":[cite: 1]
-                                st.warning("⚠️ Warning: Suspicious signs detected in this job post.")[cite: 1]
+                            """, unsafe_allow_html=True)
+                            if level_risk == "HIGH RISK":
+                                st.warning("⚠️ Warning: Suspicious signs detected in this job post.")
                             else:
-                                st.success("✅ Looks safe. No obvious red flags found.")[cite: 1]
+                                st.success("✅ Looks safe. No obvious red flags found.")
                     except Exception as exc:
-                        st.error(f"Error: {exc}")[cite: 1]
+                        st.error(f"Error: {exc}")
 
 # ============================================================
 # 2. JOB SEEKER / CANDIDATE PRE-INTERVIEW ASSESSMENT (NO SCORE REVEALED)
@@ -1231,7 +1229,7 @@ elif st.session_state.workspace == "Assessment Exam":
         with col_ce2:
             exam_role_choice = st.selectbox("Assigned Assessment Role:", list(ROLE_EXAM_BLUEPRINTS.keys()), key="cand_exam_role_sel")
 
-        blueprint = get_exam_blueprint(exam_role_choice)[cite: 1]
+        blueprint = get_exam_blueprint(exam_role_choice)
 
         st.markdown(
             """
@@ -1553,11 +1551,9 @@ elif st.session_state.workspace == "Recruiter":
                                 "assessment_score": None,
                                 "interview_notes": ""
                             }
-                            # Check duplicates
                             if not any(x["email"] == c_record["email"] for x in st.session_state.recruiter_candidates):
                                 st.session_state.recruiter_candidates.append(c_record)
                         except Exception:
-                            # Fallback extraction if parser fails
                             name_clean = f.name.rsplit(".", 1)[0].replace("_", " ").title()
                             matched = req_skills[:max(1, len(req_skills)-1)]
                             missing = req_skills[len(matched):]
@@ -1584,7 +1580,6 @@ elif st.session_state.workspace == "Recruiter":
                     st.success(f"Screened {len(uploaded_resumes)} resumes successfully!")
                     st.rerun()
 
-            # Display Screened Cohort
             if st.session_state.recruiter_candidates:
                 st.markdown("#### 📋 Screened Candidate Pool")
                 for cand in st.session_state.recruiter_candidates:
@@ -1808,17 +1803,17 @@ elif st.session_state.workspace == "Resume Builder":
         </section>
         """,
         unsafe_allow_html=True,
-    )[cite: 1]
+    )
 
-    def_name = st.session_state.resume_analysis.get("name", "Alex Mercer") if st.session_state.resume_analysis else "Alex Mercer"[cite: 1]
-    def_email = st.session_state.resume_analysis.get("email", "alex.mercer@innovate.dev") if st.session_state.resume_analysis else "alex.mercer@innovate.dev"[cite: 1]
-    def_phone = st.session_state.resume_analysis.get("phone", "+1 (555) 019-2834") if st.session_state.resume_analysis else "+1 (555) 019-2834"[cite: 1]
-    def_skills = ", ".join(st.session_state.resume_analysis.get("skills", ["Python", "FastAPI", "React", "Docker", "Machine Learning", "PostgreSQL", "AWS", "Distributed Systems"])) if st.session_state.resume_analysis else "Python, FastAPI, React, Docker, Machine Learning, PostgreSQL, AWS, Distributed Systems"[cite: 1]
+    def_name = st.session_state.resume_analysis.get("name", "Alex Mercer") if st.session_state.resume_analysis else "Alex Mercer"
+    def_email = st.session_state.resume_analysis.get("email", "alex.mercer@innovate.dev") if st.session_state.resume_analysis else "alex.mercer@innovate.dev"
+    def_phone = st.session_state.resume_analysis.get("phone", "+1 (555) 019-2834") if st.session_state.resume_analysis else "+1 (555) 019-2834"
+    def_skills = ", ".join(st.session_state.resume_analysis.get("skills", ["Python", "FastAPI", "React", "Docker", "Machine Learning", "PostgreSQL", "AWS", "Distributed Systems"])) if st.session_state.resume_analysis else "Python, FastAPI, React, Docker, Machine Learning, PostgreSQL, AWS, Distributed Systems"
 
-    builder_col1, builder_col2 = st.columns([1.1, 1.3], gap="large")[cite: 1]
+    builder_col1, builder_col2 = st.columns([1.1, 1.3], gap="large")
 
     with builder_col1:
-        st.markdown("### ⚙️ Template & Profile Editor")[cite: 1]
+        st.markdown("### ⚙️ Template & Profile Editor")
         
         template_style = st.selectbox(
             "Select Resume Formation:",
@@ -1829,27 +1824,27 @@ elif st.session_state.workspace == "Resume Builder":
                 "🌿 Nordic Minimalist (Emerald & Clean Whitespace)",
                 "🌑 Dark Cyberpunk Pro (Modern High-Contrast Slate)"
             ]
-        )[cite: 1]
+        )
         
-        rb_name = st.text_input("Full Name", value=def_name, key="rb_name")[cite: 1]
-        rb_title = st.text_input("Target Role / Headline", value="Senior Software & AI Systems Engineer", key="rb_title")[cite: 1]
+        rb_name = st.text_input("Full Name", value=def_name, key="rb_name")
+        rb_title = st.text_input("Target Role / Headline", value="Senior Software & AI Systems Engineer", key="rb_title")
         
-        c_c1, c_c2 = st.columns(2)[cite: 1]
+        c_c1, c_c2 = st.columns(2)
         with c_c1:
-            rb_email = st.text_input("Email", value=def_email, key="rb_email")[cite: 1]
-            rb_loc = st.text_input("Location", value="San Francisco, CA", key="rb_loc")[cite: 1]
+            rb_email = st.text_input("Email", value=def_email, key="rb_email")
+            rb_loc = st.text_input("Location", value="San Francisco, CA", key="rb_loc")
         with c_c2:
-            rb_phone = st.text_input("Phone", value=def_phone, key="rb_phone")[cite: 1]
-            rb_links = st.text_input("GitHub / LinkedIn / Portfolio", value="github.com/alex-mercer | linkedin.com/in/alex-mercer", key="rb_links")[cite: 1]
+            rb_phone = st.text_input("Phone", value=def_phone, key="rb_phone")
+            rb_links = st.text_input("GitHub / LinkedIn / Portfolio", value="github.com/alex-mercer | linkedin.com/in/alex-mercer", key="rb_links")
 
         rb_summary = st.text_area(
             "Executive Summary",
             value="High-impact engineer with 5+ years of experience designing scalable backend architectures, AI workflows, and distributed microservices. Proven track record of optimizing system throughput by 40% and deploying LLM inference pipelines to production.",
             height=100,
             key="rb_summary"
-        )[cite: 1]
+        )
         
-        rb_skills = st.text_area("Core Skills (comma separated)", value=def_skills, height=75, key="rb_skills")[cite: 1]
+        rb_skills = st.text_area("Core Skills (comma separated)", value=def_skills, height=75, key="rb_skills")
         
         rb_projects = st.text_area(
             "Featured Projects & Key Impact",
@@ -1857,7 +1852,7 @@ elif st.session_state.workspace == "Resume Builder":
 • Distributed Cache Layer: Designed low-latency Redis cluster handling 50k+ req/sec with sub-5ms latency.""",
             height=90,
             key="rb_projects"
-        )[cite: 1]
+        )
 
         rb_exp = st.text_area(
             "Work Experience",
@@ -1871,7 +1866,7 @@ Full Stack Developer — Nexus Labs (2020 - 2022)
 • Integrated machine learning recommendation pipelines into core customer checkout workflows.""",
             height=150,
             key="rb_exp"
-        )[cite: 1]
+        )
         
         rb_edu = st.text_area(
             "Education & Certifications",
@@ -1879,68 +1874,68 @@ Full Stack Developer — Nexus Labs (2020 - 2022)
 AWS Certified Solutions Architect — Associate (2024)""",
             height=80,
             key="rb_edu"
-        )[cite: 1]
+        )
 
     with builder_col2:
-        st.markdown("### 👁️ Live Resume Preview")[cite: 1]
+        st.markdown("### 👁️ Live Resume Preview")
         
-        if "Silicon Valley" in template_style:[cite: 1]
-            primary_c = "#0284c7"[cite: 1]
-            accent_c = "#6366f1"[cite: 1]
-            bg_c = "#ffffff"[cite: 1]
-            text_c = "#0f172a"[cite: 1]
-            tag_bg = "#e0f2fe"[cite: 1]
-            tag_text = "#0369a1"[cite: 1]
-            border_header = f"3px solid {primary_c}"[cite: 1]
-            font_family = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"[cite: 1]
-        elif "Ivy League" in template_style:[cite: 1]
-            primary_c = "#1e293b"[cite: 1]
-            accent_c = "#475569"[cite: 1]
-            bg_c = "#fdfdfd"[cite: 1]
-            text_c = "#1e293b"[cite: 1]
-            tag_bg = "#f1f5f9"[cite: 1]
-            tag_text = "#334155"[cite: 1]
-            border_header = "1px solid #94a3b8"[cite: 1]
-            font_family = "Georgia, 'Times New Roman', serif"[cite: 1]
-        elif "Hybrid Skills-First" in template_style:[cite: 1]
-            primary_c = "#7c3aed"[cite: 1]
-            accent_c = "#0284c7"[cite: 1]
-            bg_c = "#ffffff"[cite: 1]
-            text_c = "#111827"[cite: 1]
-            tag_bg = "#ede9fe"[cite: 1]
-            tag_text = "#6d28d9"[cite: 1]
-            border_header = f"2px dashed {primary_c}"[cite: 1]
-            font_family = "'Inter', -apple-system, sans-serif"[cite: 1]
-        elif "Nordic Minimalist" in template_style:[cite: 1]
-            primary_c = "#059669"[cite: 1]
-            accent_c = "#10b981"[cite: 1]
-            bg_c = "#ffffff"[cite: 1]
-            text_c = "#18181b"[cite: 1]
-            tag_bg = "#ecfdf5"[cite: 1]
-            tag_text = "#047857"[cite: 1]
-            border_header = "none"[cite: 1]
-            font_family = "'Helvetica Neue', Arial, sans-serif"[cite: 1]
+        if "Silicon Valley" in template_style:
+            primary_c = "#0284c7"
+            accent_c = "#6366f1"
+            bg_c = "#ffffff"
+            text_c = "#0f172a"
+            tag_bg = "#e0f2fe"
+            tag_text = "#0369a1"
+            border_header = f"3px solid {primary_c}"
+            font_family = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+        elif "Ivy League" in template_style:
+            primary_c = "#1e293b"
+            accent_c = "#475569"
+            bg_c = "#fdfdfd"
+            text_c = "#1e293b"
+            tag_bg = "#f1f5f9"
+            tag_text = "#334155"
+            border_header = "1px solid #94a3b8"
+            font_family = "Georgia, 'Times New Roman', serif"
+        elif "Hybrid Skills-First" in template_style:
+            primary_c = "#7c3aed"
+            accent_c = "#0284c7"
+            bg_c = "#ffffff"
+            text_c = "#111827"
+            tag_bg = "#ede9fe"
+            tag_text = "#6d28d9"
+            border_header = f"2px dashed {primary_c}"
+            font_family = "'Inter', -apple-system, sans-serif"
+        elif "Nordic Minimalist" in template_style:
+            primary_c = "#059669"
+            accent_c = "#10b981"
+            bg_c = "#ffffff"
+            text_c = "#18181b"
+            tag_bg = "#ecfdf5"
+            tag_text = "#047857"
+            border_header = "none"
+            font_family = "'Helvetica Neue', Arial, sans-serif"
         else:
-            primary_c = "#38bdf8"[cite: 1]
-            accent_c = "#a855f7"[cite: 1]
-            bg_c = "#0f172a"[cite: 1]
-            text_c = "#f8fafc"[cite: 1]
-            tag_bg = "#1e293b"[cite: 1]
-            tag_text = "#38bdf8"[cite: 1]
-            border_header = f"2px solid {primary_c}"[cite: 1]
-            font_family = "'Segoe UI', Roboto, sans-serif"[cite: 1]
+            primary_c = "#38bdf8"
+            accent_c = "#a855f7"
+            bg_c = "#0f172a"
+            text_c = "#f8fafc"
+            tag_bg = "#1e293b"
+            tag_text = "#38bdf8"
+            border_header = f"2px solid {primary_c}"
+            font_family = "'Segoe UI', Roboto, sans-serif"
 
-        skills_list = [s.strip() for s in rb_skills.split(",") if s.strip()][cite: 1]
-        skills_html = "".join([f"""<span style="background:{tag_bg}; color:{tag_text}; padding:3px 8px; border-radius:4px; margin:2px 4px 2px 0; display:inline-block; font-size:11px; font-weight:700;">{s}</span>""" for s in skills_list])[cite: 1]
+        skills_list = [s.strip() for s in rb_skills.split(",") if s.strip()]
+        skills_html = "".join([f"""<span style="background:{tag_bg}; color:{tag_text}; padding:3px 8px; border-radius:4px; margin:2px 4px 2px 0; display:inline-block; font-size:11px; font-weight:700;">{s}</span>""" for s in skills_list])
         
-        exp_formatted = "<br>".join([f"<span style='display:block; margin-bottom:4px; font-size:11.5px;'>{line}</span>" if line.strip().startswith("•") else f"<strong style='display:block; margin-top:7px; color:{text_c}; font-size:12px;'>{line}</strong>" for line in rb_exp.split("\n") if line.strip()])[cite: 1]
-        proj_formatted = "<br>".join([f"<span style='display:block; margin-bottom:3px; font-size:11.5px;'>{line}</span>" if line.strip().startswith("•") else f"<strong style='display:block; margin-top:7px; color:{text_c}; font-size:12px;'>{line}</strong>" for line in rb_projects.split("\n") if line.strip()])[cite: 1]
-        edu_formatted = "<br>".join([f"<span style='display:block; margin-bottom:3px; font-size:11.5px;'>{line}</span>" if line.strip().startswith("•") else f"<strong style='display:block; margin-top:7px; color:{text_c}; font-size:12px;'>{line}</strong>" for line in rb_edu.split("\n") if line.strip()])[cite: 1]
+        exp_formatted = "<br>".join([f"<span style='display:block; margin-bottom:4px; font-size:11.5px;'>{line}</span>" if line.strip().startswith("•") else f"<strong style='display:block; margin-top:7px; color:{text_c}; font-size:12px;'>{line}</strong>" for line in rb_exp.split("\n") if line.strip()])
+        proj_formatted = "<br>".join([f"<span style='display:block; margin-bottom:3px; font-size:11.5px;'>{line}</span>" for line in rb_projects.split("\n") if line.strip()])
+        edu_formatted = "<br>".join([f"<span style='display:block; margin-bottom:3px; font-size:11.5px;'>{line}</span>" for line in rb_edu.split("\n") if line.strip()])
 
-        resume_preview_html = f"""<div style="background:{bg_c}; color:{text_c}; font-family:{font_family}; padding:30px; border-radius:12px; box-shadow:0 15px 40px rgba(0,0,0,0.45); line-height:1.45;"><div style="border-bottom:{border_header}; padding-bottom:10px; margin-bottom:12px;"><h1 style="color:{primary_c}; margin:0; font-size:24px; font-weight:900; letter-spacing:-0.5px;">{rb_name}</h1><div style="color:{accent_c}; font-size:13.5px; font-weight:700; margin-top:2px;">{rb_title}</div><div style="font-size:11px; color:#64748b; margin-top:6px; display:flex; flex-wrap:wrap; gap:10px;"><span>📧 {rb_email}</span><span>📱 {rb_phone}</span><span>📍 {rb_loc}</span><span>🔗 {rb_links}</span></div></div><div style="margin-bottom:12px;"><div style="font-size:11.5px; font-weight:800; text-transform:uppercase; color:{primary_c}; letter-spacing:1px; margin-bottom:3px;">Summary</div><p style="font-size:11.5px; color:{text_c}; opacity:0.9; margin:0;">{rb_summary}</p></div><div style="margin-bottom:12px;"><div style="font-size:11.5px; font-weight:800; text-transform:uppercase; color:{primary_c}; letter-spacing:1px; margin-bottom:5px;">Core Stack</div><div>{skills_html}</div></div><div style="margin-bottom:12px;"><div style="font-size:11.5px; font-weight:800; text-transform:uppercase; color:{primary_c}; letter-spacing:1px; margin-bottom:4px;">Featured Projects</div><div style="color:{text_c}; opacity:0.9;">{proj_formatted}</div></div><div style="margin-bottom:12px;"><div style="font-size:11.5px; font-weight:800; text-transform:uppercase; color:{primary_c}; letter-spacing:1px; margin-bottom:4px;">Experience</div><div style="line-height:1.45;">{exp_formatted}</div></div><div style="margin-bottom:4px;"><div style="font-size:11.5px; font-weight:800; text-transform:uppercase; color:{primary_c}; letter-spacing:1px; margin-bottom:4px;">Education</div><div style="color:{text_c}; opacity:0.9;">{edu_formatted}</div></div></div>"""[cite: 1]
+        resume_preview_html = f"""<div style="background:{bg_c}; color:{text_c}; font-family:{font_family}; padding:30px; border-radius:12px; box-shadow:0 15px 40px rgba(0,0,0,0.45); line-height:1.45;"><div style="border-bottom:{border_header}; padding-bottom:10px; margin-bottom:12px;"><h1 style="color:{primary_c}; margin:0; font-size:24px; font-weight:900; letter-spacing:-0.5px;">{rb_name}</h1><div style="color:{accent_c}; font-size:13.5px; font-weight:700; margin-top:2px;">{rb_title}</div><div style="font-size:11px; color:#64748b; margin-top:6px; display:flex; flex-wrap:wrap; gap:10px;"><span>📧 {rb_email}</span><span>📱 {rb_phone}</span><span>📍 {rb_loc}</span><span>🔗 {rb_links}</span></div></div><div style="margin-bottom:12px;"><div style="font-size:11.5px; font-weight:800; text-transform:uppercase; color:{primary_c}; letter-spacing:1px; margin-bottom:3px;">Summary</div><p style="font-size:11.5px; color:{text_c}; opacity:0.9; margin:0;">{rb_summary}</p></div><div style="margin-bottom:12px;"><div style="font-size:11.5px; font-weight:800; text-transform:uppercase; color:{primary_c}; letter-spacing:1px; margin-bottom:5px;">Core Stack</div><div>{skills_html}</div></div><div style="margin-bottom:12px;"><div style="font-size:11.5px; font-weight:800; text-transform:uppercase; color:{primary_c}; letter-spacing:1px; margin-bottom:4px;">Featured Projects</div><div style="color:{text_c}; opacity:0.9;">{proj_formatted}</div></div><div style="margin-bottom:12px;"><div style="font-size:11.5px; font-weight:800; text-transform:uppercase; color:{primary_c}; letter-spacing:1px; margin-bottom:4px;">Experience</div><div style="line-height:1.45;">{exp_formatted}</div></div><div style="margin-bottom:4px;"><div style="font-size:11.5px; font-weight:800; text-transform:uppercase; color:{primary_c}; letter-spacing:1px; margin-bottom:4px;">Education</div><div style="color:{text_c}; opacity:0.9;">{edu_formatted}</div></div></div>"""
         
-        st.markdown(resume_preview_html, unsafe_allow_html=True)[cite: 1]
-        st.markdown("<br>", unsafe_allow_html=True)[cite: 1]
+        st.markdown(resume_preview_html, unsafe_allow_html=True)
+        st.markdown("<br>", unsafe_allow_html=True)
         
         full_download_doc = f"""<!DOCTYPE html>
 <html>
@@ -1976,9 +1971,9 @@ p, div {{ font-size: 11.5px; color: #334155; line-height: 1.45; }}
 <div class="section-title">Education & Credentials</div>
 <div>{edu_formatted}</div>
 </body>
-</html>"""[cite: 1]
+</html>"""
 
-        col_dl1, col_dl2 = st.columns(2)[cite: 1]
+        col_dl1, col_dl2 = st.columns(2)
         with col_dl1:
             st.download_button(
                 "⬇️ Download Resume (PDF-Ready HTML)",
@@ -1986,7 +1981,7 @@ p, div {{ font-size: 11.5px; color: #334155; line-height: 1.45; }}
                 file_name=f"{rb_name.replace(' ', '_')}_Resume.html",
                 mime="text/html",
                 use_container_width=True
-            )[cite: 1]
+            )
         with col_dl2:
             st.download_button(
                 "⬇️ Download Plain Text (.txt)",
@@ -1994,7 +1989,7 @@ p, div {{ font-size: 11.5px; color: #334155; line-height: 1.45; }}
                 file_name=f"{rb_name.replace(' ', '_')}_Resume.txt",
                 mime="text/plain",
                 use_container_width=True
-            )[cite: 1]
+            )
 
 # ============================================================
 # 5. AI CAREER ASSISTANT
@@ -2009,56 +2004,56 @@ elif st.session_state.workspace == "Assistant":
         </section>
         """,
         unsafe_allow_html=True,
-    )[cite: 1]
+    )
 
-    if "chat_messages" not in st.session_state:[cite: 1]
+    if "chat_messages" not in st.session_state:
         st.session_state.chat_messages = [{
             "role": "assistant",
             "content": "Hi! Ask me anything about optimizing your resume, interview preparation, or career roadmaps."
-        }][cite: 1]
+        }]
 
-    st.markdown("#### Popular Questions")[cite: 1]
-    q_cols = st.columns(3)[cite: 1]
+    st.markdown("#### Popular Questions")
+    q_cols = st.columns(3)
     faqs = [
         "How do I optimize my resume for ATS?",
         "How do I present my technical skills?",
         "What makes a project stand out?",
-    ][cite: 1]
+    ]
 
-    chosen_faq = None[cite: 1]
-    for i, faq in enumerate(faqs):[cite: 1]
-        if q_cols[i].button(faq, key=f"btn_faq_{i}", use_container_width=True):[cite: 1]
-            chosen_faq = faq[cite: 1]
+    chosen_faq = None
+    for i, faq in enumerate(faqs):
+        if q_cols[i].button(faq, key=f"btn_faq_{i}", use_container_width=True):
+            chosen_faq = faq
 
-    for msg in st.session_state.chat_messages:[cite: 1]
-        with st.chat_message(msg["role"]):[cite: 1]
-            st.write(msg["content"])[cite: 1]
+    for msg in st.session_state.chat_messages:
+        with st.chat_message(msg["role"]):
+            st.write(msg["content"])
 
-    user_input = st.chat_input("Ask a question about your resume or career...")[cite: 1]
-    active_prompt = chosen_faq or user_input[cite: 1]
+    user_input = st.chat_input("Ask a question about your resume or career...")
+    active_prompt = chosen_faq or user_input
 
-    if active_prompt:[cite: 1]
-        st.session_state.chat_messages.append({"role": "user", "content": active_prompt})[cite: 1]
-        with st.chat_message("user"):[cite: 1]
-            st.write(active_prompt)[cite: 1]
+    if active_prompt:
+        st.session_state.chat_messages.append({"role": "user", "content": active_prompt})
+        with st.chat_message("user"):
+            st.write(active_prompt)
 
-        with st.chat_message("assistant"):[cite: 1]
-            with st.spinner("Thinking..."):[cite: 1]
+        with st.chat_message("assistant"):
+            with st.spinner("Thinking..."):
                 ans = api_chat_assistant(
                     st.session_state.chat_messages,
                     resume_context=st.session_state.resume_text,
-                )[cite: 1]
-                st.write(ans)[cite: 1]
-        st.session_state.chat_messages.append({"role": "assistant", "content": ans})[cite: 1]
-        st.rerun()[cite: 1]
+                )
+                st.write(ans)
+        st.session_state.chat_messages.append({"role": "assistant", "content": ans})
+        st.rerun()
 
 # ============================================================
 # 6. PRIVATE ADMIN & ANALYTICS DASHBOARD
 # ============================================================
 elif st.session_state.workspace == "Analytics":
-    if not st.session_state.is_admin_auth:[cite: 1]
-        st.warning("Unauthorized access. Admin privileges required.")[cite: 1]
-        st.stop()[cite: 1]
+    if not st.session_state.is_admin_auth:
+        st.warning("Unauthorized access. Admin privileges required.")
+        st.stop()
 
     st.markdown(
         """
@@ -2069,37 +2064,37 @@ elif st.session_state.workspace == "Analytics":
         </section>
         """,
         unsafe_allow_html=True,
-    )[cite: 1]
+    )
 
-    if os.path.exists(ANALYTICS_FILE):[cite: 1]
-        logs_df = pd.read_csv(ANALYTICS_FILE)[cite: 1]
+    if os.path.exists(ANALYTICS_FILE):
+        logs_df = pd.read_csv(ANALYTICS_FILE)
         
-        col_a1, col_a2, col_a3 = st.columns(3)[cite: 1]
-        total_logins = len(logs_df[logs_df["Event"].isin(["LOGIN", "GUEST_ACCESS"])])[cite: 1]
-        total_regs = len(logs_df[logs_df["Event"] == "REGISTER"])[cite: 1]
-        rated_entries = logs_df[logs_df["Event"] == "LOGOUT_WITH_RATING"][cite: 1]
+        col_a1, col_a2, col_a3 = st.columns(3)
+        total_logins = len(logs_df[logs_df["Event"].isin(["LOGIN", "GUEST_ACCESS"])])
+        total_regs = len(logs_df[logs_df["Event"] == "REGISTER"])
+        rated_entries = logs_df[logs_df["Event"] == "LOGOUT_WITH_RATING"]
         
         with col_a1:
-            render_radial_gauge(total_logins, "Total Visits", "Traffic", "#38bdf8")[cite: 1]
+            render_radial_gauge(total_logins, "Total Visits", "Traffic", "#38bdf8")
         with col_a2:
-            render_radial_gauge(total_regs, "Sign-ups", "Conversions", "#818cf8")[cite: 1]
+            render_radial_gauge(total_regs, "Sign-ups", "Conversions", "#818cf8")
         with col_a3:
-            render_radial_gauge(len(rated_entries), "Exit Reviews", "Feedback", "#c084fc")[cite: 1]
+            render_radial_gauge(len(rated_entries), "Exit Reviews", "Feedback", "#c084fc")
 
-        st.markdown("<br>", unsafe_allow_html=True)[cite: 1]
+        st.markdown("<br>", unsafe_allow_html=True)
         
-        st.markdown("#### ⭐ User Exit Ratings & Comments")[cite: 1]
-        if not rated_entries.empty:[cite: 1]
+        st.markdown("#### ⭐ User Exit Ratings & Comments")
+        if not rated_entries.empty:
             st.dataframe(
                 rated_entries[["Timestamp", "Username", "Rating", "Details"]].rename(columns={"Details": "Feedback"}),
                 use_container_width=True,
                 hide_index=True
-            )[cite: 1]
+            )
         else:
-            st.info("No ratings recorded yet.")[cite: 1]
+            st.info("No ratings recorded yet.")
 
-        st.markdown("#### 📜 Full System Audit Log")[cite: 1]
-        st.dataframe(logs_df.sort_values(by="Timestamp", ascending=False), use_container_width=True, hide_index=True)[cite: 1]
+        st.markdown("#### 📜 Full System Audit Log")
+        st.dataframe(logs_df.sort_values(by="Timestamp", ascending=False), use_container_width=True, hide_index=True)
 
         st.download_button(
             "⬇️ Export Full Telemetry Log (CSV)",
@@ -2107,14 +2102,14 @@ elif st.session_state.workspace == "Analytics":
             file_name="platform_analytics.csv",
             mime="text/csv",
             use_container_width=True,
-        )[cite: 1]
+        )
     else:
-        st.info("No activity logs or ratings recorded yet.")[cite: 1]
+        st.info("No activity logs or ratings recorded yet.")
 
 # ============================================================
 # FOOTER
 # ============================================================
-st.divider()[cite: 1]
+st.divider()
 st.markdown(
     """
     <div class="footer">
@@ -2122,4 +2117,4 @@ st.markdown(
     </div>
     """,
     unsafe_allow_html=True,
-)[cite: 1]
+)
