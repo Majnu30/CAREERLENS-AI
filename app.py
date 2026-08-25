@@ -10,6 +10,8 @@ import html
 import ipaddress
 import socket
 import textwrap
+import sqlite3
+import secrets
 from urllib.parse import urlparse, quote
 from datetime import datetime
 from typing import Dict, List, Any, Optional
@@ -30,6 +32,7 @@ from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, Tabl
 
 API_BASE_URL = os.getenv("API_URL", "https://careerlens-ai-9dx8.onrender.com")
 ANALYTICS_FILE = "analytics.csv"
+APP_DB_FILE = os.getenv("CAREERLENS_DB", "careerlens.db")
 ADMIN_PIN = os.getenv("ADMIN_PIN", "")
 
 st.set_page_config(
@@ -934,8 +937,82 @@ def api_chat_assistant(messages: List[Dict], resume_context: str = "") -> str:
 # STATE INITIALIZATION
 # ============================================================
 
+def _db_connect():
+    conn = sqlite3.connect(APP_DB_FILE, timeout=20, check_same_thread=False)
+    conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("PRAGMA foreign_keys=ON")
+    return conn
+
+def _init_app_db():
+    with _db_connect() as conn:
+        conn.execute("""CREATE TABLE IF NOT EXISTS users (
+            user_id TEXT PRIMARY KEY, username TEXT UNIQUE NOT NULL, display_name TEXT NOT NULL,
+            password_hash TEXT NOT NULL, created_at TEXT NOT NULL
+        )""")
+        conn.execute("""CREATE TABLE IF NOT EXISTS user_state (
+            user_id TEXT PRIMARY KEY, state_json TEXT NOT NULL, updated_at TEXT NOT NULL,
+            FOREIGN KEY(user_id) REFERENCES users(user_id) ON DELETE CASCADE
+        )""")
+        conn.execute("""CREATE TABLE IF NOT EXISTS recruiter_state (
+            user_id TEXT PRIMARY KEY, state_json TEXT NOT NULL, updated_at TEXT NOT NULL,
+            FOREIGN KEY(user_id) REFERENCES users(user_id) ON DELETE CASCADE
+        )""")
+
+def _db_user(username):
+    with _db_connect() as conn:
+        return conn.execute("SELECT user_id, username, display_name, password_hash FROM users WHERE lower(username)=lower(?)", (username.strip(),)).fetchone()
+
+def _db_create_user(username, display_name, password_hash):
+    user_id = secrets.token_hex(16)
+    with _db_connect() as conn:
+        conn.execute("INSERT INTO users(user_id,username,display_name,password_hash,created_at) VALUES(?,?,?,?,?)", (user_id, username.strip(), display_name.strip() or username.split('@')[0], password_hash, datetime.now().isoformat(timespec="seconds")))
+    return user_id
+
+def _db_save_state(user_id, state):
+    if not user_id:
+        return
+    payload = json.dumps(state, ensure_ascii=False)
+    with _db_connect() as conn:
+        conn.execute("INSERT INTO user_state(user_id,state_json,updated_at) VALUES(?,?,?) ON CONFLICT(user_id) DO UPDATE SET state_json=excluded.state_json, updated_at=excluded.updated_at", (user_id, payload, datetime.now().isoformat(timespec="seconds")))
+
+def _db_load_state(user_id):
+    if not user_id:
+        return {}
+    with _db_connect() as conn:
+        row = conn.execute("SELECT state_json FROM user_state WHERE user_id=?", (user_id,)).fetchone()
+    if not row:
+        return {}
+    try:
+        return json.loads(row[0]) if isinstance(row[0], str) else {}
+    except (TypeError, ValueError):
+        return {}
+
+def _db_save_recruiter_state(user_id, data):
+    if not user_id:
+        return
+    payload = json.dumps(data, ensure_ascii=False)
+    with _db_connect() as conn:
+        conn.execute("INSERT INTO recruiter_state(user_id,state_json,updated_at) VALUES(?,?,?) ON CONFLICT(user_id) DO UPDATE SET state_json=excluded.state_json, updated_at=excluded.updated_at", (user_id, payload, datetime.now().isoformat(timespec="seconds")))
+
+def _db_load_recruiter_state(user_id):
+    if not user_id:
+        return {"campaign": None, "candidates": [], "assessments": [], "submissions": []}
+    with _db_connect() as conn:
+        row = conn.execute("SELECT state_json FROM recruiter_state WHERE user_id=?", (user_id,)).fetchone()
+    if not row:
+        return {"campaign": None, "candidates": [], "assessments": [], "submissions": []}
+    try:
+        data=json.loads(row[0])
+        return data if isinstance(data, dict) else {"campaign": None, "candidates": [], "assessments": [], "submissions": []}
+    except (TypeError, ValueError):
+        return {"campaign": None, "candidates": [], "assessments": [], "submissions": []}
+
+_init_app_db()
+
 if "is_logged_in" not in st.session_state:
     st.session_state.is_logged_in = False
+if "user_id" not in st.session_state:
+    st.session_state.user_id = ""
 if "username" not in st.session_state:
     st.session_state.username = "Guest Explorer"
 if "users_db" not in st.session_state:
@@ -1008,30 +1085,19 @@ RECRUITER_DATA_FILE = "recruiter_workspace.json"
 
 def _load_recruiter_data() -> Dict[str, Any]:
     default = {"campaign": None, "candidates": [], "assessments": [], "submissions": []}
-    try:
-        if os.path.isfile(RECRUITER_DATA_FILE):
-            with open(RECRUITER_DATA_FILE, "r", encoding="utf-8") as fh:
-                data = json.load(fh)
-            if isinstance(data, dict):
-                for key, value in default.items():
-                    data.setdefault(key, value)
-                return data
-    except (OSError, ValueError, TypeError):
-        pass
+    if st.session_state.get("user_id"):
+        data = _db_load_recruiter_state(st.session_state.user_id)
+        for key, value in default.items():
+            data.setdefault(key, value)
+        return data
     return default
 
 
 def _save_recruiter_data(data: Dict[str, Any]) -> None:
-    temp = f"{RECRUITER_DATA_FILE}.tmp"
-    try:
-        with open(temp, "w", encoding="utf-8") as fh:
-            json.dump(data, fh, indent=2, ensure_ascii=False)
-        os.replace(temp, RECRUITER_DATA_FILE)
-    except OSError:
+    if st.session_state.get("user_id"):
         try:
-            if os.path.exists(temp):
-                os.remove(temp)
-        except OSError:
+            _db_save_recruiter_state(st.session_state.user_id, data)
+        except sqlite3.Error:
             pass
 
 
@@ -1057,36 +1123,55 @@ def _assessment_public_url(token: str) -> str:
     return f"{base}/?assessment={quote(token)}"
 
 
+def _smtp_settings() -> Dict[str, Any]:
+    cfg = st.session_state.get("smtp_config", {}) or {}
+    return {
+        "host": str(cfg.get("host") or os.getenv("SMTP_HOST", "")).strip(),
+        "port": int(cfg.get("port") or os.getenv("SMTP_PORT", "587")),
+        "username": str(cfg.get("username") or os.getenv("SMTP_USERNAME", "")).strip(),
+        "password": str(cfg.get("password") or os.getenv("SMTP_PASSWORD", "")),
+        "sender": str(cfg.get("sender") or os.getenv("SMTP_FROM", "")).strip(),
+        "use_ssl": bool(cfg.get("use_ssl", False)) or os.getenv("SMTP_SSL", "0").lower() in {"1", "true", "yes"},
+    }
+
 def _send_assessment_email(to_email: str, candidate_name: str, role: str, link: str) -> tuple[bool, str]:
-    host = os.getenv("SMTP_HOST", "").strip()
-    username = os.getenv("SMTP_USERNAME", "").strip()
-    password = os.getenv("SMTP_PASSWORD", "")
-    sender = os.getenv("SMTP_FROM", username).strip()
-    if not all([host, username, password, sender, to_email]):
-        return False, "SMTP is not configured. The assessment link was generated but not emailed."
+    import smtplib
+    from email.message import EmailMessage
+    if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", to_email or ""):
+        return False, "Candidate email is missing or invalid."
+    cfg = _smtp_settings()
+    if not all([cfg["host"], cfg["username"], cfg["password"], cfg["sender"]]):
+        return False, "Email is not configured. Open Email Delivery and enter SMTP settings, or set SMTP_* environment variables."
     try:
-        import smtplib
-        from email.message import EmailMessage
-        port = int(os.getenv("SMTP_PORT", "587"))
         msg = EmailMessage()
-        msg["Subject"] = f"CareerLens AI Assessment — {role}"
-        msg["From"] = sender
+        msg["Subject"] = f"CareerLens AI — {role} Assessment Invitation"
+        msg["From"] = cfg["sender"]
         msg["To"] = to_email
         msg.set_content(
             f"Hello {candidate_name or 'Candidate'},\n\n"
-            f"You have been invited to complete a {role} assessment.\n\n"
-            f"Assessment link: {link}\n\n"
-            "Your assessment score is not displayed to you after submission; the recruiter will review the result.\n\n"
+            f"You have been invited to complete the {role} assessment.\n\n"
+            f"Open your assessment here:\n{link}\n\n"
+            "Your score and answer key are not displayed after submission. The recruiter will review your result.\n\n"
             "Regards,\nCareerLens AI"
         )
-        with smtplib.SMTP(host, port, timeout=20) as server:
-            server.starttls()
-            server.login(username, password)
-            server.send_message(msg)
-        return True, "Assessment invitation sent successfully."
-    except (OSError, ValueError) as exc:
+        if cfg["use_ssl"] or cfg["port"] == 465:
+            with smtplib.SMTP_SSL(cfg["host"], cfg["port"], timeout=25) as server:
+                server.login(cfg["username"], cfg["password"])
+                server.send_message(msg)
+        else:
+            with smtplib.SMTP(cfg["host"], cfg["port"], timeout=25) as server:
+                server.ehlo()
+                server.starttls()
+                server.ehlo()
+                server.login(cfg["username"], cfg["password"])
+                server.send_message(msg)
+        return True, "Email sent successfully."
+    except (OSError, ValueError, smtplib.SMTPException) as exc:
         return False, f"Email delivery failed: {exc}"
 
+
+if "smtp_config" not in st.session_state:
+    st.session_state.smtp_config = {}
 
 if "recruiter_data" not in st.session_state:
     st.session_state.recruiter_data = _load_recruiter_data()
@@ -1363,20 +1448,30 @@ def dialog_auth():
         if st.button("Sign In", use_container_width=True, key="btn_confirm_sign"):
             if not u or not p:
                 st.warning("Please fill in both fields.")
-            elif u in st.session_state.users_db and password_matches(st.session_state.users_db[u], p):
-                st.session_state.username = u.split("@")[0].capitalize()
-                st.session_state.is_logged_in = True
-                st.session_state.selected_gateway = False
-                log_event("LOGIN", st.session_state.username, "N/A", "User Login")
-                st.rerun()
-            elif ADMIN_PIN and u.lower() == "admin" and p == ADMIN_PIN:
-                st.session_state.username = "Administrator"
-                st.session_state.is_logged_in = True
-                st.session_state.selected_gateway = True
-                st.session_state.active_workspace = "Recruiter Workspace"
-                st.rerun()
             else:
-                st.error("Account not found. Please register or continue as Guest.")
+                account = _db_user(u)
+                if account and password_matches(account[3], p):
+                    st.session_state.user_id = account[0]
+                    st.session_state.username = account[2]
+                    st.session_state.is_logged_in = True
+                    st.session_state.selected_gateway = False
+                    saved = _db_load_state(st.session_state.user_id)
+                    for key, value in saved.items():
+                        st.session_state[key] = value
+                    st.session_state.recruiter_data = _db_load_recruiter_state(st.session_state.user_id)
+                    st.session_state.recruiter_candidates = st.session_state.recruiter_data.get("candidates", [])
+                    st.session_state.recruiter_assessment_submissions = {x.get("token", str(i)): x for i, x in enumerate(st.session_state.recruiter_data.get("submissions", [])) if isinstance(x, dict)}
+                    log_event("LOGIN", st.session_state.username, "N/A", "User Login")
+                    st.rerun()
+                elif ADMIN_PIN and u.lower() == "admin" and p == ADMIN_PIN:
+                    st.session_state.user_id = "admin"
+                    st.session_state.username = "Administrator"
+                    st.session_state.is_logged_in = True
+                    st.session_state.selected_gateway = True
+                    st.session_state.active_workspace = "Recruiter Workspace"
+                    st.rerun()
+                else:
+                    st.error("Account not found. Please register or continue as Guest.")
     with tab_auth2:
         reg_n = st.text_input("Full Name", key="auth_reg_n")
         reg_u = st.text_input("Choose Username / Email", key="auth_reg_u")
@@ -1385,12 +1480,23 @@ def dialog_auth():
             if not reg_u or not reg_p:
                 st.warning("Username and password are required.")
             else:
-                st.session_state.users_db[reg_u] = hash_password(reg_p)
-                st.session_state.username = reg_n.strip() if reg_n.strip() else reg_u.split("@")[0].capitalize()
-                st.session_state.is_logged_in = True
-                st.session_state.selected_gateway = False
-                log_event("REGISTER", st.session_state.username, "N/A", f"Registered: {reg_u}")
-                st.rerun()
+                if _db_user(reg_u):
+                    st.error("That username or email is already registered. Please sign in.")
+                else:
+                    try:
+                        uid = _db_create_user(reg_u, reg_n, hash_password(reg_p))
+                        st.session_state.user_id = uid
+                        st.session_state.username = reg_n.strip() if reg_n.strip() else reg_u.split("@")[0].capitalize()
+                        st.session_state.is_logged_in = True
+                        st.session_state.selected_gateway = False
+                        st.session_state.recruiter_data = _db_load_recruiter_state(uid)
+                        st.session_state.recruiter_candidates = []
+                        st.session_state.recruiter_assessment_submissions = {}
+                        _db_save_state(uid, {"username": st.session_state.username, "resume_text": "", "resume_analysis": None, "job_match_result": None, "resume_builder": {}})
+                        log_event("REGISTER", st.session_state.username, "N/A", f"Registered: {reg_u}")
+                        st.rerun()
+                    except sqlite3.IntegrityError:
+                        st.error("That username or email is already registered. Please sign in.")
 
 # ============================================================
 # 1. LANDING & ACCESS SCREEN
@@ -1432,8 +1538,16 @@ if not st.session_state.is_logged_in:
                 dialog_auth()
         with b3:
             if st.button("🚀 Guest Access", key="btn_entry_guest", use_container_width=True):
+                st.session_state.user_id = ""
                 st.session_state.username = "Guest Explorer"
                 st.session_state.is_logged_in = True
+                st.session_state.resume_text = ""
+                st.session_state.resume_analysis = None
+                st.session_state.job_match_result = None
+                st.session_state.resume_builder = {}
+                st.session_state.recruiter_data = {"campaign": None, "candidates": [], "assessments": [], "submissions": []}
+                st.session_state.recruiter_candidates = []
+                st.session_state.recruiter_assessment_submissions = {}
                 st.session_state.selected_gateway = False
                 log_event("GUEST_ACCESS", "Guest", "N/A", "Guest entry")
                 st.rerun()
@@ -1609,6 +1723,7 @@ with st.sidebar:
             ("🏆 Shortlisted Candidates", "Shortlisted Candidates"),
             ("📝 Assessment Builder", "Assessment Builder"),
             ("📊 Assessment Results", "Score Vault"),
+            ("📧 Email Delivery", "Email Delivery"),
             ("🎤 Interview Pipeline", "Interview Pipeline")
         ]
         for name, key_val in rec_tools:
@@ -1618,9 +1733,31 @@ with st.sidebar:
                 st.rerun()
 
     st.markdown("<hr style='border-color: rgba(255,255,255,0.1); margin: 20px 0;'>", unsafe_allow_html=True)
-    if st.button("🚪 Switch Mode / Logout", key="sb_logout_btn", use_container_width=True):
-        st.session_state.selected_gateway = False
+    if st.button("🚪 Logout", key="sb_logout_btn", use_container_width=True):
+        uid = st.session_state.get("user_id", "")
+        if uid:
+            try:
+                _db_save_state(uid, {
+                    "username": st.session_state.username,
+                    "resume_text": st.session_state.get("resume_text", ""),
+                    "resume_analysis": st.session_state.get("resume_analysis"),
+                    "job_match_result": st.session_state.get("job_match_result"),
+                    "resume_builder": st.session_state.get("resume_builder", {}),
+                })
+            except sqlite3.Error:
+                pass
+        for key in ["is_logged_in", "selected_gateway", "user_id"]:
+            st.session_state[key] = False if key != "user_id" else ""
+        st.session_state.username = "Guest Explorer"
+        st.session_state.active_workspace = "Job Seeker Workspace"
         st.session_state.active_tool = "Dashboard"
+        st.session_state.resume_text = ""
+        st.session_state.resume_analysis = None
+        st.session_state.job_match_result = None
+        st.session_state.resume_builder = {}
+        st.session_state.recruiter_data = {"campaign": None, "candidates": [], "assessments": [], "submissions": []}
+        st.session_state.recruiter_candidates = []
+        st.session_state.recruiter_assessment_submissions = {}
         st.rerun()
 
 # ============================================================
@@ -2325,106 +2462,145 @@ elif st.session_state.active_workspace == "Recruiter Workspace":
     submissions = list(st.session_state.recruiter_assessment_submissions.values())
     campaign = data.get("campaign") or {}
 
-    completed_scores = [float(x.get("percentage", 0)) for x in submissions if isinstance(x, dict)]
-    shortlisted = [c for c in candidates if c.get("status") == "Shortlisted"]
-    completed = len(submissions)
+    # --------------------------------------------------------
+    # Recruiter dashboard helpers
+    # --------------------------------------------------------
+    status_order = ["Screened", "Shortlisted", "Assessment Sent", "Assessment Completed", "Interview", "Selected", "Rejected"]
+    status_counts = {status: sum(1 for c in candidates if c.get("status") == status) for status in status_order}
     pending = sum(1 for c in candidates if c.get("assessment_status") == "Sent")
+    completed_scores = [float(x.get("percentage", 0)) for x in submissions if isinstance(x, dict)]
     avg_score = round(sum(completed_scores) / len(completed_scores), 1) if completed_scores else 0
+    shortlist_count = status_counts["Shortlisted"]
 
-    k1, k2, k3, k4, k5 = st.columns(5)
-    k1.metric("Candidates", len(candidates))
-    k2.metric("Shortlisted", len(shortlisted))
-    k3.metric("Assessments Sent", pending)
-    k4.metric("Completed", completed)
-    k5.metric("Avg. Assessment", f"{avg_score}%")
+    def persist_recruiter():
+        data["candidates"] = st.session_state.recruiter_candidates
+        data["submissions"] = list(st.session_state.recruiter_assessment_submissions.values())
+        st.session_state.recruiter_data = data
+        _save_recruiter_data(data)
+
+    def recruiter_nav(tool: str):
+        st.session_state.active_tool = tool
+        st.rerun()
+
+    # Professional, compact command center header.
+    st.markdown(
+        f"""
+        <div class="header-banner" style="margin-bottom:18px;">
+          <div>
+            <div class="header-title">Recruiter Command Center</div>
+            <div class="header-sub">{html.escape(campaign.get('role', 'Start a hiring campaign'))} · One clean pipeline from resume to decision</div>
+          </div>
+          <div style="font-weight:800;color:#fff;">{html.escape(st.session_state.username)}</div>
+        </div>
+        """, unsafe_allow_html=True
+    )
 
     if st.session_state.active_tool == "Dashboard":
-        st.markdown("### 👔 Recruiter Command Center")
-        if campaign:
-            st.success(f"Active hiring campaign: **{campaign.get('role', 'Untitled Role')}**")
+        st.markdown("### Hiring overview")
+        if not campaign:
+            st.info("Start with the role you are hiring for. CareerLens will use it to screen resumes and build the assessment.")
         else:
-            st.info("Start by creating a hiring campaign. The selected role drives screening, shortlisting and assessment generation.")
-        a, b, c = st.columns(3)
-        with a:
-            if st.button("🎯 Create Hiring Campaign", use_container_width=True):
-                st.session_state.active_tool = "Hiring Campaign"
-                st.rerun()
-        with b:
-            if st.button("📤 Upload Resumes", use_container_width=True):
-                st.session_state.active_tool = "Bulk Screening"
-                st.rerun()
-        with c:
-            if st.button("📊 Review Assessments", use_container_width=True):
-                st.session_state.active_tool = "Score Vault"
-                st.rerun()
-        st.markdown("#### Hiring Pipeline")
-        pipeline = [
-            ("Applied", len(candidates)),
-            ("Shortlisted", len(shortlisted)),
-            ("Assessment Sent", pending),
-            ("Assessment Completed", completed),
-            ("Interview", sum(1 for c in candidates if c.get("status") == "Interview")),
+            st.success(f"Active campaign · **{campaign.get('role')}** · {campaign.get('openings', 1)} opening(s)")
+
+        k1, k2, k3, k4, k5 = st.columns(5)
+        k1.metric("Candidates", len(candidates))
+        k2.metric("Shortlisted", shortlist_count)
+        k3.metric("Assessments Sent", pending)
+        k4.metric("Completed", len(submissions))
+        k5.metric("Avg. Score", f"{avg_score}%")
+
+        st.markdown("#### What do you want to do?")
+        actions = [
+            ("🎯", "Create / Edit Campaign", "Hiring Campaign"),
+            ("📤", "Upload Resumes", "Bulk Screening"),
+            ("🏆", "Review Shortlist", "Shortlisted Candidates"),
+            ("📝", "Send Assessment", "Assessment Builder"),
+            ("📊", "Review Results", "Score Vault"),
+            ("🎤", "Manage Interviews", "Interview Pipeline"),
         ]
-        st.dataframe(pd.DataFrame(pipeline, columns=["Stage", "Candidates"]), use_container_width=True, hide_index=True)
+        cols = st.columns(3)
+        for i, (icon, label, target) in enumerate(actions):
+            with cols[i % 3]:
+                if st.button(f"{icon} {label}", key=f"dash_action_{i}", use_container_width=True):
+                    recruiter_nav(target)
+
+        st.markdown("#### Hiring pipeline")
+        stages = [
+            ("Screened", status_counts["Screened"]),
+            ("Shortlisted", status_counts["Shortlisted"]),
+            ("Assessment Sent", status_counts["Assessment Sent"]),
+            ("Assessment Completed", status_counts["Assessment Completed"]),
+            ("Interview", status_counts["Interview"]),
+            ("Selected", status_counts["Selected"]),
+        ]
+        pipe_cols = st.columns(len(stages))
+        for col, (stage, count) in zip(pipe_cols, stages):
+            with col:
+                st.markdown(f"<div class='content-box' style='text-align:center;padding:14px 8px;'><div style='font-size:1.55rem;font-weight:900;color:#0f172a'>{count}</div><div style='font-size:.76rem;color:#64748b;font-weight:700'>{stage}</div></div>", unsafe_allow_html=True)
+
+        if candidates:
+            st.markdown("#### Recent candidates")
+            recent = sorted(candidates, key=lambda c: c.get("uploaded_at", ""), reverse=True)[:8]
+            st.dataframe(pd.DataFrame([{
+                "Candidate": c.get("name", "Candidate"),
+                "Role Match": f"{c.get('role_match', 0)}%",
+                "Resume": f"{c.get('resume_score', 0)}%",
+                "Status": c.get("status", "Screened"),
+                "Assessment": c.get("assessment_status", "Not Sent"),
+            } for c in recent]), use_container_width=True, hide_index=True)
 
     elif st.session_state.active_tool == "Hiring Campaign":
-        st.markdown("### 🎯 Create Hiring Campaign")
-        st.caption("Define the role first. Every later hiring decision is evaluated against this role.")
+        st.markdown("### 🎯 Hiring campaign")
+        st.caption("Define the hiring target once. Screening, shortlisting and assessments will follow this role.")
+        role_options = IT_ROLES + NON_IT_ROLES + ["Custom Role"]
         current_role = campaign.get("role", "Software Developer")
-        role = st.selectbox("Role you are hiring for", IT_ROLES + NON_IT_ROLES + ["Custom Role"], index=(IT_ROLES + NON_IT_ROLES + ["Custom Role"]).index(current_role) if current_role in IT_ROLES + NON_IT_ROLES + ["Custom Role"] else 0)
+        selected = current_role if current_role in role_options else "Custom Role"
+        role = st.selectbox("What role are you hiring for?", role_options, index=role_options.index(selected))
         custom_role = st.text_input("Custom role title", value=campaign.get("custom_role", "")) if role == "Custom Role" else ""
         final_role = custom_role.strip() if role == "Custom Role" else role
         c1, c2 = st.columns(2)
         with c1:
             experience = st.text_input("Required experience", value=campaign.get("experience", "0–3 years"))
-            required_skills = st.text_input("Required skills (comma separated)", value=campaign.get("required_skills", "Python, SQL, Git"))
-        with c2:
+            required_skills = st.text_input("Required skills", value=campaign.get("required_skills", "Python, SQL, Git"))
             openings = st.number_input("Number of openings", min_value=1, max_value=500, value=int(campaign.get("openings", 1)))
-            job_description = st.text_area("Job description", value=campaign.get("job_description", ""), height=150)
-        if st.button("💾 Save Hiring Campaign", type="primary", use_container_width=True):
-            if not final_role:
-                st.error("Please provide a role title.")
-            elif not job_description.strip():
-                st.error("Please provide the job description used for screening.")
+        with c2:
+            job_description = st.text_area("Job description", value=campaign.get("job_description", ""), height=185)
+        if st.button("💾 Save campaign", type="primary", use_container_width=True):
+            if not final_role or not job_description.strip():
+                st.error("Role and job description are required.")
             else:
                 data["campaign"] = {
-                    "role": final_role,
-                    "custom_role": custom_role,
-                    "experience": experience.strip(),
-                    "required_skills": required_skills.strip(),
-                    "openings": int(openings),
-                    "job_description": job_description.strip(),
+                    "role": final_role, "custom_role": custom_role,
+                    "experience": experience.strip(), "required_skills": required_skills.strip(),
+                    "openings": int(openings), "job_description": job_description.strip(),
                     "updated_at": datetime.now().isoformat(timespec="seconds"),
                 }
-                _save_recruiter_data(data)
-                st.success("Hiring campaign saved. You can now upload candidate resumes.")
+                persist_recruiter()
+                st.success("Hiring campaign saved. Upload candidate resumes next.")
 
     elif st.session_state.active_tool == "Bulk Screening":
-        st.markdown("### 📤 Bulk Resume Screening")
+        st.markdown("### 📤 Bulk resume screening")
         if not campaign:
             st.warning("Create a hiring campaign first.")
-            if st.button("Create Hiring Campaign", use_container_width=True):
-                st.session_state.active_tool = "Hiring Campaign"
-                st.rerun()
+            if st.button("Create hiring campaign", type="primary", use_container_width=True): recruiter_nav("Hiring Campaign")
         else:
-            st.info(f"Screening resumes for **{campaign['role']}** using the configured job description and required skills.")
-            files = st.file_uploader("Upload candidate resumes", type=["pdf", "docx", "txt"], accept_multiple_files=True, key="recruiter_bulk_upload")
-            if files and st.button("⚡ Analyze & Rank Resumes", type="primary", use_container_width=True):
+            st.info(f"Screening against **{campaign['role']}** · Skills: {campaign.get('required_skills', 'Not specified')}")
+            files = st.file_uploader("Upload candidate resumes", type=["pdf", "docx", "txt"], accept_multiple_files=True, key="recruiter_bulk_upload_v2")
+            if files and st.button("⚡ Analyze all resumes", type="primary", use_container_width=True):
                 processed = []
-                for uploaded in files:
+                progress = st.progress(0, text="Analyzing resumes…")
+                for idx, uploaded in enumerate(files, 1):
                     try:
                         profile = api_analyze_resume(uploaded)
-                        resume_text = profile.get("extracted_text", "")
-                        match = api_match_job(resume_text, campaign.get("job_description", ""))
+                        resume_text = profile.get("extracted_text", "") or ""
+                        match = normalize_job_match(api_match_job(resume_text, campaign.get("job_description", "")))
                         name = str(profile.get("name") or re.sub(r"[_-]+", " ", os.path.splitext(uploaded.name)[0])).strip()
-                        email = str(profile.get("email") or extract_email_from_text(resume_text)).strip()
-                        if email.endswith("@domain.com"):
-                            email = ""
+                        email = str(profile.get("email") or extract_email_from_text(resume_text) or "").strip()
+                        if email.endswith("@domain.com"): email = ""
                         cid = _candidate_id(name, email or uploaded.name)
+                        old = next((c for c in candidates if c.get("id") == cid), {})
                         processed.append({
-                            "id": cid,
-                            "name": name,
-                            "email": email,
+                            **old, "id": cid, "name": name, "email": email,
                             "phone": profile.get("phone", ""),
                             "resume_score": round(float(profile.get("resume_score", 0) or 0), 1),
                             "role_match": int(match.get("overall", 0)),
@@ -2432,162 +2608,168 @@ elif st.session_state.active_workspace == "Recruiter Workspace":
                             "missing_skills": ", ".join(match.get("missing", [])),
                             "skills": ", ".join(profile.get("skills", [])),
                             "resume_text": resume_text,
-                            "status": "Screened",
-                            "assessment_status": "Not Sent",
-                            "assessment_token": "",
-                            "uploaded_at": datetime.now().isoformat(timespec="seconds"),
+                            "status": old.get("status", "Screened"),
+                            "assessment_status": old.get("assessment_status", "Not Sent"),
+                            "uploaded_at": old.get("uploaded_at", datetime.now().isoformat(timespec="seconds")),
                         })
                     except Exception as exc:
                         st.error(f"Could not process {uploaded.name}: {exc}")
-                # Merge by candidate id; never duplicate a candidate on rerun.
-                existing = {c.get("id"): c for c in candidates}
-                existing.update({c["id"]: c for c in processed})
-                st.session_state.recruiter_candidates = sorted(existing.values(), key=_recruiter_score, reverse=True)
-                data["candidates"] = st.session_state.recruiter_candidates
-                _save_recruiter_data(data)
+                    progress.progress(idx / len(files), text=f"Analyzed {idx}/{len(files)}")
+                by_id = {c.get("id"): c for c in candidates}
+                by_id.update({c["id"]: c for c in processed})
+                st.session_state.recruiter_candidates = sorted(by_id.values(), key=lambda c: (_recruiter_score(c), float(c.get("resume_score", 0))), reverse=True)
+                persist_recruiter()
                 st.success(f"Processed {len(processed)} resume(s).")
-
+                st.rerun()
             if candidates:
-                df = pd.DataFrame([{
-                    "Candidate": c.get("name"), "Email": c.get("email"), "Resume Score": c.get("resume_score", 0),
-                    "Role Match": c.get("role_match", 0), "Status": c.get("status"), "Assessment": c.get("assessment_status")
-                } for c in candidates])
-                st.dataframe(df, use_container_width=True, hide_index=True)
-                st.markdown("#### 🏆 Shortlist Candidates")
-                shortlist_count = st.number_input("How many candidates do you want to shortlist?", min_value=1, max_value=max(1, len(candidates)), value=min(int(campaign.get("openings", 1)), len(candidates)))
-                if st.button("🏆 Generate AI Shortlist", type="primary", use_container_width=True):
+                st.markdown("#### Screening results")
+                st.dataframe(pd.DataFrame([{
+                    "Candidate": c.get("name"), "Email": c.get("email") or "Missing",
+                    "Resume": f"{c.get('resume_score',0)}%", "Role Match": f"{c.get('role_match',0)}%", "Status": c.get("status")
+                } for c in candidates]), use_container_width=True, hide_index=True)
+                st.markdown("#### 🏆 Shortlist")
+                count = st.number_input("How many candidates should be shortlisted?", min_value=1, max_value=len(candidates), value=min(int(campaign.get("openings", 1)), len(candidates)))
+                if st.button("Generate shortlist", type="primary", use_container_width=True):
                     ranked = sorted(candidates, key=lambda c: (_recruiter_score(c), float(c.get("resume_score", 0))), reverse=True)
-                    selected_ids = {c["id"] for c in ranked[:int(shortlist_count)]}
-                    for candidate in candidates:
-                        if candidate.get("status") not in {"Assessment Completed", "Interview", "Selected", "Rejected"}:
-                            candidate["status"] = "Shortlisted" if candidate.get("id") in selected_ids else "Screened"
-                    data["candidates"] = candidates
-                    _save_recruiter_data(data)
-                    st.success(f"{len(selected_ids)} candidate(s) shortlisted.")
-                    st.rerun()
+                    ids = {c["id"] for c in ranked[:int(count)]}
+                    for c in candidates:
+                        if c.get("status") not in {"Assessment Completed", "Interview", "Selected", "Rejected"}:
+                            c["status"] = "Shortlisted" if c.get("id") in ids else "Screened"
+                    persist_recruiter(); st.success(f"{len(ids)} candidate(s) shortlisted."); st.rerun()
 
     elif st.session_state.active_tool == "Shortlisted Candidates":
-        st.markdown("### 🏆 Shortlisted Candidates")
+        st.markdown("### 🏆 Shortlisted candidates")
         shortlisted = [c for c in candidates if c.get("status") == "Shortlisted"]
         if not shortlisted:
-            st.info("No candidates have been shortlisted yet. Run bulk screening and generate a shortlist first.")
+            st.info("No shortlist yet. Upload resumes and generate a shortlist first.")
         else:
-            for candidate in sorted(shortlisted, key=_recruiter_score, reverse=True):
+            st.caption(f"{len(shortlisted)} candidate(s) ready for assessment")
+            for c in sorted(shortlisted, key=_recruiter_score, reverse=True):
                 with st.container(border=True):
-                    c1, c2, c3 = st.columns([2.2, 1, 1])
-                    with c1:
-                        st.markdown(f"**{_escape(candidate.get('name'))}**")
-                        st.caption(candidate.get("email") or "Email not detected")
-                    with c2:
-                        st.metric("Role Match", f"{candidate.get('role_match', 0)}%")
-                    with c3:
-                        st.metric("Resume", f"{candidate.get('resume_score', 0)}%")
-                    st.write(f"**Matched:** {candidate.get('matched_skills') or 'None detected'}")
-                    st.write(f"**Missing:** {candidate.get('missing_skills') or 'None detected'}")
-                    if st.button("Send Assessment", key=f"send_assessment_{candidate['id']}", disabled=not candidate.get("email")):
-                        st.session_state.assessment_candidate_for_recruiter = candidate["id"]
-                        st.session_state.active_tool = "Assessment Builder"
-                        st.rerun()
+                    a,b,c3 = st.columns([2.4,1,1])
+                    with a:
+                        st.markdown(f"**{html.escape(c.get('name','Candidate'))}**")
+                        st.caption(c.get("email") or "Email not detected")
+                        st.write(f"Matched: {c.get('matched_skills') or 'None'}")
+                        st.write(f"Missing: {c.get('missing_skills') or 'None'}")
+                    with b: st.metric("Match", f"{c.get('role_match',0)}%")
+                    with c3: st.metric("Resume", f"{c.get('resume_score',0)}%")
+                    if st.button("Invite to assessment", key=f"short_invite_{c['id']}", disabled=not bool(c.get("email"))):
+                        st.session_state.assessment_selected_ids = [c["id"]]
+                        recruiter_nav("Assessment Builder")
 
     elif st.session_state.active_tool == "Assessment Builder":
-        st.markdown("### 📝 Role-Specific Assessment Builder")
+        st.markdown("### 📝 Assessment center")
         if not campaign:
             st.warning("Create a hiring campaign first.")
-        elif not shortlisted:
-            st.warning("Shortlist candidates before generating an assessment.")
         else:
-            st.caption(f"Assessment role: **{campaign['role']}**")
-            count = st.select_slider("Number of questions", options=list(range(10, 51, 5)), value=20)
-            difficulty = st.selectbox("Difficulty", ["Standard", "Advanced", "Mixed"])
-            selected_ids = st.multiselect("Candidates to invite", options=[c["id"] for c in shortlisted], format_func=lambda cid: next((c.get("name", cid) for c in shortlisted if c["id"] == cid), cid), default=[c["id"] for c in shortlisted if c.get("email")])
-            if st.button("🔗 Generate Assessment & Invitation Links", type="primary", use_container_width=True):
-                questions = generate_assessment_questions(campaign["role"], int(count))
-                assessment = {
-                    "id": uuid.uuid4().hex,
-                    "role": campaign["role"],
-                    "difficulty": difficulty,
-                    "question_count": int(count),
-                    "questions": questions,
-                    "created_at": datetime.now().isoformat(timespec="seconds"),
-                    "candidate_tokens": {},
-                }
-                for cid in selected_ids:
-                    candidate = next((c for c in shortlisted if c["id"] == cid), None)
-                    if not candidate:
-                        continue
-                    token = _make_assessment_token()
-                    assessment["candidate_tokens"][cid] = token
-                    candidate["assessment_token"] = token
-                    candidate["assessment_status"] = "Sent"
-                    candidate["status"] = "Assessment Sent"
-                    link = _assessment_public_url(token)
-                    candidate["assessment_link"] = link
-                    if candidate.get("email"):
-                        sent, message = _send_assessment_email(candidate["email"], candidate.get("name", "Candidate"), campaign["role"], link)
-                        candidate["email_delivery"] = "Sent" if sent else "Link Generated"
-                        candidate["email_message"] = message
-                data.setdefault("assessments", []).append(assessment)
-                data["candidates"] = candidates
-                _save_recruiter_data(data)
-                st.session_state.last_generated_assessment = assessment
-                st.success("Assessment links generated. Email delivery status is shown below.")
-
-            assessment = st.session_state.get("last_generated_assessment")
-            if assessment:
-                rows = []
-                for cid, token in assessment.get("candidate_tokens", {}).items():
-                    candidate = next((c for c in candidates if c.get("id") == cid), None)
-                    if candidate:
-                        rows.append({"Candidate": candidate.get("name"), "Email": candidate.get("email"), "Delivery": candidate.get("email_delivery", "Link Generated"), "Assessment Link": candidate.get("assessment_link", "")})
-                if rows:
-                    st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
-                    for row in rows:
-                        st.code(row["Assessment Link"], language="text")
+            eligible = [c for c in candidates if c.get("status") in {"Shortlisted", "Assessment Sent"} and c.get("email")]
+            if not eligible:
+                st.info("No shortlisted candidates with valid email addresses are ready. Return to Shortlisted Candidates after screening.")
+            else:
+                count = st.select_slider("Questions", options=list(range(10,51,5)), value=20)
+                difficulty = st.selectbox("Difficulty", ["Standard", "Advanced", "Mixed"])
+                ids_default = st.session_state.pop("assessment_selected_ids", [c["id"] for c in eligible])
+                ids_default = [x for x in ids_default if any(c["id"] == x for c in eligible)]
+                selected_ids = st.multiselect("Candidates to invite", [c["id"] for c in eligible], default=ids_default, format_func=lambda x: next((c.get("name",x) for c in eligible if c["id"]==x),x))
+                if st.button("🔗 Generate links + send emails", type="primary", use_container_width=True):
+                    if not selected_ids:
+                        st.error("Select at least one candidate.")
+                    else:
+                        questions = generate_assessment_questions(campaign["role"], int(count))
+                        assessment = {"id": uuid.uuid4().hex, "role": campaign["role"], "difficulty": difficulty, "question_count": int(count), "questions": questions, "created_at": datetime.now().isoformat(timespec="seconds"), "candidate_tokens": {}}
+                        rows=[]
+                        for cid in selected_ids:
+                            candidate=next((x for x in candidates if x.get("id")==cid),None)
+                            if not candidate: continue
+                            token=_make_assessment_token(); link=_assessment_public_url(token)
+                            assessment["candidate_tokens"][cid]=token
+                            candidate.update({"assessment_token":token,"assessment_link":link,"assessment_status":"Sent","status":"Assessment Sent","email_delivery":"Pending"})
+                            sent,msg=_send_assessment_email(candidate.get("email",""),candidate.get("name","Candidate"),campaign["role"],link)
+                            candidate["email_delivery"]="Sent" if sent else "Failed"
+                            candidate["email_message"]=msg
+                            rows.append({"Candidate":candidate.get("name"),"Email":candidate.get("email"),"Delivery":"Sent" if sent else "Failed","Message":msg,"Link":link})
+                        data.setdefault("assessments",[]).append(assessment)
+                        st.session_state.last_generated_assessment=assessment
+                        persist_recruiter()
+                        st.success("Assessment generated. Delivery results are shown below.")
+                        st.dataframe(pd.DataFrame(rows),use_container_width=True,hide_index=True)
+                        for r in rows:
+                            st.code(r["Link"],language="text")
 
     elif st.session_state.active_tool == "Score Vault":
-        st.markdown("### 📊 Recruiter Assessment Results")
-        st.caption("Candidate scores and detailed answer reviews appear here only after a recruiter-dispatched assessment is submitted.")
+        st.markdown("### 📊 Assessment results")
+        st.caption("Only recruiter accounts can see scores and answer keys.")
         if not submissions:
-            st.info("No candidate assessment has been completed yet.")
+            st.info("No candidate has completed a recruiter-issued assessment yet.")
         else:
-            for result in sorted(submissions, key=lambda x: float(x.get("percentage", 0)), reverse=True):
-                with st.expander(f"{result.get('candidate_name', 'Candidate')} — {result.get('percentage', 0)}%"):
-                    c1, c2, c3, c4 = st.columns(4)
-                    c1.metric("Score", f"{result.get('score', 0)}/{result.get('total', 0)}")
-                    c2.metric("Correct", result.get("correct_count", 0))
-                    c3.metric("Incorrect", result.get("wrong_count", 0))
-                    c4.metric("Unanswered", result.get("unanswered_count", 0))
-                    for item in result.get("wrong_items", []):
-                        st.error(f"Q{item['id']}: {item['question']} | Candidate: {item.get('selected')} | Correct: {item.get('correct')}")
-                    for item in result.get("correct_items", []):
-                        st.success(f"Q{item['id']}: {item['question']} | Correct: {item.get('correct')}")
-                    for item in result.get("unanswered_items", []):
-                        st.warning(f"Q{item['id']}: Unanswered | Correct: {item.get('correct')}")
+            for result in sorted(submissions,key=lambda x:float(x.get("percentage",0)),reverse=True):
+                with st.container(border=True):
+                    st.markdown(f"### {html.escape(result.get('candidate_name','Candidate'))}")
+                    c1,c2,c3,c4=st.columns(4)
+                    c1.metric("Score",f"{result.get('score',0)}/{result.get('total',0)}")
+                    c2.metric("Percentage",f"{result.get('percentage',0)}%")
+                    c3.metric("Correct",result.get('correct_count',0))
+                    c4.metric("Unanswered",result.get('unanswered_count',0))
+                    if st.button("Review answers",key=f"review_result_{result.get('token','')}"):
+                        st.session_state[f"open_result_{result.get('token','')}"]=True
+                    if st.session_state.get(f"open_result_{result.get('token','')}"):
+                        for item in result.get("wrong_items",[]): st.error(f"Q{item['id']}: {item['question']} · Candidate: {item.get('selected')} · Correct: {item.get('correct')}")
+                        for item in result.get("correct_items",[]): st.success(f"Q{item['id']}: {item['question']} · Correct: {item.get('correct')}")
+                        for item in result.get("unanswered_items",[]): st.warning(f"Q{item['id']}: Unanswered · Correct: {item.get('correct')}")
 
     elif st.session_state.active_tool == "Interview Pipeline":
-        st.markdown("### 🎤 Interview Pipeline")
-        st.caption("Move candidates forward only after reviewing resume and assessment evidence.")
-        for candidate in candidates:
-            if candidate.get("status") in {"Assessment Completed", "Interview", "Selected", "Rejected"}:
-                with st.container(border=True):
-                    st.markdown(f"**{candidate.get('name')}** — {candidate.get('email') or 'No email'}")
-                    st.write(f"Resume: **{candidate.get('resume_score', 0)}%** • Role Match: **{candidate.get('role_match', 0)}%** • Assessment: **{candidate.get('assessment_percentage', 'Pending')}**")
-                    a, b, c = st.columns(3)
-                    with a:
-                        if st.button("🎤 Move to Interview", key=f"int_{candidate['id']}"):
-                            candidate["status"] = "Interview"
-                            _save_recruiter_data(data)
-                            st.rerun()
-                    with b:
-                        if st.button("✅ Select", key=f"select_{candidate['id']}"):
-                            candidate["status"] = "Selected"
-                            _save_recruiter_data(data)
-                            st.rerun()
-                    with c:
-                        if st.button("❌ Reject", key=f"reject_{candidate['id']}"):
-                            candidate["status"] = "Rejected"
-                            _save_recruiter_data(data)
-                            st.rerun()
+        st.markdown("### 🎤 Interview pipeline")
+        visible=[c for c in candidates if c.get("status") in {"Assessment Completed","Interview","Selected","Rejected"}]
+        if not visible: st.info("Candidates appear here after assessment completion.")
+        for c in visible:
+            with st.container(border=True):
+                st.markdown(f"**{html.escape(c.get('name','Candidate'))}** · {c.get('email') or 'No email'}")
+                st.write(f"Resume **{c.get('resume_score',0)}%** · Match **{c.get('role_match',0)}%** · Assessment **{c.get('assessment_percentage','Pending')}%**")
+                a,b,d=st.columns(3)
+                with a:
+                    if st.button("🎤 Interview",key=f"int_{c['id']}"): c["status"]="Interview"; persist_recruiter(); st.rerun()
+                with b:
+                    if st.button("✅ Select",key=f"sel_{c['id']}"): c["status"]="Selected"; persist_recruiter(); st.rerun()
+                with d:
+                    if st.button("❌ Reject",key=f"rej_{c['id']}"): c["status"]="Rejected"; persist_recruiter(); st.rerun()
+
+    elif st.session_state.active_tool == "Email Delivery":
+        st.markdown("### 📧 Email delivery")
+        st.caption("Assessment links are sent through SMTP. Use your organization's SMTP server or Gmail/Outlook SMTP credentials.")
+        env = _smtp_settings()
+        c1,c2=st.columns(2)
+        with c1:
+            host=st.text_input("SMTP host",value=st.session_state.smtp_config.get("host",env["host"]))
+            port=st.number_input("SMTP port",min_value=1,max_value=65535,value=st.session_state.smtp_config.get("port",env["port"]))
+            username=st.text_input("SMTP username",value=st.session_state.smtp_config.get("username",env["username"]))
+        with c2:
+            password=st.text_input("SMTP password / app password",type="password",value=st.session_state.smtp_config.get("password",env["password"]))
+            sender=st.text_input("From email",value=st.session_state.smtp_config.get("sender",env["sender"]))
+            ssl_mode=st.checkbox("Use SSL (port 465)",value=st.session_state.smtp_config.get("use_ssl",env["use_ssl"]))
+        public_url=st.text_input("Public app URL",value=os.getenv("PUBLIC_APP_URL","").strip(),help="Must be the deployed Streamlit URL. Example: https://your-app.streamlit.app")
+        if st.button("💾 Save email settings",type="primary",use_container_width=True):
+            st.session_state.smtp_config={"host":host.strip(),"port":int(port),"username":username.strip(),"password":password,"sender":sender.strip(),"use_ssl":ssl_mode}
+            if public_url.strip(): os.environ["PUBLIC_APP_URL"]=public_url.strip().rstrip("/")
+            st.success("Email settings loaded for this session. Use 'Send assessment' to deliver invitations.")
+        st.warning("For production, put SMTP credentials and PUBLIC_APP_URL in Streamlit Secrets/environment variables instead of source code.")
+
+def _persist_current_user_state():
+    uid = st.session_state.get("user_id", "")
+    if not uid:
+        return
+    try:
+        _db_save_state(uid, {
+            "username": st.session_state.get("username", ""),
+            "resume_text": st.session_state.get("resume_text", ""),
+            "resume_analysis": st.session_state.get("resume_analysis"),
+            "job_match_result": st.session_state.get("job_match_result"),
+            "resume_builder": st.session_state.get("resume_builder", {}),
+        })
+    except (sqlite3.Error, TypeError, ValueError):
+        pass
+
+_persist_current_user_state()
 
 # ============================================================
 # FOOTER
