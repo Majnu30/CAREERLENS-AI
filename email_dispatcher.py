@@ -1,52 +1,78 @@
-import os
+"""SendGrid email service for CareerLens AI.
+
+Secrets are read only from environment variables through config.py.
+No credentials are stored in source code.
+"""
+
+from __future__ import annotations
+
+import html
 import re
 from typing import Tuple
-from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail
+
 from config import SENDGRID_API_KEY, SENDGRID_FROM_EMAIL
 
-def send_assessment_email(to_email: str, candidate_name: str, role: str, test_link: str) -> Tuple[bool, str]:
-    """
-    Sends automated candidate assessment invitations using SendGrid API.
-    """
-    if not to_email or not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", to_email.strip()):
+EMAIL_RE = re.compile(r"^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+$")
+
+
+def _valid_email(email: str) -> bool:
+    value = (email or "").strip().lower()
+    return bool(value and len(value) <= 254 and EMAIL_RE.fullmatch(value))
+
+
+def _send(to_email: str, subject: str, html_content: str) -> Tuple[bool, str]:
+    if not _valid_email(to_email):
         return False, "Candidate email is invalid or missing."
-
     if not SENDGRID_API_KEY:
-        return False, "SendGrid API Key is not configured."
-
-    subject = f"CareerLens AI — Assessment Invitation for {role}"
-    
-    html_content = f"""
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px;">
-        <h2 style="color: #2563eb; margin-top: 0;">CareerLens AI Assessment</h2>
-        <p>Hello <strong>{candidate_name or 'Candidate'}</strong>,</p>
-        <p>Congratulations! You have been shortlisted for the <strong>{role}</strong> role.</p>
-        <p>Please complete your online pre-interview qualifying assessment by clicking the link below:</p>
-        <div style="text-align: center; margin: 30px 0;">
-            <a href="{test_link}" style="background-color: #2563eb; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
-                Start Assessment Now →
-            </a>
-        </div>
-        <p style="color: #64748b; font-size: 13px;">If the button doesn't work, copy and paste this URL into your browser:<br>
-        <a href="{test_link}" style="color: #2563eb;">{test_link}</a></p>
-        <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;">
-        <p style="color: #94a3b8; font-size: 12px;">CareerLens AI Recruitment Intelligence. Please do not reply directly to this automated email.</p>
-    </div>
-    """
-
-    message = Mail(
-        from_email=SENDGRID_FROM_EMAIL,
-        to_emails=to_email.strip(),
-        subject=subject,
-        html_content=html_content
-    )
+        return False, "SendGrid API key is not configured."
+    if not _valid_email(SENDGRID_FROM_EMAIL):
+        return False, "SendGrid sender email is not configured correctly."
 
     try:
-        sg = SendGridAPIClient(SENDGRID_API_KEY)
-        response = sg.send(message)
-        if response.status_code in [200, 201, 202]:
-            return True, "Email delivered successfully via SendGrid."
-        return False, f"SendGrid returned status code: {response.status_code}"
-    except Exception as e:
-        return False, f"Delivery failed: {str(e)}"
+        from sendgrid import SendGridAPIClient
+        from sendgrid.helpers.mail import Mail
+        message = Mail(
+            from_email=SENDGRID_FROM_EMAIL,
+            to_emails=to_email.strip().lower(),
+            subject=subject[:200],
+            html_content=html_content,
+        )
+        response = SendGridAPIClient(SENDGRID_API_KEY).send(message)
+        if response.status_code in (200, 201, 202):
+            return True, "Email accepted by SendGrid."
+        return False, f"SendGrid returned status code {response.status_code}."
+    except Exception:
+        # Do not leak provider credentials, request data, or stack traces to users.
+        return False, "Email delivery failed. Check the server logs and SendGrid configuration."
+
+
+def send_html_email(to_email: str, subject: str, html_content: str) -> Tuple[bool, str]:
+    """Send caller-supplied HTML content after validating the destination."""
+    return _send(to_email, subject, html_content)
+
+
+def send_assessment_email(to_email: str, candidate_name: str, role: str, test_link: str) -> Tuple[bool, str]:
+    """Send a safe, consistent assessment invitation."""
+    safe_name = html.escape((candidate_name or "Candidate").strip()[:120])
+    safe_role = html.escape((role or "Open Position").strip()[:160])
+    safe_link = html.escape((test_link or "").strip(), quote=True)
+
+    if not safe_link.startswith(("http://", "https://")):
+        return False, "Assessment link is invalid."
+
+    subject = f"CareerLens AI — Assessment Invitation for {safe_role}"
+    content = f"""
+    <div style="font-family:Arial,sans-serif;max-width:620px;margin:auto;padding:24px;border:1px solid #e2e8f0;border-radius:14px;background:#ffffff;">
+      <h2 style="color:#2563eb;margin-top:0;">CareerLens AI Assessment</h2>
+      <p>Hello <strong>{safe_name}</strong>,</p>
+      <p>You have been shortlisted for the <strong>{safe_role}</strong> role.</p>
+      <p>Please complete your online pre-interview assessment using the secure link below.</p>
+      <p style="text-align:center;margin:28px 0;">
+        <a href="{safe_link}" style="background:#2563eb;color:#ffffff;padding:13px 24px;text-decoration:none;border-radius:8px;font-weight:700;display:inline-block;">Start Assessment</a>
+      </p>
+      <p style="color:#64748b;font-size:13px;">If the button does not work, copy this link into your browser:<br>{safe_link}</p>
+      <hr style="border:0;border-top:1px solid #e2e8f0;margin:24px 0;">
+      <p style="color:#94a3b8;font-size:12px;">CareerLens AI Recruitment Intelligence. This is an automated message.</p>
+    </div>
+    """
+    return _send(to_email, subject, content)
