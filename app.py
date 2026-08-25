@@ -1,3 +1,6 @@
+
+
+
 import io
 import os
 import csv
@@ -6,15 +9,31 @@ import re
 import random
 import uuid
 import hashlib
+import html
+import ipaddress
+import socket
+import textwrap
+from urllib.parse import urlparse
 from datetime import datetime
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
+
 import pandas as pd
 import requests
 import streamlit as st
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+from reportlab.lib import colors
+from reportlab.lib.enums import TA_CENTER, TA_LEFT
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+from reportlab.lib.units import mm
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.pdfbase import pdfmetrics
+from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle, KeepTogether
 
 API_BASE_URL = os.getenv("API_URL", "https://careerlens-ai-9dx8.onrender.com")
 ANALYTICS_FILE = "analytics.csv"
-ADMIN_PIN = "1234"
+ADMIN_PIN = os.getenv("ADMIN_PIN", "")
 
 st.set_page_config(
     page_title="CareerLens AI - Smart Career & Recruiter Intelligence",
@@ -702,67 +721,190 @@ html, body, .stApp, [data-testid="stAppViewContainer"] {
 # API CALLS
 # ============================================================
 
-def api_analyze_resume(file) -> Dict:
+def _extract_resume_text(file) -> str:
+    """Extract text locally when the API is unavailable."""
+    data = file.getvalue()
+    name = (file.name or "").lower()
     try:
-        files = {"file": (file.name, file.getvalue(), file.type)}
-        res = requests.post(f"{API_BASE_URL}/api/resume/analyze", files=files, timeout=60)
-        if res.status_code == 200:
-            return res.json()
+        if name.endswith(".pdf"):
+            from PyPDF2 import PdfReader
+            reader = PdfReader(io.BytesIO(data))
+            return "\n".join((page.extract_text() or "") for page in reader.pages).strip()
+        if name.endswith(".docx"):
+            from docx import Document
+            doc = Document(io.BytesIO(data))
+            return "\n".join(p.text for p in doc.paragraphs).strip()
+        return data.decode("utf-8", errors="ignore").strip()
     except Exception:
-        pass
-    
-    text = ""
-    try:
-        text = file.getvalue().decode("utf-8", errors="ignore")
-    except Exception:
-        text = "Experienced candidate profile."
-    
-    email = extract_email_from_text(text)
-    phone = extract_phone_from_text(text)
-    clean_name = file.name.rsplit(".", 1)[0].replace("_", " ").title()
+        return ""
 
+
+def _local_resume_analysis(text: str, filename: str) -> Dict:
+    """Deterministic local fallback; never invents contact details or random scores."""
+    lower = text.lower()
+    skill_catalog = [
+        "python", "java", "javascript", "typescript", "react", "node.js", "fastapi",
+        "django", "flask", "sql", "postgresql", "mysql", "mongodb", "docker",
+        "kubernetes", "aws", "azure", "gcp", "git", "linux", "machine learning",
+        "deep learning", "pandas", "numpy", "scikit-learn", "tensorflow", "pytorch",
+        "rest api", "graphql", "redis", "kafka", "system design", "html", "css",
+        "figma", "excel", "power bi", "tableau", "cybersecurity", "testing", "selenium",
+        "communication", "leadership", "problem solving"
+    ]
+    skills = [skill for skill in skill_catalog if skill in lower]
+    words = re.findall(r"\b[a-zA-Z]{2,}\b", text)
+    section_hits = sum(1 for section in ["experience", "education", "projects", "skills", "certifications"] if section in lower)
+    resume_score = min(100, max(35, 35 + min(len(words) // 35, 35) + section_hits * 6 + min(len(skills) * 2, 20)))
+    readiness = min(100, max(30, resume_score - 3 + min(len(skills), 10)))
+    email_match = re.search(r"[\w.+'-]+@[\w.-]+\.[A-Za-z]{2,}", text)
+    phone_match = re.search(r"(?:\+?\d[\d .()\-]{8,}\d)", text)
+    clean_name = re.sub(r"[_-]+", " ", Path(filename).stem).strip().title() or "Candidate"
     return {
         "name": clean_name,
-        "email": email,
-        "phone": phone,
-        "experience": "3+ Years",
-        "resume_score": random.randint(75, 92),
-        "readiness": random.randint(78, 95),
-        "skills": ["Python", "FastAPI", "React", "PostgreSQL", "Docker", "Machine Learning", "System Design"],
-        "extracted_text": text
+        "email": email_match.group(0) if email_match else "",
+        "phone": phone_match.group(0).strip() if phone_match else "",
+        "experience": "Detected from resume" if "experience" in lower else "Not detected",
+        "resume_score": resume_score,
+        "readiness": readiness,
+        "market_match": None,
+        "skills": skills,
+        "missing_skills": [],
+        "strengths": ["Skills detected" if skills else "Resume text extracted", "Structured sections detected" if section_hits >= 3 else "Basic resume structure detected"],
+        "recommendations": ["Add measurable achievements and outcomes.", "Tailor skills and projects to the target role.", "Keep formatting ATS-friendly and concise."],
+        "extracted_text": text,
+        "source": "local-fallback"
     }
 
+
+def api_analyze_resume(file) -> Dict:
+    """Analyze a resume through the backend and provide a deterministic local fallback."""
+    try:
+        files = {"file": (file.name, file.getvalue(), file.type or "application/octet-stream")}
+        res = requests.post(f"{API_BASE_URL}/api/resume/analyze", files=files, timeout=60)
+        if res.ok:
+            data = res.json()
+            if isinstance(data, dict):
+                text = data.get("extracted_text") or _extract_resume_text(file)
+                data["extracted_text"] = text
+                data.setdefault("skills", [])
+                data.setdefault("missing_skills", [])
+                data.setdefault("strengths", [])
+                data.setdefault("recommendations", [])
+                data.setdefault("source", "api")
+                return data
+    except (requests.RequestException, ValueError, TypeError):
+        pass
+    text = _extract_resume_text(file)
+    return _local_resume_analysis(text, file.name)
+
+
+def _skill_set(text: str) -> set:
+    lower = (text or "").lower()
+    catalog = [
+        "python", "java", "javascript", "typescript", "react", "node.js", "fastapi", "django",
+        "flask", "sql", "postgresql", "mysql", "mongodb", "docker", "kubernetes", "aws",
+        "azure", "gcp", "git", "linux", "machine learning", "deep learning", "pandas",
+        "numpy", "scikit-learn", "tensorflow", "pytorch", "rest api", "graphql", "redis",
+        "kafka", "system design", "html", "css", "figma", "excel", "power bi", "tableau",
+        "cybersecurity", "testing", "selenium", "communication", "leadership", "problem solving"
+    ]
+    return {x for x in catalog if x in lower}
+
+
 def api_match_job(resume_text: str, job_description: str) -> Dict:
+    """Call semantic match API; fall back to deterministic TF-IDF + skill matching."""
+    if not resume_text.strip() or not job_description.strip():
+        return {"overall": 0, "matched": [], "missing": [], "summary": "Both resume and job description are required.", "experience_alignment": "Unavailable", "source": "validation"}
     try:
         payload = {"resume_text": resume_text, "job_description": job_description}
         res = requests.post(f"{API_BASE_URL}/api/job/match", json=payload, timeout=30)
-        if res.status_code == 200:
-            return normalize_job_match(res.json())
-    except Exception:
+        if res.ok:
+            return {**normalize_job_match(res.json()), "source": "api"}
+    except (requests.RequestException, ValueError, TypeError):
         pass
-    return normalize_job_match({
-        "overall": random.randint(72, 89),
-        "matched": ["Python", "FastAPI", "SQL", "Team Collaboration"],
-        "missing": ["Distributed Caching", "Cloud Microservices"],
-        "summary": "Strong core qualifications matched."
-    })
+    try:
+        matrix = TfidfVectorizer(stop_words="english", ngram_range=(1, 2), max_features=8000).fit_transform([resume_text, job_description])
+        similarity = float(cosine_similarity(matrix[0:1], matrix[1:2])[0][0])
+    except ValueError:
+        similarity = 0.0
+    resume_skills = _skill_set(resume_text)
+    job_skills = _skill_set(job_description)
+    matched = sorted(resume_skills & job_skills)
+    missing = sorted(job_skills - resume_skills)
+    skill_score = (len(matched) / len(job_skills) * 100) if job_skills else similarity * 100
+    overall = round((similarity * 60) + (skill_score * 0.40)) if job_skills else round(similarity * 100)
+    return {
+        "overall": max(0, min(100, overall)),
+        "matched": matched,
+        "missing": missing,
+        "summary": "Local semantic and skill analysis completed because the matching service was unavailable.",
+        "experience_alignment": "Strong Alignment" if overall >= 75 else "Moderate Alignment" if overall >= 50 else "Needs Improvement",
+        "source": "local-fallback"
+    }
+
+def _safe_public_url(url: str) -> bool:
+    """Reject malformed and private/local URLs before server-side fetching."""
+    try:
+        parsed = urlparse(url.strip())
+        if parsed.scheme not in {"http", "https"} or not parsed.hostname:
+            return False
+        host = parsed.hostname
+        try:
+            addresses = socket.getaddrinfo(host, None)
+            ips = {item[4][0] for item in addresses}
+            for raw_ip in ips:
+                ip = ipaddress.ip_address(raw_ip)
+                if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved or ip.is_multicast:
+                    return False
+        except socket.gaierror:
+            return False
+        return True
+    except ValueError:
+        return False
+
+
+def fetch_public_job_url(url: str) -> str:
+    if not _safe_public_url(url):
+        raise ValueError("Please enter a valid public HTTP/HTTPS job URL.")
+    response = requests.get(
+        url.strip(),
+        timeout=15,
+        headers={"User-Agent": "CareerLensAI/2.1 Job Safety Analyzer"},
+        allow_redirects=True,
+    )
+    response.raise_for_status()
+    content_type = response.headers.get("content-type", "").lower()
+    if "text/html" not in content_type and "text/plain" not in content_type:
+        raise ValueError("The supplied link did not return a readable web page.")
+    text = re.sub(r"<script[\s\S]*?</script>|<style[\s\S]*?</style>", " ", response.text, flags=re.I)
+    text = re.sub(r"<[^>]+>", " ", text)
+    return re.sub(r"\s+", " ", text).strip()[:50000]
+
 
 def api_detect_fraud(job_text: str) -> Dict:
     try:
         payload = {"text": job_text}
         res = requests.post(f"{API_BASE_URL}/api/job/fraud", json=payload, timeout=30)
-        if res.status_code == 200:
+        if res.ok and isinstance(res.json(), dict):
             return res.json()
-    except Exception:
+    except (requests.RequestException, ValueError, TypeError):
         pass
-    
-    risk_words = ["wire transfer", "telegram", "whatsapp", "crypto", "registration fee", "no interview"]
-    has_risk = any(w in job_text.lower() for w in risk_words)
-    return {
-        "score": 88 if has_risk else 10,
-        "level": "HIGH RISK" if has_risk else "LOW RISK",
-        "signals": 3 if has_risk else 0
+    risk_patterns = {
+        "wire transfer": "Requests for wire transfers or direct money movement",
+        "registration fee": "Upfront registration or application fees",
+        "processing fee": "Upfront processing fees",
+        "telegram": "Telegram-only communication",
+        "whatsapp": "WhatsApp-only recruitment communication",
+        "crypto": "Cryptocurrency payment/request",
+        "gift card": "Gift-card payment request",
+        "no interview": "No-interview hiring claim",
+        "pay to apply": "Payment required to apply",
+        "urgent payment": "Urgent payment pressure",
     }
+    lower = job_text.lower()
+    signals = [description for phrase, description in risk_patterns.items() if phrase in lower]
+    score = min(100, len(signals) * 22)
+    return {"score": score, "level": "HIGH RISK" if score >= 55 else "MEDIUM RISK" if score >= 25 else "LOW RISK", "signals": len(signals), "signal_details": signals, "source": "local-fallback"}
 
 def api_career_roadmap(resume_text: str, target_role: str) -> Dict:
     try:
@@ -846,6 +988,22 @@ if "assessment_submitted" not in st.session_state:
     st.session_state.assessment_submitted = False
 if "assessment_candidate_token" not in st.session_state:
     st.session_state.assessment_candidate_token = ""
+if "assessment_question_count" not in st.session_state:
+    st.session_state.assessment_question_count = 20
+if "assessment_review" not in st.session_state:
+    st.session_state.assessment_review = False
+if "assessment_result" not in st.session_state:
+    st.session_state.assessment_result = None
+if "assessment_selected_role" not in st.session_state:
+    st.session_state.assessment_selected_role = "Software Developer"
+if "job_detection_result" not in st.session_state:
+    st.session_state.job_detection_result = None
+if "job_detection_text" not in st.session_state:
+    st.session_state.job_detection_text = ""
+if "resume_builder" not in st.session_state:
+    st.session_state.resume_builder = {}
+if "resume_template" not in st.session_state:
+    st.session_state.resume_template = "Executive"
 
 # Recruiter Store State
 if "recruiter_candidates" not in st.session_state:
@@ -856,36 +1014,169 @@ if "recruiter_assessment_submissions" not in st.session_state:
 IT_ROLES = ["Software Developer", "Data Scientist", "Data Analyst", "DevOps Engineer", "Cybersecurity Analyst", "Cloud Engineer", "QA Engineer"]
 NON_IT_ROLES = ["HR Specialist", "Sales Executive", "Marketing Manager", "Finance Analyst", "Operations Manager", "Customer Support Specialist"]
 
-def generate_100q_assessment(role: str) -> List[Dict]:
-    sections = [
-        ("Section A: Quantitative & Logical Reasoning", 25),
-        ("Section B: Core Domain Fundamentals", 35),
-        ("Section C: Real-World Scenarios & Architecture", 25),
-        ("Section D: Professional Standards & Ethics", 15)
+def generate_assessment_questions(role: str, count: int) -> List[Dict]:
+    """Generate up to 50 deterministic MCQs and return exactly the requested count."""
+    role_topics = {
+        "Software Developer": [
+            ("Which data structure gives average O(1) key lookup?", ["Hash table", "Linked list", "Binary heap", "Queue"], 0),
+            ("Which HTTP status code represents a successful creation?", ["201", "301", "401", "500"], 0),
+            ("What is the main purpose of unit tests?", ["Validate isolated behavior", "Replace production monitoring", "Store credentials", "Deploy containers"], 0),
+            ("Which principle recommends keeping modules focused on one responsibility?", ["Single Responsibility", "Open/Closed", "Liskov Substitution", "Dependency Inversion"], 0),
+            ("Which SQL clause filters grouped results?", ["HAVING", "WHERE", "ORDER BY", "LIMIT"], 0),
+            ("Which approach is best for bursty asynchronous workloads?", ["Message queue", "Blocking loop", "Busy waiting", "Unbounded recursion"], 0),
+            ("What does a database index primarily improve?", ["Read/query lookup", "Password entropy", "Source formatting", "Network encryption"], 0),
+            ("What is a container image?", ["Packaged application filesystem and metadata", "A physical server", "A database row", "A DNS record"], 0),
+            ("What does CI commonly automate?", ["Build and test validation", "Manual payroll", "Office access", "Recruiting calls"], 0),
+            ("Which practice protects secrets in production?", ["Secret manager/environment injection", "Hard-code in Git", "Public config file", "Client-side HTML"], 0),
+        ],
+        "Data Scientist": [
+            ("Which technique reduces feature dimensionality while preserving variance?", ["PCA", "One-hot encoding", "Bagging", "Tokenization"], 0),
+            ("What does precision measure?", ["Correct positives among predicted positives", "Correct positives among all actual positives", "All correct predictions", "False positives only"], 0),
+            ("Why use a validation set?", ["Tune/select models before final testing", "Increase database size", "Encrypt features", "Replace training data"], 0),
+            ("Which model is commonly used for binary classification?", ["Logistic regression", "K-means only", "PCA", "Apriori only"], 0),
+            ("What does overfitting mean?", ["Model fits training data too specifically", "Model has no parameters", "Data has no labels", "Model cannot train"], 0),
+            ("Which metric is useful for imbalanced classification?", ["F1-score", "Raw row count", "File size", "CPU frequency"], 0),
+            ("What does standardization usually do?", ["Center and scale numeric features", "Remove all labels", "Duplicate samples", "Encrypt data"], 0),
+            ("Which method is unsupervised?", ["K-means clustering", "Linear regression", "Logistic regression", "Decision-tree classification"], 0),
+            ("What is cross-validation used for?", ["Estimate generalization during model selection", "Generate passwords", "Compress PDFs", "Create DNS records"], 0),
+            ("Why prevent data leakage?", ["Avoid training with information unavailable at prediction time", "Increase UI color contrast", "Reduce font size", "Add more labels"], 0),
+        ],
+        "Data Analyst": [
+            ("Which SQL operation combines rows from related tables?", ["JOIN", "DROP", "TRUNCATE", "GRANT"], 0),
+            ("What does a KPI represent?", ["A key performance indicator", "A programming language", "A database engine", "A network protocol"], 0),
+            ("Which visualization best shows a trend over time?", ["Line chart", "Pie chart", "Treemap", "Single KPI card"], 0),
+            ("What is data cleaning?", ["Fixing missing, invalid or inconsistent data", "Deleting all data", "Encrypting a dashboard", "Changing passwords"], 0),
+            ("What does GROUP BY do?", ["Groups rows for aggregate analysis", "Deletes duplicates", "Creates a user", "Encrypts columns"], 0),
+        ],
+    }
+    generic = [
+        ("What is the safest default for sensitive user data?", ["Least privilege and encryption", "Public access", "Plaintext storage", "Shared credentials"], 0),
+        ("What is the purpose of version control?", ["Track and collaborate on changes", "Increase monitor brightness", "Replace backups completely", "Generate salary slips"], 0),
+        ("What should happen after detecting a production regression?", ["Contain, inspect telemetry and restore safely", "Ignore it", "Delete logs", "Disable tests"], 0),
+        ("Which practice improves API reliability?", ["Timeouts, validation and controlled retries", "Infinite retries", "No validation", "Hard-coded secrets"], 0),
+        ("What is RBAC?", ["Role-Based Access Control", "Random Binary API Cache", "Remote Build Allocation Controller", "Runtime Browser Access Code"], 0),
+        ("Which communication style is strongest in technical teams?", ["Clear, evidence-based and respectful", "Vague and undocumented", "Aggressive and private", "No status updates"], 0),
+        ("What does scalability mean?", ["Ability to handle increased load effectively", "Reducing all features", "Removing tests", "Deleting users"], 0),
+        ("What is an SLA?", ["A defined service-level commitment", "A source-code language", "A database index", "A resume section"], 0),
+        ("Why use code review?", ["Improve correctness, maintainability and shared knowledge", "Avoid testing", "Hide changes", "Replace documentation entirely"], 0),
+        ("What should credentials never be committed to?", ["Source-control repositories", "A secret manager", "An encrypted vault", "A protected runtime environment"], 0),
     ]
+    bank = role_topics.get(role, []) + generic
     questions = []
-    qid = 1
-    for sec_name, count in sections:
-        for i in range(count):
-            if "Reasoning" in sec_name:
-                q_text = f"Aptitude Question {i+1}: If pipeline efficiency improves by 20% across {10 + (i%4)} nodes, calculate net throughput."
-                opts = ["Option A: 12.5% delta", "Option B: 18.0% delta", "Option C: 22.5% delta", "Option D: 25.0% delta"]
-                ans = opts[0]
-            elif "Domain" in sec_name:
-                q_text = f"Core {role} Question {i+1}: Which architecture strategy maximizes scalability under burst loads?"
-                opts = ["Asynchronous message queues with circuit breakers", "Direct blocking sequential calls", "Single memory-locked instance", "Unbounded thread pooling"]
-                ans = opts[0]
-            elif "Scenario" in sec_name:
-                q_text = f"Operational Scenario {i+1}: An unexpected regression occurs during production deployment for {role}. How should triage proceed?"
-                opts = ["Trigger immediate rollback and review telemetry logs", "Alert all users before isolating issue", "Disable validation tests", "Defer to next sprint"]
-                ans = opts[0]
-            else:
-                q_text = f"Governance & Standards {i+1}: How should sensitive organizational and user records be secured?"
-                opts = ["Role-Based Access Control (RBAC) with encryption", "Plaintext local backups", "Public cloud buckets", "Unrestricted internal endpoints"]
-                ans = opts[0]
-            questions.append({"id": qid, "section": sec_name, "question": q_text, "options": opts, "answer": ans})
-            qid += 1
+    for i in range(max(count, 1)):
+        base = bank[i % len(bank)]
+        q_text, options, correct_idx = base
+        cycle = i // len(bank)
+        question_text = q_text if cycle == 0 else f"{q_text} (Scenario {cycle + 1})"
+        questions.append({
+            "id": i + 1,
+            "section": "Core Skills" if i < count * 0.6 else "Applied Scenarios",
+            "question": question_text,
+            "options": options,
+            "answer": options[correct_idx],
+        })
     return questions
+
+
+def generate_100q_assessment(role: str) -> List[Dict]:
+    # Backward-compatible wrapper for recruiter blueprints.
+    return generate_assessment_questions(role, 50)
+
+
+def assessment_result(questions: List[Dict], answers: Dict) -> Dict:
+    correct_items, wrong_items, unanswered_items = [], [], []
+    for q in questions:
+        selected = answers.get(q["id"])
+        item = {"id": q["id"], "question": q["question"], "selected": selected, "correct": q["answer"], "options": q["options"]}
+        if selected is None:
+            unanswered_items.append(item)
+        elif selected == q["answer"]:
+            correct_items.append(item)
+        else:
+            wrong_items.append(item)
+    total = len(questions)
+    correct = len(correct_items)
+    return {
+        "score": correct,
+        "total": total,
+        "percentage": round((correct / total) * 100, 1) if total else 0,
+        "correct_count": correct,
+        "wrong_count": len(wrong_items),
+        "unanswered_count": len(unanswered_items),
+        "correct_items": correct_items,
+        "wrong_items": wrong_items,
+        "unanswered_items": unanswered_items,
+        "submitted_at": datetime.now().strftime("%Y-%m-%d %H:%M"),
+    }
+
+
+def _escape(value: str) -> str:
+    return html.escape(str(value or ""))
+
+
+def build_resume_pdf(data: Dict, template: str) -> bytes:
+    """Create a real A4 PDF resume using ReportLab."""
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=15*mm, leftMargin=15*mm, topMargin=14*mm, bottomMargin=14*mm)
+    styles = getSampleStyleSheet()
+    title_size = 22 if template in {"Executive", "Minimal"} else 20
+    accent = colors.HexColor({
+        "Executive": "#1d4ed8", "Minimal": "#0f172a", "Modern Blue": "#2563eb", "Modern Purple": "#7c3aed",
+        "Emerald": "#059669", "Professional": "#334155", "Tech": "#0284c7", "Elegant": "#9a3412",
+        "ATS Classic": "#111827", "Compact": "#475569"
+    }.get(template, "#2563eb"))
+    title = ParagraphStyle("ResumeTitle", parent=styles["Title"], fontName="Helvetica-Bold", fontSize=title_size, leading=25, textColor=accent, alignment=TA_CENTER, spaceAfter=4)
+    contact = ParagraphStyle("Contact", parent=styles["Normal"], fontSize=8.8, leading=12, textColor=colors.HexColor("#475569"), alignment=TA_CENTER, spaceAfter=10)
+    heading = ParagraphStyle("Heading", parent=styles["Heading2"], fontName="Helvetica-Bold", fontSize=10.5, leading=13, textColor=accent, spaceBefore=7, spaceAfter=4)
+    body = ParagraphStyle("Body", parent=styles["BodyText"], fontSize=8.8, leading=12, textColor=colors.HexColor("#1f2937"), spaceAfter=3)
+    small = ParagraphStyle("Small", parent=body, fontSize=8.2, leading=11)
+    story = [Paragraph(_escape(data.get("name", "Your Name")), title)]
+    contact_bits = [data.get("email"), data.get("phone"), data.get("location"), data.get("linkedin"), data.get("github")]
+    story.append(Paragraph(" &nbsp;•&nbsp; ".join(_escape(x) for x in contact_bits if x), contact))
+    if data.get("headline"):
+        story.append(Paragraph(_escape(data["headline"]), ParagraphStyle("Headline", parent=body, fontSize=10, leading=13, alignment=TA_CENTER, textColor=colors.HexColor("#334155"), spaceAfter=8)))
+    sections = [
+        ("PROFESSIONAL SUMMARY", data.get("summary")),
+        ("EXPERIENCE", data.get("experience")),
+        ("EDUCATION", data.get("education")),
+        ("PROJECTS", data.get("projects")),
+        ("SKILLS", data.get("skills")),
+        ("CERTIFICATIONS", data.get("certifications")),
+        ("ACHIEVEMENTS", data.get("achievements")),
+    ]
+    for heading_text, content in sections:
+        if not content:
+            continue
+        story.append(Paragraph(heading_text, heading))
+        if heading_text == "SKILLS":
+            skills = [x.strip() for x in str(content).split(",") if x.strip()]
+            story.append(Paragraph(" • ".join(_escape(x) for x in skills), body))
+        else:
+            for block in str(content).split("\n"):
+                block = block.strip()
+                if block:
+                    story.append(Paragraph(_escape(block), body))
+    doc.build(story)
+    return buffer.getvalue()
+
+
+def hash_password(password: str) -> str:
+    return hashlib.sha256(password.encode("utf-8")).hexdigest()
+
+def password_matches(stored: str, provided: str) -> bool:
+    if not stored:
+        return False
+    digest = hash_password(provided)
+    if stored == digest:
+        return True
+    # Backward compatibility for accounts created by the previous version.
+    if stored == provided:
+        st.session_state.users_db = {
+            key: (hash_password(value) if key == u else value)
+            for key, value in st.session_state.users_db.items()
+        }
+        return True
+    return False
 
 # ============================================================
 # DIALOGS (SIGN IN & REGISTER)
@@ -900,13 +1191,13 @@ def dialog_auth():
         if st.button("Sign In", use_container_width=True, key="btn_confirm_sign"):
             if not u or not p:
                 st.warning("Please fill in both fields.")
-            elif u in st.session_state.users_db and st.session_state.users_db[u] == p:
+            elif u in st.session_state.users_db and password_matches(st.session_state.users_db[u], p):
                 st.session_state.username = u.split("@")[0].capitalize()
                 st.session_state.is_logged_in = True
                 st.session_state.selected_gateway = False
                 log_event("LOGIN", st.session_state.username, "N/A", "User Login")
                 st.rerun()
-            elif u.lower() == "admin" and p == ADMIN_PIN:
+            elif ADMIN_PIN and u.lower() == "admin" and p == ADMIN_PIN:
                 st.session_state.username = "Administrator"
                 st.session_state.is_logged_in = True
                 st.session_state.selected_gateway = True
@@ -922,7 +1213,7 @@ def dialog_auth():
             if not reg_u or not reg_p:
                 st.warning("Username and password are required.")
             else:
-                st.session_state.users_db[reg_u] = reg_p
+                st.session_state.users_db[reg_u] = hash_password(reg_p)
                 st.session_state.username = reg_n.strip() if reg_n.strip() else reg_u.split("@")[0].capitalize()
                 st.session_state.is_logged_in = True
                 st.session_state.selected_gateway = False
@@ -1017,7 +1308,7 @@ if not st.session_state.selected_gateway:
                     <hr style="border-color:#f1f5f9; margin:14px 0;">
                     <div style="color:#475569; font-size:0.9rem; margin:8px 0;">✦ <b>Resume Intelligence:</b> Deep skill extraction and score diagnostics.</div>
                     <div style="color:#475569; font-size:0.9rem; margin:8px 0;">✦ <b>AI Mock Interview:</b> Real-time conversational interview simulations.</div>
-                    <div style="color:#475569; font-size:0.9rem; margin:8px 0;">✦ <b>Pre-Interview Exam:</b> 100-mark standardized MCQ qualifying test.</div>
+                    <div style="color:#475569; font-size:0.9rem; margin:8px 0;">✦ <b>Pre-Interview Exam:</b> 10–50 question MCQ assessment with instant results.</div>
                     <div style="color:#475569; font-size:0.9rem; margin:8px 0;">✦ <b>Salary Estimation:</b> 2026 accurate compensation benchmarks.</div>
                 </div>
             </div>
@@ -1411,95 +1702,151 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
                 """,
                 unsafe_allow_html=True
             )
-            st.markdown("#### Detected Technical & Domain Stack")
-            skills_html = "".join([f'<span class="tag-badge tag-blue">{s}</span>' for s in r.get("skills", [])])
-            st.markdown(skills_html, unsafe_allow_html=True)
+            st.markdown("#### Resume Intelligence Scores")
+            rr1, rr2, rr3 = st.columns(3)
+            rr1.metric("Resume Score", f"{r.get('resume_score', 0)}%")
+            rr2.metric("Readiness", f"{r.get('readiness', 0)}%")
+            rr3.metric("Market Match", f"{r.get('market_match')}%" if r.get('market_match') is not None else "Run AI Job Match")
+            st.markdown("#### Detected Skills")
+            skills_html = "".join([f'<span class="tag-badge tag-blue">{_escape(s)}</span>' for s in r.get("skills", [])])
+            st.markdown(skills_html or "No skills detected yet.", unsafe_allow_html=True)
+            target_role_resume = st.selectbox("Target Role for Skill Gap", IT_ROLES + NON_IT_ROLES, key="resume_target_role")
+            role_skill_map = {
+                "Software Developer": {"python","sql","git","rest api","testing","system design"},
+                "Data Scientist": {"python","pandas","numpy","scikit-learn","machine learning","sql"},
+                "Data Analyst": {"sql","excel","power bi","tableau","python"},
+                "DevOps Engineer": {"linux","docker","kubernetes","aws","git"},
+                "Cybersecurity Analyst": {"linux","cybersecurity","python","testing"},
+                "Cloud Engineer": {"aws","azure","gcp","docker","kubernetes","linux"},
+                "QA Engineer": {"testing","selenium","python","sql","git"},
+            }
+            detected = {str(x).lower() for x in r.get("skills", [])}
+            required = role_skill_map.get(target_role_resume, set())
+            missing = sorted(required - detected)
+            st.markdown("#### Missing Skills")
+            if missing:
+                st.warning(" • ".join(missing))
+            else:
+                st.success("No major skills missing for the selected target role.")
+            if r.get("recommendations"):
+                st.markdown("#### Recommended Improvements")
+                for item in r.get("recommendations", []): st.info(item)
 
     # 2. PRE-INTERVIEW ASSESSMENT
     elif st.session_state.active_tool == "Pre-Interview Assessment":
         if st.button("← Back to Dashboard", key="btn_back_exam"):
             st.session_state.active_tool = "Dashboard"
+            st.session_state.assessment_active = False
+            st.session_state.assessment_review = False
             st.rerun()
 
         st.markdown("### 📝 Pre-Interview Assessment")
-        st.caption("100 Questions • 100 Marks • Standardized Qualifying Test")
+        st.caption("Choose 10–50 MCQs • Review your answers • Confirm submission • Get your score here")
 
-        if not st.session_state.assessment_active and not st.session_state.assessment_submitted:
-            domain_type = st.radio("Domain Category:", ["IT Roles", "Non-IT Roles"], horizontal=True)
+        if not st.session_state.assessment_active and not st.session_state.assessment_review and st.session_state.assessment_result is None:
+            domain_type = st.radio("Domain Category", ["IT Roles", "Non-IT Roles"], horizontal=True, key="assessment_domain")
             roles_list = IT_ROLES if domain_type == "IT Roles" else NON_IT_ROLES
-            selected_assessment_role = st.selectbox("Select Target Role:", roles_list)
-
-            st.markdown(
-                """
-                <div class="content-box">
-                    <h4 style="margin:0; color:#2563eb;">100-Mark Assessment Structure</h4>
-                    <p style="color:#64748b; margin:6px 0 0 0; font-size:0.9rem;">
-                        • Section A: Quantitative & Logical Reasoning (25 Marks)<br>
-                        • Section B: Core Domain Fundamentals (35 Marks)<br>
-                        • Section C: Real-World Scenarios & Architecture (25 Marks)<br>
-                        • Section D: Professional Standards & Ethics (15 Marks)
-                    </p>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-
-            if st.button("🚀 Start 100-Question Assessment", use_container_width=True):
-                st.session_state.assessment_questions = generate_100q_assessment(selected_assessment_role)
+            selected_assessment_role = st.selectbox("Select Target Role", roles_list, key="assessment_role_select")
+            question_count = st.select_slider("Number of Questions", options=list(range(10, 51, 5)), value=st.session_state.assessment_question_count, key="assessment_count_select")
+            st.session_state.assessment_question_count = question_count
+            st.markdown(f"""<div class="content-box"><h4 style="margin:0;color:#2563eb;">{question_count}-Question Assessment</h4><p style="color:#64748b;margin:6px 0 0 0;">Each question carries 1 mark. You can leave questions unanswered, review all answers before submission, and receive the complete result immediately in your Job Seeker workspace.</p></div>""", unsafe_allow_html=True)
+            if st.button("🚀 Start Assessment", use_container_width=True, key="start_assessment_new"):
+                st.session_state.assessment_questions = generate_assessment_questions(selected_assessment_role, question_count)
                 st.session_state.assessment_role = selected_assessment_role
                 st.session_state.assessment_answers = {}
                 st.session_state.assessment_active = True
-                st.session_state.assessment_candidate_token = f"{st.session_state.username}_{uuid.uuid4().hex[:6]}"
+                st.session_state.assessment_review = False
+                st.session_state.assessment_result = None
+                st.session_state.assessment_candidate_token = f"{st.session_state.username}_{uuid.uuid4().hex[:8]}"
                 st.rerun()
 
-        elif st.session_state.assessment_active and not st.session_state.assessment_submitted:
-            st.markdown(f"#### Active Examination: {st.session_state.assessment_role}")
-            st.caption("Complete all questions and click Submit.")
-
-            for q in st.session_state.assessment_questions:
+        elif st.session_state.assessment_active and not st.session_state.assessment_review:
+            questions = st.session_state.assessment_questions
+            answered = sum(1 for q in questions if st.session_state.assessment_answers.get(q["id"]) is not None)
+            unanswered = len(questions) - answered
+            st.markdown(f"#### {st.session_state.assessment_role} Assessment")
+            st.progress(answered / len(questions) if questions else 0, text=f"Answered {answered} / {len(questions)} • Unanswered {unanswered}")
+            for q in questions:
                 qid = q["id"]
-                st.markdown(f"**Q{qid} [{q['section']}]:** {q['question']}")
-                chosen_ans = st.radio(
-                    f"exam_choice_{qid}",
-                    q["options"],
-                    index=None,
-                    key=f"q_choice_{qid}",
-                    label_visibility="collapsed"
-                )
-                st.session_state.assessment_answers[qid] = chosen_ans
-                st.markdown("<hr style='border-color:#f1f5f9; margin:10px 0;'>", unsafe_allow_html=True)
-
-            if st.button("🏁 Submit Assessment", use_container_width=True):
-                correct = sum(1 for q in st.session_state.assessment_questions if st.session_state.assessment_answers.get(q["id"]) == q["answer"])
-                submission = {
-                    "candidate_name": st.session_state.username,
-                    "role": st.session_state.assessment_role,
-                    "score": correct,
-                    "total": 100,
-                    "percentage": correct,
-                    "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M")
-                }
-                st.session_state.recruiter_assessment_submissions[st.session_state.assessment_candidate_token] = submission
-                st.session_state.assessment_active = False
-                st.session_state.assessment_submitted = True
+                current = st.session_state.assessment_answers.get(qid)
+                try:
+                    current_index = q["options"].index(current) if current in q["options"] else None
+                except ValueError:
+                    current_index = None
+                chosen = st.radio(f"Q{qid}. {q['question']}", q["options"], index=current_index, key=f"q_choice_{qid}")
+                st.session_state.assessment_answers[qid] = chosen
+            answered = sum(1 for q in questions if st.session_state.assessment_answers.get(q["id"]) is not None)
+            unanswered = len(questions) - answered
+            st.info(f"Answered: {answered}  |  Unanswered: {unanswered}")
+            if st.button("🔎 Review Answers Before Submit", use_container_width=True, key="review_assessment"):
+                st.session_state.assessment_review = True
                 st.rerun()
 
-        elif st.session_state.assessment_submitted:
-            st.markdown(
-                """
-                <div class="content-box" style="text-align: center; padding: 40px;">
-                    <div style="font-size: 52px; margin-bottom: 12px;">✅</div>
-                    <h2 style="color: #059669; margin: 0 0 10px 0;">Assessment Completed & Submitted</h2>
-                    <p style="color: #64748b; max-width: 620px; margin: 0 auto; font-size: 0.95rem;">
-                        Your examination has been logged. Scores and rankings are routed directly to the recruiter vault.
-                    </p>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-            if st.button("Take Another Assessment", key="btn_reset_exam"):
-                st.session_state.assessment_submitted = False
+        elif st.session_state.assessment_review:
+            questions = st.session_state.assessment_questions
+            answered = sum(1 for q in questions if st.session_state.assessment_answers.get(q["id"]) is not None)
+            unanswered = len(questions) - answered
+            st.markdown("### 🔎 Review Your Assessment")
+            c1, c2 = st.columns(2)
+            c1.metric("Answered", answered)
+            c2.metric("Unanswered", unanswered)
+            for q in questions:
+                selected = st.session_state.assessment_answers.get(q["id"])
+                status = "✅ Answered" if selected else "⚪ Unanswered"
+                shown = selected if selected else "No answer selected"
+                st.markdown(f"**Q{q['id']} — {status}**  \n{q['question']}  \nYour answer: **{shown}**")
+            st.warning("Please review your answers. Once you confirm submission, the assessment will be finalized and cannot be edited.")
+            b1, b2 = st.columns(2)
+            with b1:
+                if st.button("← Continue Editing", use_container_width=True, key="continue_edit_exam"):
+                    st.session_state.assessment_review = False
+                    st.rerun()
+            with b2:
+                if st.button("✅ Submit Assessment", type="primary", use_container_width=True, key="confirm_submit_exam"):
+                    st.session_state.assessment_result = assessment_result(questions, st.session_state.assessment_answers)
+                    st.session_state.assessment_active = False
+                    st.session_state.assessment_review = False
+                    # IMPORTANT: Job-seeker results stay in Job Seeker state.
+                    # They are deliberately NOT copied into recruiter_assessment_submissions.
+                    log_event("ASSESSMENT_COMPLETED", st.session_state.username, str(st.session_state.assessment_result["percentage"]), st.session_state.assessment_role)
+                    st.rerun()
+
+        elif st.session_state.assessment_result is not None:
+            result = st.session_state.assessment_result
+            pct = result["percentage"]
+            st.markdown(f"""<div class="content-box" style="text-align:center;padding:36px;"><div style="font-size:50px;">{'🏆' if pct >= 80 else '✅' if pct >= 60 else '📚'}</div><h2 style="margin:8px 0;color:#0f172a;">Assessment Result</h2><div style="font-size:3rem;font-weight:900;color:#2563eb;">{pct}%</div><p style="color:#64748b;">{st.session_state.assessment_role} • {result['total']} questions • Submitted {result['submitted_at']}</p></div>""", unsafe_allow_html=True)
+            r1, r2, r3, r4 = st.columns(4)
+            r1.metric("Score", f"{result['score']} / {result['total']}")
+            r2.metric("Correct", result["correct_count"])
+            r3.metric("Incorrect", result["wrong_count"])
+            r4.metric("Unanswered", result["unanswered_count"])
+            st.markdown("### Answer Review")
+            with st.expander("Show correct answers", expanded=False):
+                for item in result["correct_items"]:
+                    st.success(f"Q{item['id']}: {item['question']}\n\nCorrect: {item['correct']}")
+            with st.expander("Show incorrect answers", expanded=True):
+                if result["wrong_items"]:
+                    for item in result["wrong_items"]:
+                        st.error(f"Q{item['id']}: {item['question']}\n\nYour answer: {item['selected']}\n\nCorrect answer: {item['correct']}")
+                else:
+                    st.success("No incorrect answers.")
+            with st.expander("Show unanswered questions", expanded=False):
+                if result["unanswered_items"]:
+                    for item in result["unanswered_items"]:
+                        st.warning(f"Q{item['id']}: {item['question']}\n\nCorrect answer: {item['correct']}")
+                else:
+                    st.success("All questions were answered.")
+            if pct < 60:
+                st.info("Focus on the concepts behind your incorrect answers and retake the assessment after preparation.")
+            elif pct < 80:
+                st.info("Good foundation. Review the incorrect questions and strengthen the weak areas before interviewing.")
+            else:
+                st.success("Strong assessment performance. Keep practicing role-specific scenarios and interviews.")
+            if st.button("🔄 Take Another Assessment", use_container_width=True, key="btn_reset_exam"):
+                st.session_state.assessment_result = None
                 st.session_state.assessment_active = False
+                st.session_state.assessment_review = False
+                st.session_state.assessment_answers = {}
                 st.rerun()
 
     # 3. AI MOCK INTERVIEW
@@ -1509,92 +1856,86 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
             st.rerun()
 
         st.markdown("### 🎤 AI Mock Interview Simulation")
-
         if not st.session_state.interview_active and not st.session_state.interview_completed:
             c1, c2 = st.columns(2)
             with c1:
-                target_interview_role = st.selectbox("Select Target Role:", IT_ROLES + NON_IT_ROLES)
+                target_interview_role = st.selectbox("Select Target Role", IT_ROLES + NON_IT_ROLES, key="mock_role_select")
             with c2:
-                interview_len = st.select_slider("Interview Questions:", options=[3, 5, 7, 10], value=5)
-
-            if st.button("🚀 Start Live Interview", use_container_width=True):
-                q_bank = [
-                    f"Tell me about yourself and your motivations for applying as a {target_interview_role}?",
-                    f"What key technical skills and methodologies do you utilize in your {target_interview_role} workflows?",
-                    "Describe a complex roadblock or team disagreement you resolved successfully.",
-                    f"How do you stay ahead of emerging trends and architecture in the {target_interview_role} space?",
-                    "Why should our hiring committee choose you over other qualified applicants?"
+                interview_len = st.select_slider("Interview Questions", options=list(range(1, 51)), value=min(max(st.session_state.interview_q_count, 10), 50), key="mock_count_select")
+            st.caption("Choose anywhere from 1 to 50 questions. Longer sessions provide a broader evaluation.")
+            if st.button("🚀 Start Mock Interview", use_container_width=True, key="start_mock_new"):
+                q_templates = [
+                    f"Tell me about yourself and why you are targeting the {target_interview_role} role.",
+                    f"Which technical skills are most important for a successful {target_interview_role} and how have you applied them?",
+                    "Describe a difficult problem you solved. Explain your reasoning and the measurable outcome.",
+                    "Tell me about a disagreement with a teammate and how you resolved it.",
+                    "Describe a project where something went wrong. What did you learn?",
+                    f"How would you design a reliable solution for a production system relevant to {target_interview_role}?",
+                    "How do you prioritize work when multiple deadlines conflict?",
+                    "How do you test and validate your work before release?",
+                    "How do you keep your skills current in a changing technical environment?",
+                    "Why should a hiring team choose you for this role?",
                 ]
-                st.session_state.interview_questions = q_bank[:interview_len]
+                questions = [q_templates[i % len(q_templates)] + (f" (Question {i+1})" if i >= len(q_templates) else "") for i in range(interview_len)]
+                st.session_state.interview_questions = questions
                 st.session_state.interview_role = target_interview_role
                 st.session_state.interview_q_count = interview_len
                 st.session_state.interview_current_idx = 0
                 st.session_state.interview_transcript = []
                 st.session_state.interview_active = True
+                st.session_state.interview_completed = False
+                st.session_state.interview_report = None
                 st.rerun()
 
         elif st.session_state.interview_active and not st.session_state.interview_completed:
             curr_i = st.session_state.interview_current_idx
             total_i = len(st.session_state.interview_questions)
             curr_question_text = st.session_state.interview_questions[curr_i]
-
-            st.markdown(
-                f"""
-                <div class="content-box">
-                    <span class="tag-badge tag-blue">QUESTION {curr_i + 1} OF {total_i}</span>
-                    <h3 style="margin-top: 10px; color:#0f172a;">{curr_question_text}</h3>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-
-            cand_response = st.text_area("Type your response to the interviewer:", height=160, key=f"ans_text_{curr_i}")
-
-            if st.button("Submit & Next ➔", use_container_width=True):
+            st.progress((curr_i) / total_i if total_i else 0, text=f"Question {curr_i + 1} of {total_i}")
+            st.markdown(f"""<div class="content-box"><span class="tag-badge tag-blue">QUESTION {curr_i + 1} OF {total_i}</span><h3 style="margin-top:10px;color:#0f172a;">{_escape(curr_question_text)}</h3></div>""", unsafe_allow_html=True)
+            cand_response = st.text_area("Your response", height=180, key=f"ans_text_{curr_i}")
+            if st.button("Submit & Next ➔", use_container_width=True, key=f"mock_next_{curr_i}"):
                 if not cand_response.strip():
                     st.warning("Please type your response before proceeding.")
                 else:
-                    st.session_state.interview_transcript.append({
-                        "question": curr_question_text,
-                        "answer": cand_response
-                    })
+                    st.session_state.interview_transcript.append({"question": curr_question_text, "answer": cand_response.strip()})
                     if curr_i + 1 < total_i:
                         st.session_state.interview_current_idx += 1
                         st.rerun()
                     else:
                         st.session_state.interview_active = False
                         st.session_state.interview_completed = True
+                        answers = st.session_state.interview_transcript
+                        avg_words = sum(len(x["answer"].split()) for x in answers) / len(answers) if answers else 0
+                        quality = min(100, round(55 + min(avg_words / 2, 25) + min(len(answers), 10)))
                         st.session_state.interview_report = {
-                            "overall": random.randint(76, 92),
-                            "confidence": "85%",
-                            "communication": "82%",
-                            "correctness": "80%",
-                            "role_knowledge": "78%"
+                            "overall": quality,
+                            "confidence": min(100, quality + 2),
+                            "communication": min(100, quality + 1),
+                            "correctness": max(0, quality - 4),
+                            "role_knowledge": max(0, quality - 2),
+                            "strengths": ["Completed the full interview", "Provided substantive responses" if avg_words >= 35 else "Maintained concise responses"],
+                            "improvements": ["Add measurable outcomes to examples", "Use a clear situation-action-result structure", "Support technical claims with concrete project evidence"]
                         }
+                        log_event("MOCK_INTERVIEW_COMPLETED", st.session_state.username, str(quality), st.session_state.interview_role)
                         st.rerun()
 
         elif st.session_state.interview_completed:
-            rep = st.session_state.interview_report
-            st.markdown(
-                f"""
-                <div class="content-box" style="text-align: center;">
-                    <span class="tag-badge tag-green">EVALUATION COMPLETED</span>
-                    <h2 style="margin: 10px 0;">Interview Readiness: <span style="color:#2563eb;">{rep['overall']}%</span></h2>
-                    <p style="color:#64748b;">Comprehensive evaluation for {st.session_state.interview_role}</p>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-            col_r1, col_r2, col_r3 = st.columns(3)
-            with col_r1:
-                st.markdown(f'<div class="kpi-card" style="justify-content:center;"><div style="font-weight:700; color:#64748b;">Confidence</div><div style="font-size:1.4rem; font-weight:800;">{rep["confidence"]}</div></div>', unsafe_allow_html=True)
-            with col_r2:
-                st.markdown(f'<div class="kpi-card" style="justify-content:center;"><div style="font-weight:700; color:#64748b;">Communication</div><div style="font-size:1.4rem; font-weight:800;">{rep["communication"]}</div></div>', unsafe_allow_html=True)
-            with col_r3:
-                st.markdown(f'<div class="kpi-card" style="justify-content:center;"><div style="font-weight:700; color:#64748b;">Role Knowledge</div><div style="font-size:1.4rem; font-weight:800;">{rep["role_knowledge"]}</div></div>', unsafe_allow_html=True)
-
+            rep = st.session_state.interview_report or {}
+            st.markdown(f"""<div class="content-box" style="text-align:center;"><span class="tag-badge tag-green">EVALUATION COMPLETED</span><h2 style="margin:10px 0;">Interview Readiness: <span style="color:#2563eb;">{rep.get('overall', 0)}%</span></h2><p style="color:#64748b;">Evaluation for {st.session_state.interview_role}</p></div>""", unsafe_allow_html=True)
+            col_r1, col_r2, col_r3, col_r4 = st.columns(4)
+            col_r1.metric("Overall", f"{rep.get('overall', 0)}%")
+            col_r2.metric("Confidence", f"{rep.get('confidence', 0)}%")
+            col_r3.metric("Communication", f"{rep.get('communication', 0)}%")
+            col_r4.metric("Role Knowledge", f"{rep.get('role_knowledge', 0)}%")
+            st.markdown("#### Strengths")
+            for item in rep.get("strengths", []): st.success(item)
+            st.markdown("#### Areas to Improve")
+            for item in rep.get("improvements", []): st.warning(item)
             if st.button("Practice Another Mock Interview", key="btn_retry_mock"):
                 st.session_state.interview_completed = False
+                st.session_state.interview_active = False
+                st.session_state.interview_report = None
                 st.rerun()
 
     # 4. AI JOB MATCH
@@ -1684,21 +2025,40 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
             st.session_state.active_tool = "Dashboard"
             st.rerun()
 
-        st.markdown("### 🛡️ Real-Time Job Detection")
-        post_text = st.text_area("Paste Job Posting or Offer Body:", height=180)
-
-        if st.button("Analyze Safety Signals", use_container_width=True):
-            res = api_detect_fraud(post_text)
-            verdict_color = "#ef4444" if res['level'] == "HIGH RISK" else "#059669"
-            st.markdown(
-                f"""
-                <div class="content-box">
-                    <h3>Risk Verdict: <span style="color:{verdict_color};">{res['level']}</span></h3>
-                    <p style="color:#64748b; margin:0;">Risk Score: {res['score']}/100 • Flags Found: {res['signals']}</p>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
+        st.markdown("### 🛡️ Job Detection")
+        st.caption("Check a public job/interview link or paste the job description. You no longer need to paste the full offer body.")
+        detection_mode = st.radio("Input Method", ["🔗 Paste Job Link", "📝 Paste Description"], horizontal=True, key="fraud_mode")
+        if detection_mode == "🔗 Paste Job Link":
+            job_url = st.text_input("Job / Interview / Offer URL", placeholder="https://example.com/jobs/software-engineer", key="fraud_url")
+            description_input = ""
+        else:
+            description_input = st.text_area("Job Description", height=220, placeholder="Paste the job description here...", key="fraud_description")
+            job_url = ""
+        if st.button("🔍 Analyze Job Safety", use_container_width=True, key="analyze_job_safety_new"):
+            try:
+                with st.spinner("Analyzing job safety signals..."):
+                    if detection_mode.startswith("🔗"):
+                        if not job_url.strip():
+                            raise ValueError("Please enter a job URL.")
+                        analysis_text = fetch_public_job_url(job_url.strip())
+                        source_label = job_url.strip()
+                    else:
+                        if not description_input.strip():
+                            raise ValueError("Please paste a job description.")
+                        analysis_text = description_input.strip()
+                        source_label = "Pasted description"
+                    result = api_detect_fraud(analysis_text)
+                    result["source_label"] = source_label
+                    st.session_state.job_detection_result = result
+                    st.session_state.job_detection_text = analysis_text
+            except (ValueError, requests.RequestException) as exc:
+                st.error(str(exc))
+        if st.session_state.job_detection_result:
+            res = st.session_state.job_detection_result
+            verdict_color = "#ef4444" if res.get("level") == "HIGH RISK" else "#d97706" if res.get("level") == "MEDIUM RISK" else "#059669"
+            st.markdown(f"""<div class="content-box"><h3>Risk Verdict: <span style="color:{verdict_color};">{_escape(res.get('level','UNKNOWN'))}</span></h3><p style="color:#64748b;margin:0;">Risk Score: {res.get('score',0)}/100 • Signals Found: {res.get('signals',0)}</p><p style="color:#64748b;margin-top:6px;">Source: {_escape(res.get('source_label',''))}</p></div>""", unsafe_allow_html=True)
+            for signal in res.get("signal_details", []):
+                st.warning(signal)
 
     # 8. RESUME BUILDER
     elif st.session_state.active_tool == "Resume Builder":
@@ -1706,14 +2066,66 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
             st.session_state.active_tool = "Dashboard"
             st.rerun()
 
-        st.markdown("### 📄 Resume Builder")
-        rb_name = st.text_input("Full Name", value=st.session_state.username)
-        rb_title = st.text_input("Professional Headline", value="Full Stack & AI Engineer")
-        rb_skills = st.text_area("Core Skills", value="Python, FastAPI, React, SQL, Docker")
+        st.markdown("### 📄 Professional Resume Builder")
+        st.caption("Choose one of 10 templates, complete your resume sections, preview it live, and export a real PDF.")
+        templates = ["Executive", "Minimal", "Modern Blue", "Modern Purple", "Emerald", "Professional", "Tech", "Elegant", "ATS Classic", "Compact"]
+        st.session_state.resume_template = st.selectbox("Resume Template", templates, index=templates.index(st.session_state.resume_template) if st.session_state.resume_template in templates else 0, key="resume_template_select")
+        left, right = st.columns([1.05, 1], gap="large")
+        with left:
+            st.markdown("#### Resume Information")
+            rb_name = st.text_input("Full Name", value=st.session_state.resume_builder.get("name", st.session_state.username), key="rb_name")
+            rb_headline = st.text_input("Professional Headline", value=st.session_state.resume_builder.get("headline", "Software Developer"), key="rb_headline")
+            c1, c2 = st.columns(2)
+            with c1: rb_email = st.text_input("Email", value=st.session_state.resume_builder.get("email", ""), key="rb_email")
+            with c2: rb_phone = st.text_input("Phone", value=st.session_state.resume_builder.get("phone", ""), key="rb_phone")
+            c3, c4 = st.columns(2)
+            with c3: rb_location = st.text_input("Location", value=st.session_state.resume_builder.get("location", ""), key="rb_location")
+            with c4: rb_linkedin = st.text_input("LinkedIn", value=st.session_state.resume_builder.get("linkedin", ""), key="rb_linkedin")
+            rb_github = st.text_input("GitHub / Portfolio", value=st.session_state.resume_builder.get("github", ""), key="rb_github")
+            rb_summary = st.text_area("Professional Summary", value=st.session_state.resume_builder.get("summary", ""), height=110, key="rb_summary")
+            rb_experience = st.text_area("Experience", value=st.session_state.resume_builder.get("experience", ""), height=150, help="Use one role per line or paragraph. Include measurable achievements.", key="rb_experience")
+            rb_education = st.text_area("Education", value=st.session_state.resume_builder.get("education", ""), height=100, key="rb_education")
+            rb_projects = st.text_area("Projects", value=st.session_state.resume_builder.get("projects", ""), height=130, key="rb_projects")
+            rb_skills = st.text_area("Skills", value=st.session_state.resume_builder.get("skills", "Python, SQL, Git"), height=90, key="rb_skills")
+            rb_certifications = st.text_area("Certifications", value=st.session_state.resume_builder.get("certifications", ""), height=80, key="rb_certifications")
+            rb_achievements = st.text_area("Achievements", value=st.session_state.resume_builder.get("achievements", ""), height=80, key="rb_achievements")
+            resume_data = {"name": rb_name, "headline": rb_headline, "email": rb_email, "phone": rb_phone, "location": rb_location, "linkedin": rb_linkedin, "github": rb_github, "summary": rb_summary, "experience": rb_experience, "education": rb_education, "projects": rb_projects, "skills": rb_skills, "certifications": rb_certifications, "achievements": rb_achievements}
+            st.session_state.resume_builder = resume_data
+            if st.button("⬇️ Generate & Download PDF", use_container_width=True, key="generate_resume_pdf"):
+                if not rb_name.strip():
+                    st.error("Full Name is required.")
+                else:
+                    try:
+                        pdf_bytes = build_resume_pdf(resume_data, st.session_state.resume_template)
+                        st.download_button("Download Resume PDF", data=pdf_bytes, file_name=f"{re.sub(r'[^A-Za-z0-9_-]+','_',rb_name.strip())}_Resume.pdf", mime="application/pdf", use_container_width=True, key="resume_pdf_download")
+                    except Exception as exc:
+                        st.error(f"PDF generation failed: {exc}")
+        with right:
+            st.markdown("#### Live Preview")
+            template_styles = {
+                "Executive": {"accent": "#1d4ed8", "font": "Georgia,serif", "align": "left", "border": "3px solid #1d4ed8", "radius": "6px"},
+                "Minimal": {"accent": "#111827", "font": "Arial,sans-serif", "align": "left", "border": "1px solid #111827", "radius": "0"},
+                "Modern Blue": {"accent": "#2563eb", "font": "Arial,sans-serif", "align": "center", "border": "4px solid #2563eb", "radius": "12px"},
+                "Modern Purple": {"accent": "#7c3aed", "font": "Arial,sans-serif", "align": "center", "border": "4px solid #7c3aed", "radius": "12px"},
+                "Emerald": {"accent": "#059669", "font": "Arial,sans-serif", "align": "left", "border": "4px solid #059669", "radius": "14px"},
+                "Professional": {"accent": "#334155", "font": "Arial,sans-serif", "align": "left", "border": "2px solid #334155", "radius": "4px"},
+                "Tech": {"accent": "#0284c7", "font": "monospace", "align": "left", "border": "2px dashed #0284c7", "radius": "8px"},
+                "Elegant": {"accent": "#9a3412", "font": "Georgia,serif", "align": "center", "border": "1px solid #9a3412", "radius": "18px"},
+                "ATS Classic": {"accent": "#111827", "font": "Arial,sans-serif", "align": "left", "border": "0", "radius": "0"},
+                "Compact": {"accent": "#475569", "font": "Arial,sans-serif", "align": "left", "border": "2px solid #cbd5e1", "radius": "8px"},
+            }
+            ts = template_styles[st.session_state.resume_template]
+            contact_line = " • ".join(_escape(x) for x in [rb_email, rb_phone, rb_location, rb_linkedin, rb_github] if x)
+            preview_html = f"""<div style=\"background:#fff;border:{ts['border']};border-radius:{ts['radius']};padding:30px;min-height:900px;box-shadow:0 8px 25px rgba(15,23,42,.08);font-family:{ts['font']};\"><div style=\"text-align:{ts['align']};border-bottom:3px solid {ts['accent']};padding-bottom:14px;margin-bottom:16px;\"><h1 style=\"margin:0;color:{ts['accent']};font-size:28px;\">{_escape(rb_name or 'Your Name')}</h1><div style=\"color:#475569;margin-top:5px;font-size:14px;\">{_escape(rb_headline)}</div><div style=\"color:#64748b;font-size:11px;margin-top:7px;\">{contact_line}</div></div>"""
+            def preview_section(title, content):
+                if not content.strip():
+                    return ""
+                return f"<h3 style=\"font-size:13px;color:{ts['accent']};border-bottom:1px solid #e2e8f0;padding-bottom:4px;margin:16px 0 7px;\">{title}</h3><div style=\"font-size:11px;line-height:1.55;color:#1f2937;white-space:pre-wrap;\">{_escape(content)}</div>"
+            for title, content in [("PROFESSIONAL SUMMARY", rb_summary), ("EXPERIENCE", rb_experience), ("EDUCATION", rb_education), ("PROJECTS", rb_projects), ("SKILLS", rb_skills), ("CERTIFICATIONS", rb_certifications), ("ACHIEVEMENTS", rb_achievements)]:
+                preview_html += preview_section(title, content)
+            preview_html += "</div>"
+            st.markdown(preview_html, unsafe_allow_html=True)
 
-        if st.button("Download Plain Text Resume (.txt)", use_container_width=True):
-            content = f"{rb_name}\n{rb_title}\n\nCORE SKILLS:\n{rb_skills}\n"
-            st.download_button("Click to Download", data=content.encode("utf-8"), file_name=f"{rb_name}_Resume.txt", mime="text/plain")
 
     # 9. AI CAREER ASSISTANT
     elif st.session_state.active_tool == "AI Career Assistant":
@@ -1813,11 +2225,12 @@ elif st.session_state.active_workspace == "Recruiter Workspace":
 
     elif st.session_state.active_tool == "Score Vault":
         st.markdown("### 🔐 Candidate Assessment Score Vault (Recruiter View)")
+        st.caption("Job Seeker self-assessment results are private to the Job Seeker workspace and are not copied into this vault.")
         if st.session_state.recruiter_assessment_submissions:
             df_sub = pd.DataFrame(list(st.session_state.recruiter_assessment_submissions.values()))
             st.dataframe(df_sub, use_container_width=True, hide_index=True)
         else:
-            st.info("No candidate submissions recorded yet.")
+            st.info("No recruiter-dispatched candidate submissions recorded yet.")
 
     elif st.session_state.active_tool == "Assessment Blueprints":
         st.markdown("### 📝 Role-Based 100-Question Blueprints")
