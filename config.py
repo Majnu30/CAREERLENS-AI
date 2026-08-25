@@ -1,17 +1,30 @@
+"""Centralized CareerLens AI configuration.
+
+Production secrets must be supplied as environment variables. Never commit
+real credentials to this file or to source control.
+"""
+
+from __future__ import annotations
+
 import os
 
-API_BASE_URL = os.getenv("API_URL", "https://careerlens-ai-9dx8.onrender.com")
-APP_DB_FILE = os.getenv("CAREERLENS_DB", "careerlens.db")
-ADMIN_PIN = os.getenv("ADMIN_PIN", "")
-PUBLIC_APP_URL = os.getenv("PUBLIC_APP_URL", "http://localhost:8501")
-ANALYTICS_FILE = "analytics.csv"
 
-# SendGrid Configuration
-SENDGRID_API_KEY = os.getenv(
-    "SENDGRID_API_KEY",
-    "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"
-)
-SENDGRID_FROM_EMAIL = os.getenv("SENDGRID_FROM_EMAIL", "noreply@careerlens.ai")
+def _env(name: str, default: str = "") -> str:
+    return os.getenv(name, default).strip()
+
+
+API_BASE_URL = _env("API_URL", "http://localhost:8000").rstrip("/")
+APP_DB_FILE = _env("CAREERLENS_DB", "careerlens.db")
+ADMIN_PIN = _env("ADMIN_PIN")
+PUBLIC_APP_URL = _env("PUBLIC_APP_URL", "http://localhost:8501").rstrip("/")
+ANALYTICS_FILE = _env("ANALYTICS_FILE", "analytics.csv")
+
+SENDGRID_API_KEY = _env("SENDGRID_API_KEY")
+SENDGRID_FROM_EMAIL = _env("SENDGRID_FROM_EMAIL", "noreply@careerlens.ai")
+
+CORS_ORIGINS = _env("CORS_ORIGINS", "*")
+MAX_RESUME_BYTES = _env("MAX_RESUME_BYTES", str(10 * 1024 * 1024))
+MAX_BULK_FILES = _env("MAX_BULK_FILES", "50")
 
 IT_ROLES = [
     "Software Developer",
