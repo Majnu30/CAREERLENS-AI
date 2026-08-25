@@ -1415,7 +1415,7 @@ elif st.session_state.workspace == "Assessment Exam":
             st.rerun()
 
 # ============================================================
-# 3. RECRUITER WORKSPACE (14-STEP CAMPAIGN & ASSESSMENT PIPELINE)
+# 3. RECRUITER WORKSPACE (CAMPAIGN & ASSESSMENT PIPELINE)
 # ============================================================
 elif st.session_state.workspace == "Recruiter":
     st.markdown(
@@ -1429,7 +1429,6 @@ elif st.session_state.workspace == "Recruiter":
         unsafe_allow_html=True,
     )
 
-    # 14. Recruiter Dashboard Overview Metrics
     active_campaigns_count = len(st.session_state.campaigns)
     total_resumes_count = len(st.session_state.recruiter_candidates)
     shortlisted_count = len([c for c in st.session_state.recruiter_candidates if c.get("shortlisted", False)])
@@ -1775,7 +1774,7 @@ elif st.session_state.workspace == "Recruiter":
                     c["interview_notes"] = notes
 
                 with col_stg3:
-                    if st.button(f"✉️ Send Invite", key=f"btn_inv_cand_{c['id']}"):
+                    if st.button("✉️ Send Invite", key=f"btn_inv_cand_{c['id']}"):
                         prompt = [
                             {"role": "system", "content": "You are a senior recruiter. Draft an interview invitation email."},
                             {"role": "user", "content": f"Candidate: {c['name']}, Email: {c['email']}, Stage: {c['stage']}, Match: {c['role_match']}%"}
@@ -1931,8 +1930,8 @@ AWS Certified Solutions Architect — Associate (2024)""",
         skills_html = "".join([f"""<span style="background:{tag_bg}; color:{tag_text}; padding:3px 8px; border-radius:4px; margin:2px 4px 2px 0; display:inline-block; font-size:11px; font-weight:700;">{s}</span>""" for s in skills_list])
         
         exp_formatted = "<br>".join([f"<span style='display:block; margin-bottom:4px; font-size:11.5px;'>{line}</span>" if line.strip().startswith("•") else f"<strong style='display:block; margin-top:7px; color:{text_c}; font-size:12px;'>{line}</strong>" for line in rb_exp.split("\n") if line.strip()])
-        proj_formatted = "<br>".join([f"<span style='display:block; margin-bottom:3px; font-size:11.5px;'>{line}</span>" for line in rb_projects.split("\n") if line.strip()])
-        edu_formatted = "<br>".join([f"<span style='display:block; margin-bottom:3px; font-size:11.5px;'>{line}</span>" for line in rb_edu.split("\n") if line.strip()])
+        proj_formatted = "<br>".join([f"<span style='display:block; margin-bottom:3px; font-size:11.5px;'>{line}</span>" if line.strip().startswith("•") else f"<strong style='display:block; margin-top:7px; color:{text_c}; font-size:12px;'>{line}</strong>" for line in rb_projects.split("\n") if line.strip()])
+        edu_formatted = "<br>".join([f"<span style='display:block; margin-bottom:3px; font-size:11.5px;'>{line}</span>" if line.strip().startswith("•") else f"<strong style='display:block; margin-top:7px; color:{text_c}; font-size:12px;'>{line}</strong>" for line in rb_edu.split("\n") if line.strip()])
 
         resume_preview_html = f"""<div style="background:{bg_c}; color:{text_c}; font-family:{font_family}; padding:30px; border-radius:12px; box-shadow:0 15px 40px rgba(0,0,0,0.45); line-height:1.45;"><div style="border-bottom:{border_header}; padding-bottom:10px; margin-bottom:12px;"><h1 style="color:{primary_c}; margin:0; font-size:24px; font-weight:900; letter-spacing:-0.5px;">{rb_name}</h1><div style="color:{accent_c}; font-size:13.5px; font-weight:700; margin-top:2px;">{rb_title}</div><div style="font-size:11px; color:#64748b; margin-top:6px; display:flex; flex-wrap:wrap; gap:10px;"><span>📧 {rb_email}</span><span>📱 {rb_phone}</span><span>📍 {rb_loc}</span><span>🔗 {rb_links}</span></div></div><div style="margin-bottom:12px;"><div style="font-size:11.5px; font-weight:800; text-transform:uppercase; color:{primary_c}; letter-spacing:1px; margin-bottom:3px;">Summary</div><p style="font-size:11.5px; color:{text_c}; opacity:0.9; margin:0;">{rb_summary}</p></div><div style="margin-bottom:12px;"><div style="font-size:11.5px; font-weight:800; text-transform:uppercase; color:{primary_c}; letter-spacing:1px; margin-bottom:5px;">Core Stack</div><div>{skills_html}</div></div><div style="margin-bottom:12px;"><div style="font-size:11.5px; font-weight:800; text-transform:uppercase; color:{primary_c}; letter-spacing:1px; margin-bottom:4px;">Featured Projects</div><div style="color:{text_c}; opacity:0.9;">{proj_formatted}</div></div><div style="margin-bottom:12px;"><div style="font-size:11.5px; font-weight:800; text-transform:uppercase; color:{primary_c}; letter-spacing:1px; margin-bottom:4px;">Experience</div><div style="line-height:1.45;">{exp_formatted}</div></div><div style="margin-bottom:4px;"><div style="font-size:11.5px; font-weight:800; text-transform:uppercase; color:{primary_c}; letter-spacing:1px; margin-bottom:4px;">Education</div><div style="color:{text_c}; opacity:0.9;">{edu_formatted}</div></div></div>"""
         
