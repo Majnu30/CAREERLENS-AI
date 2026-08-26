@@ -19,8 +19,9 @@ ADMIN_PIN = _env("ADMIN_PIN")
 PUBLIC_APP_URL = _env("PUBLIC_APP_URL", "http://localhost:8501").rstrip("/")
 ANALYTICS_FILE = _env("ANALYTICS_FILE", "analytics.csv")
 
-SENDGRID_API_KEY = _env("SENDGRID_API_KEY")
-SENDGRID_FROM_EMAIL = _env("SENDGRID_FROM_EMAIL", "noreply@careerlens.ai")
+SENDGRID_API_KEY = _env("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
+")
+SENDGRID_FROM_EMAIL = _env("SENDGRID_FROM_EMAIL", "careerlenssai@gmail.com")
 
 CORS_ORIGINS = _env("CORS_ORIGINS", "*")
 MAX_RESUME_BYTES = _env("MAX_RESUME_BYTES", str(10 * 1024 * 1024))
