@@ -177,271 +177,220 @@ def log_event(event_type: str, username: str, rating: str = "N/A", details: str 
 
 
 # ============================================================
-# ULTRA-CLEAN MODERN LIGHT THEME
+# ============================================================
+# CAREERLENS AI DESIGN SYSTEM
 # ============================================================
 st.markdown(
     """
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
     :root {
-        --bg-page: #f8fafc;
-        --navy-sidebar: #0a1128;
-        --navy-header: #0f172a;
-        --card-bg: #ffffff;
-        --border-subtle: #e2e8f0;
-        --text-navy: #0f172a;
-        --text-muted: #64748b;
-        --blue-primary: #2563eb;
-        --blue-hover: #1d4ed8;
-        --purple-accent: #7c3aed;
-        --emerald-accent: #059669;
-        --amber-accent: #d97706;
+        --cl-bg: #f7f8fc;
+        --cl-surface: #ffffff;
+        --cl-surface-soft: #f8faff;
+        --cl-navy: #0b1533;
+        --cl-text: #111827;
+        --cl-muted: #64748b;
+        --cl-border: #e5e7eb;
+        --cl-primary: #315fea;
+        --cl-primary-2: #6c5ce7;
+        --cl-gradient: linear-gradient(135deg, #315fea 0%, #6c5ce7 100%);
+        --cl-success: #0f9f6e;
+        --cl-warning: #d97706;
+        --cl-danger: #dc4b5f;
+        --cl-shadow: 0 12px 34px rgba(15, 23, 42, .07);
+        --cl-shadow-soft: 0 5px 18px rgba(15, 23, 42, .05);
+        --cl-radius: 18px;
     }
-    .stApp {
-        background-color: var(--bg-page) !important;
-        font-family: 'Plus Jakarta Sans', -apple-system, sans-serif !important;
-        color: var(--text-navy) !important;
+
+    html, body, [class*="css"] { font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important; }
+    .stApp { background: var(--cl-bg) !important; color: var(--cl-text) !important; }
+    .block-container { max-width: 1440px; padding: 26px 34px 48px !important; }
+    #MainMenu, footer { visibility: hidden; }
+    [data-testid="stDecoration"] { display: none; }
+
+    /* ---------- Typography ---------- */
+    h1, h2, h3, h4 { color: var(--cl-text) !important; letter-spacing: -0.025em; }
+    p, label, [data-testid="stMarkdownContainer"] { color: var(--cl-text); }
+    .eyebrow { color: var(--cl-primary); font-size: .72rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+    .muted { color: var(--cl-muted) !important; }
+
+    /* ---------- App surfaces ---------- */
+    .content-box, .gateway-card, .tool-box-card, .kpi-card, .hero-panel, .action-card, .journey-card {
+        background: var(--cl-surface);
+        border: 1px solid var(--cl-border);
+        box-shadow: var(--cl-shadow-soft);
     }
-    .block-container {
-        max-width: 1420px;
-        padding: 24px 38px 40px !important;
-    }
-    p, span, label, div {
-        color: var(--text-navy);
-    }
-    [data-testid="stFileUploader"] {
-        background-color: #ffffff !important;
-        border: 2px dashed #cbd5e1 !important;
-        border-radius: 16px !important;
-        padding: 20px !important;
-        box-shadow: 0 4px 14px rgba(15, 23, 42, 0.03) !important;
-    }
-    [data-testid="stFileUploader"] * {
-        color: #0f172a !important;
-        background-color: transparent !important;
-    }
-    [data-testid="stFileUploader"] section {
-        background-color: #f8fafc !important;
-        border-radius: 12px !important;
-        border: 1px solid #e2e8f0 !important;
-    }
-    [data-testid="stFileUploader"] button {
-        background: #2563eb !important;
-        color: #ffffff !important;
-        border-radius: 8px !important;
-        border: none !important;
-    }
-    .stTextInput input, .stTextArea textarea, .stSelectbox [data-baseweb="select"] {
-        background-color: #ffffff !important;
-        color: #0f172a !important;
-        border: 1px solid #cbd5e1 !important;
-        border-radius: 12px !important;
-        box-shadow: 0 2px 6px rgba(15, 23, 42, 0.02) !important;
-    }
-    .stTextInput input:focus, .stTextArea textarea:focus {
-        border-color: #2563eb !important;
-        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
-    }
-    [data-testid="stSidebar"] {
-        background-color: var(--navy-sidebar) !important;
-        border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
-    }
-    [data-testid="stSidebar"] * {
-        font-family: 'Plus Jakarta Sans', sans-serif !important;
-        color: #f8fafc !important;
-    }
-    .sidebar-brand-box {
-        background: #ffffff;
-        border-radius: 14px;
-        padding: 14px 18px;
-        margin-bottom: 18px;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        box-shadow: 0 4px 14px rgba(0,0,0,0.18);
-    }
-    .sidebar-brand-box * {
-        color: #0a1128 !important;
-    }
-    .sidebar-user-box {
-        background: rgba(255, 255, 255, 0.06);
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        border-radius: 14px;
-        padding: 12px 14px;
-        margin-bottom: 18px;
-    }
-    .sidebar-section-title {
-        font-size: 0.72rem;
-        font-weight: 800;
-        color: #94a3b8 !important;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        margin: 18px 0 8px 4px;
-    }
-    [data-testid="stSidebar"] .stButton > button {
-        background-color: rgba(255, 255, 255, 0.07) !important;
-        color: #ffffff !important;
-        border: 1px solid rgba(255, 255, 255, 0.12) !important;
-        border-radius: 10px !important;
-        padding: 0.55rem 0.95rem !important;
-        font-weight: 700 !important;
-        font-size: 0.88rem !important;
-        text-align: left !important;
-        justify-content: flex-start !important;
-        width: 100% !important;
-        box-shadow: none !important;
-        transition: all 0.2s ease !important;
-    }
-    [data-testid="stSidebar"] .stButton > button:hover {
-        background: linear-gradient(90deg, #2563eb, #7c3aed) !important;
-        color: #ffffff !important;
-        border-color: #60a5fa !important;
-        transform: translateX(4px) !important;
-    }
-    [data-testid="stSidebar"] .stButton > button[kind="primary"] {
-        background: linear-gradient(90deg, #2563eb, #4f46e5) !important;
-        color: #ffffff !important;
-        border: 1px solid #60a5fa !important;
-        box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4) !important;
-    }
+    .content-box { border-radius: var(--cl-radius); padding: 26px; margin-bottom: 20px; }
+    .hero-panel { border-radius: 24px; overflow: hidden; position: relative; }
+    .hero-panel::after { content: ''; position:absolute; width:240px; height:240px; right:-100px; top:-120px; background: radial-gradient(circle, rgba(108,92,231,.24), transparent 68%); pointer-events:none; }
+
+    /* ---------- Buttons: gradient only for primary actions ---------- */
     .stButton > button {
-        border-radius: 10px !important;
-        background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%) !important;
-        color: #ffffff !important;
-        font-weight: 800 !important;
-        font-size: 0.92rem !important;
-        padding: 0.6rem 1.4rem !important;
-        border: none !important;
-        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25) !important;
-        transition: all 0.2s ease !important;
+        min-height: 42px !important;
+        border-radius: 12px !important;
+        border: 1px solid #dbe2ee !important;
+        background: #ffffff !important;
+        color: var(--cl-text) !important;
+        -webkit-text-fill-color: var(--cl-text) !important;
+        font-weight: 700 !important;
+        font-size: .88rem !important;
+        padding: .58rem 1rem !important;
+        box-shadow: 0 2px 7px rgba(15,23,42,.04) !important;
+        transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease !important;
     }
     .stButton > button:hover {
-        background: linear-gradient(135deg, #1d4ed8 0%, #4338ca 100%) !important;
         transform: translateY(-1px) !important;
-        box-shadow: 0 6px 18px rgba(37, 99, 235, 0.35) !important;
+        border-color: #b9c5dd !important;
+        box-shadow: 0 7px 18px rgba(15,23,42,.08) !important;
     }
+    .stButton > button[kind="primary"] {
+        background: var(--cl-gradient) !important;
+        color: #fff !important;
+        -webkit-text-fill-color: #fff !important;
+        border-color: transparent !important;
+        box-shadow: 0 9px 22px rgba(70,83,224,.22) !important;
+    }
+    .stButton > button[kind="primary"]:hover { box-shadow: 0 12px 26px rgba(70,83,224,.30) !important; }
+    .stButton > button:focus-visible { outline: 3px solid rgba(49,95,234,.22) !important; outline-offset: 2px !important; }
+
+    /* ---------- Inputs ---------- */
+    .stTextInput input, .stTextArea textarea, .stSelectbox [data-baseweb="select"],
+    .stNumberInput input, .stDateInput input {
+        background: #fff !important; color: var(--cl-text) !important;
+        border: 1px solid #d7deea !important; border-radius: 12px !important;
+        box-shadow: none !important; min-height: 44px !important;
+    }
+    .stTextInput input:focus, .stTextArea textarea:focus, .stNumberInput input:focus {
+        border-color: var(--cl-primary) !important;
+        box-shadow: 0 0 0 3px rgba(49,95,234,.12) !important;
+    }
+    [data-testid="stFileUploader"] { background:#fff !important; border:1px dashed #b9c5dd !important; border-radius:16px !important; padding:16px !important; }
+    [data-testid="stFileUploader"] section { background:#f8faff !important; border:1px solid #e6eaf2 !important; border-radius:12px !important; }
+
+    /* ---------- Tags ---------- */
+    .tag-badge { display:inline-flex; align-items:center; gap:5px; padding:5px 10px; border-radius:999px; font-size:.69rem; font-weight:800; letter-spacing:.01em; margin:2px; }
+    .tag-blue { background:#eef4ff; color:#315fea !important; border:1px solid #d9e5ff; }
+    .tag-purple { background:#f3f0ff; color:#6c5ce7 !important; border:1px solid #e6e0ff; }
+    .tag-green { background:#ecfbf4; color:#0f8a62 !important; border:1px solid #d2f3e3; }
+    .tag-amber { background:#fff7e8; color:#a86408 !important; border:1px solid #f8e5bf; }
+    .tag-slate { background:#f1f5f9; color:#475569 !important; border:1px solid #e2e8f0; }
+
+    /* ---------- Header ---------- */
     .header-banner {
-        background: linear-gradient(135deg, #091224 0%, #0d1b38 60%, #1e1b4b 100%);
-        border-radius: 20px;
-        padding: 28px 34px;
-        margin-bottom: 24px;
-        box-shadow: 0 10px 30px rgba(9, 18, 36, 0.15);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
+        background: linear-gradient(135deg, #0b1533 0%, #162553 58%, #2d236b 100%);
+        border-radius: 22px; padding: 26px 30px; margin: 4px 0 24px;
+        box-shadow: 0 16px 36px rgba(11,21,51,.16); position:relative; overflow:hidden;
+        display:flex; align-items:center; justify-content:space-between; gap:20px;
     }
-    .header-title {
-        font-size: 1.85rem;
-        font-weight: 900;
-        color: #ffffff !important;
-        margin: 0;
+    .header-banner::after { content:''; position:absolute; width:330px; height:330px; right:-130px; top:-180px; border-radius:50%; background:rgba(108,92,231,.24); filter:blur(4px); }
+    .header-title { color:#fff !important; font-size:1.55rem; line-height:1.2; font-weight:800; margin:0; position:relative; z-index:1; }
+    .header-sub { color:#cbd5e1 !important; font-size:.88rem; margin-top:7px; position:relative; z-index:1; }
+    .header-pills { display:flex; gap:8px; flex-wrap:wrap; position:relative; z-index:1; }
+    .header-pill { padding:7px 11px; border-radius:999px; border:1px solid rgba(255,255,255,.16); background:rgba(255,255,255,.09); color:#fff; font-size:.7rem; font-weight:800; }
+
+    /* ---------- KPI cards ---------- */
+    .kpi-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; margin-bottom:26px; }
+    .kpi-card { border-radius:16px; padding:17px; display:flex; align-items:center; gap:13px; min-width:0; }
+    .kpi-icon-badge { width:46px; height:46px; border-radius:13px; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-weight:800; }
+    .kpi-label { font-size:.67rem; font-weight:800; color:var(--cl-muted) !important; text-transform:uppercase; letter-spacing:.06em; }
+    .kpi-value { font-size:1.35rem; font-weight:800; color:var(--cl-text) !important; margin:2px 0 3px; }
+
+    /* ---------- Tools ---------- */
+    .tool-box-card { border-radius:16px 16px 0 0; padding:20px 16px 12px; text-align:center; min-height:155px; }
+    .tool-icon-circle { width:48px; height:48px; border-radius:14px; display:flex; align-items:center; justify-content:center; margin:0 auto 10px; font-size:22px; }
+    .tool-title { font-size:.96rem; font-weight:800; color:var(--cl-text) !important; margin-bottom:5px; }
+    .tool-desc { font-size:.76rem; line-height:1.45; color:var(--cl-muted) !important; }
+
+    /* ---------- Gateway / landing ---------- */
+    .landing-shell { max-width:1050px; margin:0 auto; padding:26px 0 18px; }
+    .landing-brand { text-align:center; margin-bottom:24px; }
+    .brand-mark { width:62px; height:62px; border-radius:20px; margin:0 auto 15px; background:var(--cl-gradient); color:#fff; display:flex; align-items:center; justify-content:center; font-size:27px; font-weight:800; box-shadow:0 14px 28px rgba(49,95,234,.22); }
+    .brand-name { font-size:2.65rem; line-height:1; font-weight:800; color:var(--cl-navy) !important; letter-spacing:-.045em; }
+    .brand-name span { color:var(--cl-primary) !important; }
+    .brand-sub { color:#64748b !important; font-size:1rem; margin-top:10px; }
+    .access-card { max-width:720px; margin:0 auto 18px; padding:28px; border-radius:22px; background:#fff; border:1px solid #e3e8f1; box-shadow:var(--cl-shadow); text-align:center; }
+    .access-title { font-size:1.3rem; font-weight:800; margin:12px 0 8px; }
+    .access-copy { color:var(--cl-muted) !important; font-size:.9rem; line-height:1.7; max-width:560px; margin:0 auto; }
+    .portal-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; max-width:920px; margin:18px auto 0; }
+    .gateway-card { border-radius:20px; padding:25px; height:100%; transition:transform .18s ease, border-color .18s ease, box-shadow .18s ease; }
+    .gateway-card:hover { transform:translateY(-3px); border-color:#c8d4f2; box-shadow:var(--cl-shadow); }
+    .gateway-icon { width:48px; height:48px; border-radius:14px; display:flex; align-items:center; justify-content:center; font-weight:800; }
+    .gateway-title { font-size:1.15rem; font-weight:800; margin:0; }
+    .gateway-copy { color:var(--cl-muted) !important; font-size:.82rem; line-height:1.6; margin:14px 0; }
+    .gateway-list { border-top:1px solid #eef1f6; padding-top:13px; }
+    .gateway-list div { color:#475569 !important; font-size:.78rem; line-height:1.55; margin:8px 0; }
+
+    /* ---------- Navigation ---------- */
+    [data-testid="stSidebar"] { background:var(--cl-navy) !important; border-right:1px solid rgba(255,255,255,.07) !important; }
+    [data-testid="stSidebar"] * { font-family:'Plus Jakarta Sans',sans-serif !important; }
+    [data-testid="stSidebar"] .sidebar-content { padding-top:1rem; }
+    .sidebar-brand-box { background:#fff; border-radius:15px; padding:13px 15px; margin-bottom:14px; display:flex; align-items:center; gap:10px; box-shadow:0 8px 20px rgba(0,0,0,.18); }
+    .sidebar-brand-name { font-size:1rem; font-weight:800; color:#0b1533 !important; line-height:1.05; }
+    .sidebar-brand-name span { color:#315fea !important; }
+    .sidebar-brand-copy { font-size:.62rem; color:#64748b !important; font-weight:700; margin-top:3px; }
+    .sidebar-user-box { background:rgba(255,255,255,.055); border:1px solid rgba(255,255,255,.1); border-radius:14px; padding:11px 12px; margin-bottom:14px; }
+    .sidebar-section-title { font-size:.64rem; font-weight:800; color:#91a0bb !important; letter-spacing:.13em; text-transform:uppercase; margin:16px 0 7px 3px; }
+    [data-testid="stSidebar"] .stButton > button { background:transparent !important; color:#dbe5f5 !important; -webkit-text-fill-color:#dbe5f5 !important; border:1px solid transparent !important; box-shadow:none !important; border-radius:11px !important; min-height:39px !important; padding:.5rem .72rem !important; font-size:.79rem !important; justify-content:flex-start !important; text-align:left !important; }
+    [data-testid="stSidebar"] .stButton > button:hover { background:rgba(255,255,255,.07) !important; color:#fff !important; -webkit-text-fill-color:#fff !important; transform:none !important; }
+    [data-testid="stSidebar"] .stButton > button[kind="primary"] { background:var(--cl-gradient) !important; color:#fff !important; -webkit-text-fill-color:#fff !important; border-color:rgba(255,255,255,.13) !important; box-shadow:0 7px 18px rgba(49,95,234,.24) !important; }
+    .sidebar-divider { height:1px; background:rgba(255,255,255,.09); margin:18px 0; }
+
+    /* ---------- Action / journey ---------- */
+    .section-heading { display:flex; justify-content:space-between; align-items:flex-end; gap:12px; margin:24px 0 12px; }
+    .section-title { font-size:1.15rem; font-weight:800; margin:0; }
+    .section-caption { font-size:.76rem; color:var(--cl-muted) !important; margin:2px 0 0; }
+    .action-card { border-radius:18px; padding:20px; height:100%; }
+    .action-accent { height:4px; border-radius:999px; background:var(--cl-gradient); margin-bottom:15px; }
+    .journey-card { border-radius:18px; padding:20px; }
+    .journey-track { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin-top:14px; }
+    .journey-step { border-radius:14px; padding:14px; background:#f8faff; border:1px solid #e7ebf3; }
+    .journey-dot { width:9px; height:9px; border-radius:50%; background:#315fea; display:inline-block; margin-right:7px; }
+
+    /* ---------- Dataframes / alerts ---------- */
+    [data-testid="stDataFrame"] { border:1px solid var(--cl-border); border-radius:14px; overflow:hidden; }
+    [data-testid="stAlert"] { border-radius:13px !important; }
+
+    /* ---------- Responsive: desktop -> tablet -> mobile ---------- */
+    @media (max-width: 1100px) {
+        .block-container { padding-left:22px !important; padding-right:22px !important; }
+        .kpi-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+        .journey-track { grid-template-columns:1fr; }
     }
-    .header-sub {
-        font-size: 0.96rem;
-        color: #cbd5e1 !important;
-        margin: 4px 0 0 0;
+    @media (max-width: 850px) {
+        .block-container { padding:18px 15px 40px !important; max-width:100% !important; }
+        .header-banner { padding:21px 20px; border-radius:18px; }
+        .header-title { font-size:1.25rem; }
+        .header-sub { font-size:.78rem; }
+        .portal-grid { grid-template-columns:1fr; }
+        .brand-name { font-size:2.15rem; }
+        /* Streamlit horizontal blocks become safe wrapping rows. */
+        [data-testid="stHorizontalBlock"] { flex-wrap:wrap !important; gap:10px !important; }
+        [data-testid="stHorizontalBlock"] > [data-testid="column"] { min-width:calc(50% - 5px) !important; flex:1 1 calc(50% - 5px) !important; }
+        .kpi-grid { grid-template-columns:1fr 1fr; gap:10px; }
     }
-    .kpi-grid {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 18px;
-        margin-bottom: 28px;
+    @media (max-width: 600px) {
+        .block-container { padding:12px 11px 32px !important; }
+        .header-banner { display:block; padding:18px 17px; }
+        .header-pills { margin-top:13px; }
+        .header-title { font-size:1.08rem; }
+        .header-sub { font-size:.74rem; line-height:1.5; }
+        .kpi-grid { grid-template-columns:1fr; }
+        .kpi-card { padding:14px; }
+        .portal-grid { gap:12px; }
+        .gateway-card { padding:19px; }
+        .access-card { padding:22px 17px; }
+        .brand-name { font-size:1.95rem; }
+        .brand-sub { font-size:.88rem; }
+        [data-testid="stHorizontalBlock"] > [data-testid="column"] { min-width:100% !important; flex:1 1 100% !important; }
+        .stButton > button { width:100% !important; min-height:44px !important; }
+        .content-box { padding:18px; border-radius:15px; }
+        .tool-box-card { min-height:135px; }
+        .stDataFrame { max-width:100% !important; overflow-x:auto !important; }
     }
-    .kpi-card {
-        background: #ffffff;
-        border: 1px solid #e2e8f0;
-        border-radius: 18px;
-        padding: 18px 20px;
-        display: flex;
-        align-items: center;
-        gap: 16px;
-        box-shadow: 0 4px 18px rgba(15, 23, 42, 0.04);
-    }
-    .kpi-icon-badge {
-        width: 50px;
-        height: 50px;
-        border-radius: 14px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 24px;
-        flex-shrink: 0;
-    }
-    .tool-box-card {
-        background: #ffffff;
-        border: 1px solid #e2e8f0;
-        border-radius: 18px 18px 0 0;
-        padding: 24px 18px 14px;
-        text-align: center;
-        box-shadow: 0 4px 16px rgba(15, 23, 42, 0.03);
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        height: 165px;
-        justify-content: flex-start;
-    }
-    .tool-icon-circle {
-        width: 54px;
-        height: 54px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 26px;
-        margin-bottom: 10px;
-    }
-    .tool-title {
-        font-size: 1.05rem;
-        font-weight: 800;
-        color: #0f172a;
-        margin-bottom: 4px;
-    }
-    .tool-desc {
-        font-size: 0.82rem;
-        color: #64748b;
-        line-height: 1.45;
-    }
-    .content-box {
-        background: #ffffff;
-        border: 1px solid #e2e8f0;
-        border-radius: 18px;
-        padding: 28px;
-        box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
-        margin-bottom: 20px;
-    }
-    .tag-badge {
-        display: inline-flex;
-        align-items: center;
-        padding: 4px 12px;
-        border-radius: 9999px;
-        font-size: 0.75rem;
-        font-weight: 700;
-        margin: 3px;
-    }
-    .tag-blue { background: #eff6ff; color: #1d4ed8; border: 1px solid #dbeafe; }
-    .tag-purple { background: #faf5ff; color: #7e22ce; border: 1px solid #f3e8ff; }
-    .tag-green { background: #f0fdf4; color: #15803d; border: 1px solid #dcfce7; }
-    .tag-amber { background: #fffbeb; color: #b45309; border: 1px solid #fef3c7; }
-    .gateway-card {
-        background: #ffffff;
-        border: 2px solid #e2e8f0;
-        border-radius: 20px;
-        padding: 30px 26px;
-        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
-        height: 100%;
-    }
-    .gateway-card:hover {
-        border-color: #2563eb;
-        transform: translateY(-3px);
-    }
-    .stButton > button, .stButton > button *, button[kind="primary"], button[kind="primary"] *, button[kind="secondary"], button[kind="secondary"] *, [data-testid="stSidebar"] .stButton > button, [data-testid="stSidebar"] .stButton > button * {
-        color: #ffffff !important;
-        -webkit-text-fill-color: #ffffff !important;
-    }
-    @media (max-width: 768px) {
-        .block-container { padding: 14px 12px 28px !important; }
-        .header-banner { display: block !important; padding: 20px 18px !important; }
-        .kpi-grid { grid-template-columns: 1fr !important; }
+    @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after { animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; scroll-behavior:auto !important; }
     }
     </style>
     """,
@@ -1285,53 +1234,52 @@ def dialog_auth():
 if not st.session_state.is_logged_in:
     st.markdown(
         """
-        <div style="text-align: center; padding: 40px 0 24px;">
-            <div style="font-size: 58px; margin-bottom: 8px;">✨</div>
-            <h1 style="font-size: 3rem; margin: 0; color: #091224; font-weight: 900;">Career<span style="color: #2563eb;">Lens</span> AI</h1>
-            <p style="color: #475569; font-size: 1.15rem; margin-top: 6px; font-weight: 600;">Understand Your Career. Build Your Future.</p>
+        <div class="landing-shell">
+            <div class="landing-brand">
+                <div class="brand-mark">CL</div>
+                <div class="brand-name">Career<span>Lens</span> AI</div>
+                <div class="brand-sub">Career intelligence for your next move.</div>
+            </div>
+            <div class="access-card">
+                <span class="tag-badge tag-blue">AI CAREER INTELLIGENCE</span>
+                <div class="access-title">Turn your career data into a clearer next step.</div>
+                <div class="access-copy">
+                    Analyze your resume, measure readiness, practice interviews, match roles,
+                    detect risky job offers, and build a practical career path — all in one workspace.
+                </div>
+            </div>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
-    col_c1, col_c2, col_c3 = st.columns([1, 1.3, 1])
-    with col_c2:
-        st.markdown(
-            """
-            <div class="content-box" style="text-align: center; padding: 36px 30px;">
-                <span class="tag-badge tag-blue" style="font-size: 0.82rem; padding: 6px 16px; margin-bottom: 12px;">✦ AI CAREER ECOSYSTEM ✦</span>
-                <h3 style="margin: 10px 0 8px 0; font-size: 1.35rem; color: #0f172a;">Access Your Career Workspace</h3>
-                <p style="color: #64748b; font-size: 0.92rem; margin-bottom: 26px;">
-                    Resume scoring, standardized qualifying tests, AI mock interviews, and automated SendGrid recruiting pipelines.
-                </p>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+    b1, b2, b3 = st.columns(3, gap="small")
+    with b1:
+        if st.button("Sign in", type="primary", key="btn_entry_sign_in", use_container_width=True):
+            dialog_auth()
+    with b2:
+        if st.button("Create account", key="btn_entry_register", use_container_width=True):
+            dialog_auth()
+    with b3:
+        if st.button("Explore as guest", key="btn_entry_guest", use_container_width=True):
+            st.session_state.user_id = ""
+            st.session_state.username = "Guest Explorer"
+            st.session_state.is_logged_in = True
+            st.session_state.resume_text = ""
+            st.session_state.resume_analysis = None
+            st.session_state.job_match_result = None
+            st.session_state.resume_builder = {}
+            st.session_state.recruiter_data = {"campaign": None, "candidates": [], "assessments": [], "submissions": []}
+            st.session_state.recruiter_candidates = []
+            st.session_state.recruiter_assessment_submissions = {}
+            st.session_state.selected_gateway = False
+            log_event("GUEST_ACCESS", "Guest", "N/A", "Guest entry")
+            st.rerun()
 
-        b1, b2, b3 = st.columns(3)
-        with b1:
-            if st.button("🔐 Sign In", key="btn_entry_sign_in", use_container_width=True):
-                dialog_auth()
-        with b2:
-            if st.button("📝 Register", key="btn_entry_register", use_container_width=True):
-                dialog_auth()
-        with b3:
-            if st.button("🚀 Guest Access", key="btn_entry_guest", use_container_width=True):
-                st.session_state.user_id = ""
-                st.session_state.username = "Guest Explorer"
-                st.session_state.is_logged_in = True
-                st.session_state.resume_text = ""
-                st.session_state.resume_analysis = None
-                st.session_state.job_match_result = None
-                st.session_state.resume_builder = {}
-                st.session_state.recruiter_data = {"campaign": None, "candidates": [], "assessments": [], "submissions": []}
-                st.session_state.recruiter_candidates = []
-                st.session_state.recruiter_assessment_submissions = {}
-                st.session_state.selected_gateway = False
-                log_event("GUEST_ACCESS", "Guest", "N/A", "Guest entry")
-                st.rerun()
-
+    st.markdown(
+        '<div style="text-align:center;margin:18px 0 0;color:#94a3b8;font-size:.72rem;">Secure workspace • Resume intelligence • Interview readiness • Hiring intelligence</div>',
+        unsafe_allow_html=True,
+    )
     st.stop()
 
 
@@ -1343,10 +1291,14 @@ if not st.session_state.selected_gateway:
         f"""
         <div class="header-banner">
             <div>
-                <div class="header-title">Welcome, {st.session_state.username}! 👋</div>
-                <div class="header-sub">Select your workspace portal to start your journey with CareerLens AI.</div>
+                <div class="eyebrow" style="color:#9fb8ff !important;">WORKSPACE SELECTOR</div>
+                <div class="header-title">Choose your CareerLens workspace</div>
+                <div class="header-sub">Hi {html.escape(st.session_state.username)} — pick the experience that matches your goal.</div>
             </div>
-            <span class="tag-badge tag-blue" style="font-size: 0.85rem; padding: 6px 16px; background:#ffffff; color:#2563eb;">PORTAL GATEWAY</span>
+            <div class="header-pills">
+                <span class="header-pill">Career intelligence</span>
+                <span class="header-pill">AI assisted</span>
+            </div>
         </div>
         """,
         unsafe_allow_html=True,
@@ -1357,30 +1309,25 @@ if not st.session_state.selected_gateway:
         st.markdown(
             """
             <div class="gateway-card">
-                <div>
-                    <div style="display:flex; align-items:center; gap:12px; margin-bottom:14px;">
-                        <div style="width:52px; height:52px; border-radius:14px; background:#eff6ff; color:#2563eb; display:flex; align-items:center; justify-content:center; font-size:26px;">
-                            👤
-                        </div>
-                        <div>
-                            <h3 style="margin:0; font-size:1.4rem; color:#0f172a;">Job Seeker Portal</h3>
-                            <span class="tag-badge tag-blue">Candidate Intelligence</span>
-                        </div>
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <div class="gateway-icon" style="background:#eef4ff;color:#315fea;">JS</div>
+                    <div>
+                        <div class="gateway-title">Job Seeker</div>
+                        <span class="tag-badge tag-blue">CANDIDATE INTELLIGENCE</span>
                     </div>
-                    <p style="color:#64748b; font-size:0.92rem; margin-bottom:18px;">
-                        Accelerate your career with resume scoring, AI mock interviews, and roadmaps.
-                    </p>
-                    <hr style="border-color:#f1f5f9; margin:14px 0;">
-                    <div style="color:#475569; font-size:0.9rem; margin:8px 0;">✦ <b>Resume Intelligence:</b> Deep skill extraction and score diagnostics.</div>
-                    <div style="color:#475569; font-size:0.9rem; margin:8px 0;">✦ <b>AI Mock Interview:</b> Real-time conversational interview simulations.</div>
-                    <div style="color:#475569; font-size:0.9rem; margin:8px 0;">✦ <b>Pre-Interview Exam:</b> 10–50 question MCQ assessment with instant results.</div>
-                    <div style="color:#475569; font-size:0.9rem; margin:8px 0;">✦ <b>Salary Estimation:</b> Accurate compensation benchmarks.</div>
+                </div>
+                <div class="gateway-copy">Build a stronger profile, understand your readiness, and make your next career move with evidence instead of guesswork.</div>
+                <div class="gateway-list">
+                    <div><b>Resume Intelligence</b> — score, skills and improvement signals.</div>
+                    <div><b>Interview Studio</b> — practice with structured AI simulations.</div>
+                    <div><b>Job Match</b> — compare your profile with target roles.</div>
+                    <div><b>Career Roadmap</b> — turn gaps into an actionable plan.</div>
                 </div>
             </div>
             """,
             unsafe_allow_html=True,
         )
-        if st.button("🚀 Start Journey as Job Seeker", key="btn_portal_seeker", use_container_width=True):
+        if st.button("Enter Job Seeker workspace", type="primary", key="btn_portal_seeker", use_container_width=True):
             st.session_state.active_workspace = "Job Seeker Workspace"
             st.session_state.active_tool = "Dashboard"
             st.session_state.selected_gateway = True
@@ -1390,35 +1337,31 @@ if not st.session_state.selected_gateway:
         st.markdown(
             """
             <div class="gateway-card">
-                <div>
-                    <div style="display:flex; align-items:center; gap:12px; margin-bottom:14px;">
-                        <div style="width:52px; height:52px; border-radius:14px; background:#faf5ff; color:#7c3aed; display:flex; align-items:center; justify-content:center; font-size:26px;">
-                            🏢
-                        </div>
-                        <div>
-                            <h3 style="margin:0; font-size:1.4rem; color:#0f172a;">Recruiter Portal</h3>
-                            <span class="tag-badge tag-purple">Talent Acquisition</span>
-                        </div>
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <div class="gateway-icon" style="background:#f3f0ff;color:#6c5ce7;">RC</div>
+                    <div>
+                        <div class="gateway-title">Recruiter</div>
+                        <span class="tag-badge tag-purple">TALENT INTELLIGENCE</span>
                     </div>
-                    <p style="color:#64748b; font-size:0.92rem; margin-bottom:18px;">
-                        Streamline your hiring pipeline with bulk resume screening and automated testing via SendGrid.
-                    </p>
-                    <hr style="border-color:#f1f5f9; margin:14px 0;">
-                    <div style="color:#475569; font-size:0.9rem; margin:8px 0;">✦ <b>Bulk Resume Intake:</b> Upload cohorts and auto-extract candidate emails.</div>
-                    <div style="color:#475569; font-size:0.9rem; margin:8px 0;">✦ <b>Assessment Dispatcher:</b> Send automated SendGrid test invitations in 1 click.</div>
-                    <div style="color:#475569; font-size:0.9rem; margin:8px 0;">✦ <b>Candidate Score Vault:</b> Private recruiter assessment ranking view.</div>
-                    <div style="color:#475569; font-size:0.9rem; margin:8px 0;">✦ <b>Role Blueprints:</b> Standardized evaluation tracks for IT and Non-IT.</div>
+                </div>
+                <div class="gateway-copy">Move candidates through a cleaner hiring pipeline with bulk screening, assessments, scoring and interview visibility.</div>
+                <div class="gateway-list">
+                    <div><b>Bulk Screening</b> — intake cohorts and extract candidate signals.</div>
+                    <div><b>Assessment Dispatcher</b> — send structured tests in one flow.</div>
+                    <div><b>Score Vault</b> — compare assessment outcomes privately.</div>
+                    <div><b>Interview Pipeline</b> — keep the hiring journey visible.</div>
                 </div>
             </div>
             """,
             unsafe_allow_html=True,
         )
-        if st.button("🏢 Start Hiring as Recruiter", key="btn_portal_recruiter", use_container_width=True):
+        if st.button("Enter Recruiter workspace", type="primary", key="btn_portal_recruiter", use_container_width=True):
             st.session_state.active_workspace = "Recruiter Workspace"
             st.session_state.active_tool = "Dashboard"
             st.session_state.selected_gateway = True
             st.rerun()
 
+    st.markdown('<div style="text-align:center;color:#94a3b8;font-size:.72rem;margin-top:22px;">You can switch workspaces later from the navigation.</div>', unsafe_allow_html=True)
     st.stop()
 
 
@@ -1429,14 +1372,10 @@ with st.sidebar:
     st.markdown(
         """
         <div class="sidebar-brand-box">
-            <div style="font-size: 26px; color: #2563eb;">✨</div>
+            <div style="width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,#315fea,#6c5ce7);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:800;">CL</div>
             <div>
-                <div style="font-size: 1.15rem; font-weight: 900; color: #091224; line-height: 1.1;">
-                    Career<span style="color: #2563eb;">lens</span> <span style="color: #7c3aed;">AI</span>
-                </div>
-                <div style="font-size: 0.68rem; color: #64748b; font-weight: 700;">
-                    Your Career, Our Intelligence
-                </div>
+                <div class="sidebar-brand-name">Career<span>Lens</span> AI</div>
+                <div class="sidebar-brand-copy">Career intelligence workspace</div>
             </div>
         </div>
         """,
@@ -1446,13 +1385,11 @@ with st.sidebar:
     st.markdown(
         f"""
         <div class="sidebar-user-box">
-            <div style="display:flex; align-items:center; gap:10px;">
-                <div style="width:36px; height:36px; border-radius:50%; background:linear-gradient(135deg, #2563eb, #7c3aed); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800;">
-                    👤
-                </div>
-                <div>
-                    <div style="font-size:0.88rem; font-weight:800; color:#ffffff;">{st.session_state.username}</div>
-                    <div style="font-size:0.72rem; color:#4ade80; font-weight:700;">● Active User</div>
+            <div style="display:flex;align-items:center;gap:10px;">
+                <div style="width:34px;height:34px;border-radius:11px;background:linear-gradient(135deg,#315fea,#6c5ce7);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:800;">{html.escape((st.session_state.username or 'G')[:2].upper())}</div>
+                <div style="min-width:0;">
+                    <div style="font-size:.79rem;font-weight:800;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{html.escape(st.session_state.username)}</div>
+                    <div style="font-size:.63rem;color:#7ee2bd;font-weight:700;">● Workspace active</div>
                 </div>
             </div>
         </div>
@@ -1460,59 +1397,55 @@ with st.sidebar:
         unsafe_allow_html=True,
     )
 
-    st.markdown('<div class="sidebar-section-title">MAIN WORKSPACE</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sidebar-section-title">Workspace</div>', unsafe_allow_html=True)
     is_seeker = st.session_state.active_workspace == "Job Seeker Workspace"
     is_recruiter = st.session_state.active_workspace == "Recruiter Workspace"
 
-    if st.button("👤 Job Seeker Workspace", key="sb_ws_seeker", type="primary" if is_seeker else "secondary", use_container_width=True):
+    if st.button("Job Seeker", key="sb_ws_seeker", type="primary" if is_seeker else "secondary", use_container_width=True):
         st.session_state.active_workspace = "Job Seeker Workspace"
         st.session_state.active_tool = "Dashboard"
         st.rerun()
-
-    if st.button("🏢 Recruiter Workspace", key="sb_ws_recruiter", type="primary" if is_recruiter else "secondary", use_container_width=True):
+    if st.button("Recruiter", key="sb_ws_recruiter", type="primary" if is_recruiter else "secondary", use_container_width=True):
         st.session_state.active_workspace = "Recruiter Workspace"
         st.session_state.active_tool = "Dashboard"
         st.rerun()
 
     if is_seeker:
-        st.markdown('<div class="sidebar-section-title">CAREER TOOLS</div>', unsafe_allow_html=True)
+        st.markdown('<div class="sidebar-section-title">Career tools</div>', unsafe_allow_html=True)
         seeker_tools = [
-            ("📊 Dashboard", "Dashboard"),
-            ("📄 Resume Intelligence", "Resume Intelligence"),
-            ("📝 Pre-Interview Assessment", "Pre-Interview Assessment"),
-            ("🎤 AI Mock Interview", "AI Mock Interview"),
-            ("🎯 AI Job Match", "AI Job Match"),
-            ("💰 Salary Estimation", "Salary Estimation"),
-            ("🗺️ Career Roadmap", "Career Roadmap"),
-            ("🛡️ Job Detection", "Real-Time Job Detection"),
-            ("📄 Resume Builder", "Resume Builder"),
-            ("🤖 AI Assistant", "AI Career Assistant"),
+            ("Dashboard", "Dashboard"),
+            ("Resume Intelligence", "Resume Intelligence"),
+            ("Pre-Interview Assessment", "Pre-Interview Assessment"),
+            ("AI Mock Interview", "AI Mock Interview"),
+            ("AI Job Match", "AI Job Match"),
+            ("Salary Estimation", "Salary Estimation"),
+            ("Career Roadmap", "Career Roadmap"),
+            ("Job Detection", "Real-Time Job Detection"),
+            ("Resume Builder", "Resume Builder"),
+            ("Career Assistant", "AI Career Assistant"),
         ]
-        for name, key_val in seeker_tools:
-            is_active = st.session_state.active_tool == key_val
-            if st.button(name, key=f"sb_tool_{key_val}", type="primary" if is_active else "secondary", use_container_width=True):
+        for label, key_val in seeker_tools:
+            if st.button(label, key=f"sb_tool_{key_val}", type="primary" if st.session_state.active_tool == key_val else "secondary", use_container_width=True):
                 st.session_state.active_tool = key_val
                 st.rerun()
     else:
-        st.markdown('<div class="sidebar-section-title">RECRUITER TOOLS</div>', unsafe_allow_html=True)
+        st.markdown('<div class="sidebar-section-title">Recruiter tools</div>', unsafe_allow_html=True)
         rec_tools = [
-            ("📊 Recruiter Dashboard", "Dashboard"),
-            ("🎯 Hiring Campaign", "Hiring Campaign"),
-            ("📤 Bulk Resume Screening", "Bulk Screening"),
-            ("🏆 Shortlisted Candidates", "Shortlisted Candidates"),
-            ("📝 Assessment Dispatcher", "Assessment Builder"),
-            ("📊 Assessment Results", "Score Vault"),
-            ("🎤 Interview Pipeline", "Interview Pipeline"),
+            ("Dashboard", "Dashboard"),
+            ("Hiring Campaign", "Hiring Campaign"),
+            ("Bulk Screening", "Bulk Screening"),
+            ("Shortlisted Candidates", "Shortlisted Candidates"),
+            ("Assessment Dispatcher", "Assessment Builder"),
+            ("Assessment Results", "Score Vault"),
+            ("Interview Pipeline", "Interview Pipeline"),
         ]
-        for name, key_val in rec_tools:
-            is_active = st.session_state.active_tool == key_val
-            if st.button(name, key=f"sb_rec_{key_val}", type="primary" if is_active else "secondary", use_container_width=True):
+        for label, key_val in rec_tools:
+            if st.button(label, key=f"sb_rec_{key_val}", type="primary" if st.session_state.active_tool == key_val else "secondary", use_container_width=True):
                 recruiter_navigate(key_val)
                 st.rerun()
 
-    st.markdown("<hr style='border-color: rgba(255,255,255,0.1); margin: 20px 0;'>", unsafe_allow_html=True)
-
-    if st.button("🚪 Logout", key="sb_logout_btn", use_container_width=True):
+    st.markdown('<div class="sidebar-divider"></div>', unsafe_allow_html=True)
+    if st.button("Log out", key="sb_logout_btn", use_container_width=True):
         uid = st.session_state.get("user_id", "")
         if uid:
             try:
@@ -1546,17 +1479,19 @@ with st.sidebar:
 # ============================================================
 # 4. TOP APP HEADER
 # ============================================================
+workspace_label = "Job Seeker" if st.session_state.active_workspace == "Job Seeker Workspace" else "Recruiter"
+tool_label = st.session_state.active_tool
 st.markdown(
     f"""
     <div class="header-banner">
         <div>
-            <div class="header-title">CareerLens AI — {st.session_state.active_workspace}</div>
-            <div class="header-sub">Welcome back, {st.session_state.username}! Access high-impact career analytics.</div>
+            <div class="eyebrow" style="color:#9fb8ff !important;">{workspace_label.upper()} WORKSPACE</div>
+            <div class="header-title">{html.escape(tool_label if tool_label != 'Dashboard' else workspace_label + ' command center')}</div>
+            <div class="header-sub">A focused workspace for your next decision — without the clutter.</div>
         </div>
-        <div style="display:flex; align-items:center; gap:12px;">
-            <div style="background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.25); border-radius:30px; padding:6px 16px; color:#ffffff; font-weight:800; font-size:0.88rem;">
-                👤 {st.session_state.username}
-            </div>
+        <div class="header-pills">
+            <span class="header-pill">{html.escape(st.session_state.username)}</span>
+            <span class="header-pill">Live workspace</span>
         </div>
     </div>
     """,
@@ -1565,106 +1500,102 @@ st.markdown(
 
 
 # ============================================================
-# 👤 JOB SEEKER DASHBOARD
+# JOB SEEKER DASHBOARD
 # ============================================================
 if st.session_state.active_workspace == "Job Seeker Workspace":
     analysis = st.session_state.resume_analysis
-    resume_score_val = f"{analysis.get('resume_score')}%" if analysis and analysis.get("resume_score") else "--"
-    readiness_val = f"{analysis.get('readiness')}%" if analysis and analysis.get("readiness") else "--"
+    resume_score_val = f"{analysis.get('resume_score')}%" if analysis and analysis.get('resume_score') is not None else "--"
+    readiness_val = f"{analysis.get('readiness')}%" if analysis and analysis.get('readiness') is not None else "--"
     market_match_val = f"{st.session_state.job_match_result.get('overall')}%" if st.session_state.job_match_result else "--"
-    skills_count_val = f"{len(analysis.get('skills', []))} Stack" if analysis and analysis.get("skills") else "--"
+    skills_count_val = f"{len(analysis.get('skills', []))}" if analysis and analysis.get('skills') else "--"
 
     st.markdown(
         f"""
         <div class="kpi-grid">
-            <div class="kpi-card">
-                <div class="kpi-icon-badge" style="background:#eff6ff; color:#2563eb;">📄</div>
-                <div>
-                    <div style="font-size:0.75rem; font-weight:700; color:#64748b; text-transform:uppercase;">Resume Score</div>
-                    <div style="font-size:1.45rem; font-weight:900; color:#0f172a;">{resume_score_val}</div>
-                    <span class="tag-badge tag-blue">AI Evaluated</span>
-                </div>
-            </div>
-            <div class="kpi-card">
-                <div class="kpi-icon-badge" style="background:#faf5ff; color:#7c3aed;">📈</div>
-                <div>
-                    <div style="font-size:0.75rem; font-weight:700; color:#64748b; text-transform:uppercase;">Readiness Index</div>
-                    <div style="font-size:1.45rem; font-weight:900; color:#0f172a;">{readiness_val}</div>
-                    <span class="tag-badge tag-purple">Domain Ready</span>
-                </div>
-            </div>
-            <div class="kpi-card">
-                <div class="kpi-icon-badge" style="background:#ecfdf5; color:#059669;">🎯</div>
-                <div>
-                    <div style="font-size:0.75rem; font-weight:700; color:#64748b; text-transform:uppercase;">Market Match</div>
-                    <div style="font-size:1.45rem; font-weight:900; color:#0f172a;">{market_match_val}</div>
-                    <span class="tag-badge tag-green">Job Target</span>
-                </div>
-            </div>
-            <div class="kpi-card">
-                <div class="kpi-icon-badge" style="background:#fffbeb; color:#d97706;">💡</div>
-                <div>
-                    <div style="font-size:0.75rem; font-weight:700; color:#64748b; text-transform:uppercase;">Detected Stack</div>
-                    <div style="font-size:1.45rem; font-weight:900; color:#0f172a;">{skills_count_val}</div>
-                    <span class="tag-badge tag-amber">Verified Skills</span>
-                </div>
-            </div>
+            <div class="kpi-card"><div class="kpi-icon-badge" style="background:#eef4ff;color:#315fea;">RS</div><div><div class="kpi-label">Resume score</div><div class="kpi-value">{resume_score_val}</div><span class="tag-badge tag-blue">Profile signal</span></div></div>
+            <div class="kpi-card"><div class="kpi-icon-badge" style="background:#f3f0ff;color:#6c5ce7;">RI</div><div><div class="kpi-label">Readiness index</div><div class="kpi-value">{readiness_val}</div><span class="tag-badge tag-purple">Career signal</span></div></div>
+            <div class="kpi-card"><div class="kpi-icon-badge" style="background:#ecfbf4;color:#0f9f6e;">MM</div><div><div class="kpi-label">Market match</div><div class="kpi-value">{market_match_val}</div><span class="tag-badge tag-green">Role fit</span></div></div>
+            <div class="kpi-card"><div class="kpi-icon-badge" style="background:#fff7e8;color:#a86408;">SK</div><div><div class="kpi-label">Detected skills</div><div class="kpi-value">{skills_count_val}</div><span class="tag-badge tag-amber">Skill stack</span></div></div>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
     if st.session_state.active_tool == "Dashboard":
-        st.markdown("<h3 style='margin-bottom:16px; font-weight:900; font-size:1.25rem; color:#0f172a;'>Career Tools Suite</h3>", unsafe_allow_html=True)
-        c1, c2, c3, c4, c5 = st.columns(5)
-        with c1:
-            st.markdown("""<div class="tool-box-card"><div class="tool-icon-circle" style="background:#eff6ff; color:#2563eb;">📄</div><div class="tool-title">Resume Intelligence</div><div class="tool-desc">Deep resume analysis, strengths and enhancements.</div></div>""", unsafe_allow_html=True)
-            if st.button("Resume Intelligence", key="card_c1_btn", use_container_width=True):
-                st.session_state.active_tool = "Resume Intelligence"
-                st.rerun()
-        with c2:
-            st.markdown("""<div class="tool-box-card"><div class="tool-icon-circle" style="background:#faf5ff; color:#7c3aed;">📝</div><div class="tool-title">Pre-Interview Exam</div><div class="tool-desc">100-mark standardized MCQ domain qualifying test.</div></div>""", unsafe_allow_html=True)
-            if st.button("Pre-Interview Exam", key="card_c2_btn", use_container_width=True):
-                st.session_state.active_tool = "Pre-Interview Assessment"
-                st.rerun()
-        with c3:
-            st.markdown("""<div class="tool-box-card"><div class="tool-icon-circle" style="background:#eff6ff; color:#0284c7;">🎤</div><div class="tool-title">AI Mock Interview</div><div class="tool-desc">Sequential dynamic interview questions with scoring.</div></div>""", unsafe_allow_html=True)
-            if st.button("AI Mock Interview", key="card_c3_btn", use_container_width=True):
-                st.session_state.active_tool = "AI Mock Interview"
-                st.rerun()
-        with c4:
-            st.markdown("""<div class="tool-box-card"><div class="tool-icon-circle" style="background:#ecfdf5; color:#059669;">🎯</div><div class="tool-title">AI Job Match</div><div class="tool-desc">Match profile with job postings to find skill gaps.</div></div>""", unsafe_allow_html=True)
-            if st.button("AI Job Match", key="card_c4_btn", use_container_width=True):
-                st.session_state.active_tool = "AI Job Match"
-                st.rerun()
-        with c5:
-            st.markdown("""<div class="tool-box-card"><div class="tool-icon-circle" style="background:#fffbeb; color:#d97706;">💰</div><div class="tool-title">Salary Estimation</div><div class="tool-desc">Accurate market salary estimates.</div></div>""", unsafe_allow_html=True)
-            if st.button("Salary Estimation", key="card_c5_btn", use_container_width=True):
-                st.session_state.active_tool = "Salary Estimation"
+        st.markdown(
+            """
+            <div class="section-heading">
+                <div><div class="section-title">Your next best move</div><div class="section-caption">CareerLens prioritizes the action most likely to improve your profile.</div></div>
+                <span class="tag-badge tag-blue">PERSONALIZED</span>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        next_title = "Upload your resume" if not analysis else ("Check your target-role match" if not st.session_state.job_match_result else "Build your career roadmap")
+        next_copy = "Start with a resume analysis to unlock readiness and skill signals." if not analysis else ("Compare your profile against a role to reveal high-value skill gaps." if not st.session_state.job_match_result else "Turn your strongest gaps into a practical sequence of next steps.")
+        next_tool = "Resume Intelligence" if not analysis else ("AI Job Match" if not st.session_state.job_match_result else "Career Roadmap")
+        action_col1, action_col2 = st.columns([1.65, 1], gap="large")
+        with action_col1:
+            st.markdown(
+                f"""
+                <div class="action-card">
+                    <div class="action-accent"></div>
+                    <span class="tag-badge tag-purple">NEXT BEST ACTION</span>
+                    <h3 style="margin:12px 0 7px;font-size:1.18rem;">{html.escape(next_title)}</h3>
+                    <p class="muted" style="font-size:.82rem;line-height:1.6;margin:0;">{html.escape(next_copy)}</p>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+        with action_col2:
+            if st.button("Open recommended action", type="primary", use_container_width=True, key="next_best_action_btn"):
+                st.session_state.active_tool = next_tool
                 st.rerun()
 
-        st.markdown("<br>", unsafe_allow_html=True)
-        c6, c7, c8, c9, _ = st.columns(5)
-        with c6:
-            st.markdown("""<div class="tool-box-card"><div class="tool-icon-circle" style="background:#ecfdf5; color:#10b981;">🗺️</div><div class="tool-title">Career Roadmap</div><div class="tool-desc">Step-by-step career progression milestones.</div></div>""", unsafe_allow_html=True)
-            if st.button("Career Roadmap", key="card_c6_btn", use_container_width=True):
-                st.session_state.active_tool = "Career Roadmap"
-                st.rerun()
-        with c7:
-            st.markdown("""<div class="tool-box-card"><div class="tool-icon-circle" style="background:#fef2f2; color:#ef4444;">🛡️</div><div class="tool-title">Job Detection</div><div class="tool-desc">Real-time scam and fake job offer detection.</div></div>""", unsafe_allow_html=True)
-            if st.button("Job Detection", key="card_c7_btn", use_container_width=True):
-                st.session_state.active_tool = "Real-Time Job Detection"
-                st.rerun()
-        with c8:
-            st.markdown("""<div class="tool-box-card"><div class="tool-icon-circle" style="background:#eff6ff; color:#3b82f6;">📄</div><div class="tool-title">Resume Builder</div><div class="tool-desc">Build ATS-friendly clean formatted resumes.</div></div>""", unsafe_allow_html=True)
-            if st.button("Resume Builder", key="card_c8_btn", use_container_width=True):
-                st.session_state.active_tool = "Resume Builder"
-                st.rerun()
-        with c9:
-            st.markdown("""<div class="tool-box-card"><div class="tool-icon-circle" style="background:#faf5ff; color:#8b5cf6;">🤖</div><div class="tool-title">AI Career Assistant</div><div class="tool-desc">Ask interview preparation and profile guidance.</div></div>""", unsafe_allow_html=True)
-            if st.button("Career Assistant", key="card_c9_btn", use_container_width=True):
-                st.session_state.active_tool = "AI Career Assistant"
-                st.rerun()
+        st.markdown(
+            """
+            <div class="section-heading">
+                <div><div class="section-title">Career journey</div><div class="section-caption">A simple path from profile signal to confident application.</div></div>
+                <span class="tag-badge tag-slate">3 STAGES</span>
+            </div>
+            <div class="journey-card">
+                <div class="journey-track">
+                    <div class="journey-step"><span class="journey-dot"></span><b>1 · Understand</b><div class="muted" style="font-size:.74rem;margin-top:7px;">Resume + skill intelligence</div></div>
+                    <div class="journey-step"><span class="journey-dot"></span><b>2 · Prepare</b><div class="muted" style="font-size:.74rem;margin-top:7px;">Interview + assessment readiness</div></div>
+                    <div class="journey-step"><span class="journey-dot"></span><b>3 · Move</b><div class="muted" style="font-size:.74rem;margin-top:7px;">Role match + roadmap + safer jobs</div></div>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        st.markdown(
+            """
+            <div class="section-heading">
+                <div><div class="section-title">Career toolkit</div><div class="section-caption">Everything you need, organized by outcome.</div></div>
+                <span class="tag-badge tag-slate">10 TOOLS</span>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        tools = [
+            ("Resume Intelligence", "Deep resume analysis, strengths and enhancements.", "Resume Intelligence", "RI"),
+            ("Pre-Interview Exam", "Structured MCQ qualification with instant results.", "Pre-Interview Assessment", "EX"),
+            ("AI Mock Interview", "Practice dynamic interview questions with scoring.", "AI Mock Interview", "MI"),
+            ("AI Job Match", "Compare your profile with a target role.", "AI Job Match", "JM"),
+            ("Salary Estimation", "Explore compensation benchmarks for your target.", "Salary Estimation", "SL"),
+            ("Career Roadmap", "Turn skill gaps into a step-by-step plan.", "Career Roadmap", "CR"),
+            ("Job Detection", "Check job offers for risk signals.", "Real-Time Job Detection", "JD"),
+            ("Resume Builder", "Create a clean, ATS-friendly resume.", "Resume Builder", "RB"),
+            ("Career Assistant", "Ask for focused career preparation guidance.", "AI Career Assistant", "AI"),
+        ]
+        cols = st.columns(3, gap="medium")
+        for idx, (title, desc, target, icon) in enumerate(tools):
+            with cols[idx % 3]:
+                st.markdown(f'<div class="tool-box-card"><div class="tool-icon-circle" style="background:#eef4ff;color:#315fea;font-size:.72rem;font-weight:800;">{icon}</div><div class="tool-title">{html.escape(title)}</div><div class="tool-desc">{html.escape(desc)}</div></div>', unsafe_allow_html=True)
+                if st.button("Open", key=f"modern_tool_{idx}", use_container_width=True):
+                    st.session_state.active_tool = target
+                    st.rerun()
 
     # 1. RESUME INTELLIGENCE
     elif st.session_state.active_tool == "Resume Intelligence":
