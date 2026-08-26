@@ -1,7 +1,7 @@
 """Centralized CareerLens AI configuration.
 
-Production secrets must be supplied as environment variables. Never commit
-real credentials to this file or to source control.
+Production secrets must be supplied as environment variables.
+Never commit real credentials to this file or source control.
 """
 
 from __future__ import annotations
@@ -13,20 +13,61 @@ def _env(name: str, default: str = "") -> str:
     return os.getenv(name, default).strip()
 
 
-API_BASE_URL = _env("API_URL", "http://localhost:8000").rstrip("/")
-APP_DB_FILE = _env("CAREERLENS_DB", "careerlens.db")
+# Application
+API_BASE_URL = _env(
+    "API_URL",
+    "http://localhost:8000",
+).rstrip("/")
+
+APP_DB_FILE = _env(
+    "CAREERLENS_DB",
+    "careerlens.db",
+)
+
 ADMIN_PIN = _env("ADMIN_PIN")
-PUBLIC_APP_URL = _env("PUBLIC_APP_URL", "http://localhost:8501").rstrip("/")
-ANALYTICS_FILE = _env("ANALYTICS_FILE", "analytics.csv")
 
-SENDGRID_API_KEY = _env("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
-")
-SENDGRID_FROM_EMAIL = _env("SENDGRID_FROM_EMAIL", "careerlenssai@gmail.com")
+PUBLIC_APP_URL = _env(
+    "PUBLIC_APP_URL",
+    "http://localhost:8501",
+).rstrip("/")
 
-CORS_ORIGINS = _env("CORS_ORIGINS", "*")
-MAX_RESUME_BYTES = _env("MAX_RESUME_BYTES", str(10 * 1024 * 1024))
-MAX_BULK_FILES = _env("MAX_BULK_FILES", "50")
+ANALYTICS_FILE = _env(
+    "ANALYTICS_FILE",
+    "analytics.csv",
+)
 
+
+# SendGrid
+# IMPORTANT:
+# The actual API key must be stored in Render Environment Variables.
+SENDGRID_API_KEY = _env("SENDGRID_API_KEY")
+
+SENDGRID_FROM_EMAIL = _env(
+    "SENDGRID_FROM_EMAIL",
+    "careerlenssai@gmail.com",
+)
+
+
+# CORS
+CORS_ORIGINS = _env(
+    "CORS_ORIGINS",
+    "*",
+)
+
+
+# Resume limits
+MAX_RESUME_BYTES = _env(
+    "MAX_RESUME_BYTES",
+    str(10 * 1024 * 1024),
+)
+
+MAX_BULK_FILES = _env(
+    "MAX_BULK_FILES",
+    "50",
+)
+
+
+# IT roles
 IT_ROLES = [
     "Software Developer",
     "Data Scientist",
@@ -37,6 +78,8 @@ IT_ROLES = [
     "QA Engineer",
 ]
 
+
+# Non-IT roles
 NON_IT_ROLES = [
     "HR Specialist",
     "Sales Executive",
