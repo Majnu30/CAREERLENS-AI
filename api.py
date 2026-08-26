@@ -1,7 +1,7 @@
 """CareerLens AI FastAPI backend.
 
 This module intentionally contains API routes only. The Streamlit UI belongs in app.py.
-Run with: uvicorn api:app --host 0.0.0.0 --port $PORT
+Run with: uvicorn api:app --host 0.0.0.0 --port 8000
 """
 
 from __future__ import annotations
