@@ -675,7 +675,7 @@ def api_chat_assistant(messages: List[Dict], resume_context: str = "") -> str:
 
 
 def api_send_assessment_email(to_email: str, name: str, role: str, test_link: str) -> tuple[bool, str]:
-    """Dispatches assessment invitation via the working FastAPI backend endpoint."""
+    """Dispatches assessment invitation via the FastAPI backend endpoint."""
     subject = f"CareerLens AI — Assessment Invitation for {role}"
     html_content = f"""
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 10px;">
