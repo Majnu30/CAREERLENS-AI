@@ -5,6 +5,7 @@ from __future__ import annotations
 import csv
 from datetime import datetime
 import hashlib
+import hmac
 import html
 import io
 import ipaddress
@@ -50,7 +51,136 @@ st.set_page_config(
 )
 
 # ============================================================
-# SAFE RESPONSE NORMALIZERS
+# DATABASE & CACHED CONNECTOR
+# ============================================================
+@st.cache_resource
+def get_db_connection():
+    conn = sqlite3.connect(APP_DB_FILE, timeout=30, check_same_thread=False)
+    conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("PRAGMA foreign_keys=ON")
+    return conn
+
+
+def hash_password(password: str, salt: bytes = None) -> str:
+    """Uses PBKDF2 with SHA-256 for secure password hashing."""
+    if salt is None:
+        salt = os.urandom(16)
+    hashed = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, 100000)
+    return f"{salt.hex()}${hashed.hex()}"
+
+
+def password_matches(stored: str, provided: str) -> bool:
+    """Validates salted PBKDF2 password hashes with legacy fallback."""
+    if not stored:
+        return False
+    if "$" not in stored:
+        return stored == hashlib.sha256(provided.encode("utf-8")).hexdigest()
+    try:
+        salt_hex, key_hex = stored.split("$")
+        salt = bytes.fromhex(salt_hex)
+        expected = bytes.fromhex(key_hex)
+        candidate = hashlib.pbkdf2_hmac("sha256", provided.encode("utf-8"), salt, 100000)
+        return hmac.compare_digest(candidate, expected)
+    except Exception:
+        return False
+
+
+def _init_app_db():
+    conn = get_db_connection()
+    with conn:
+        conn.execute("""CREATE TABLE IF NOT EXISTS users (
+            user_id TEXT PRIMARY KEY,
+            username TEXT UNIQUE NOT NULL,
+            display_name TEXT NOT NULL,
+            password_hash TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        )""")
+        conn.execute("""CREATE TABLE IF NOT EXISTS user_state (
+            user_id TEXT PRIMARY KEY,
+            state_json TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            FOREIGN KEY(user_id) REFERENCES users(user_id) ON DELETE CASCADE
+        )""")
+        conn.execute("""CREATE TABLE IF NOT EXISTS recruiter_state (
+            user_id TEXT PRIMARY KEY,
+            state_json TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            FOREIGN KEY(user_id) REFERENCES users(user_id) ON DELETE CASCADE
+        )""")
+
+
+def _db_user(username: str):
+    conn = get_db_connection()
+    return conn.execute("SELECT user_id, username, display_name, password_hash FROM users WHERE lower(username)=lower(?)", (username.strip(),)).fetchone()
+
+
+def _db_create_user(username: str, display_name: str, password_hash: str):
+    user_id = secrets.token_hex(16)
+    conn = get_db_connection()
+    with conn:
+        conn.execute(
+            "INSERT INTO users(user_id,username,display_name,password_hash,created_at) VALUES(?,?,?,?,?)",
+            (user_id, username.strip(), display_name.strip() or username.split("@")[0], password_hash, datetime.now().isoformat(timespec="seconds")),
+        )
+    return user_id
+
+
+def _db_save_state(user_id: str, state: Dict[str, Any]):
+    if not user_id:
+        return
+    payload = json.dumps(state, ensure_ascii=False)
+    conn = get_db_connection()
+    with conn:
+        conn.execute(
+            "INSERT INTO user_state(user_id,state_json,updated_at) VALUES(?,?,?) ON CONFLICT(user_id) DO UPDATE SET state_json=excluded.state_json, updated_at=excluded.updated_at",
+            (user_id, payload, datetime.now().isoformat(timespec="seconds")),
+        )
+
+
+def _db_load_state(user_id: str) -> Dict[str, Any]:
+    if not user_id:
+        return {}
+    conn = get_db_connection()
+    row = conn.execute("SELECT state_json FROM user_state WHERE user_id=?", (user_id,)).fetchone()
+    if not row:
+        return {}
+    try:
+        return json.loads(row[0]) if isinstance(row[0], str) else {}
+    except (TypeError, ValueError):
+        return {}
+
+
+def _db_save_recruiter_state(user_id: str, data: Dict[str, Any]):
+    if not user_id:
+        return
+    payload = json.dumps(data, ensure_ascii=False)
+    conn = get_db_connection()
+    with conn:
+        conn.execute(
+            "INSERT INTO recruiter_state(user_id,state_json,updated_at) VALUES(?,?,?) ON CONFLICT(user_id) DO UPDATE SET state_json=excluded.state_json, updated_at=excluded.updated_at",
+            (user_id, payload, datetime.now().isoformat(timespec="seconds")),
+        )
+
+
+def _db_load_recruiter_state(user_id: str) -> Dict[str, Any]:
+    default = {"campaign": None, "candidates": [], "assessments": [], "submissions": []}
+    if not user_id:
+        return default
+    conn = get_db_connection()
+    row = conn.execute("SELECT state_json FROM recruiter_state WHERE user_id=?", (user_id,)).fetchone()
+    if not row:
+        return default
+    try:
+        data = json.loads(row[0])
+        return data if isinstance(data, dict) else default
+    except (TypeError, ValueError):
+        return default
+
+
+_init_app_db()
+
+# ============================================================
+# SAFE RESPONSE NORMALIZERS & EXTRACTION
 # ============================================================
 def safe_parse_json(text: str) -> Any:
     if not text:
@@ -108,24 +238,11 @@ EMAIL_RE = re.compile(r"[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9-]+(?:\.[A-Za
 
 
 def extract_email_from_text(text: str) -> str:
-    """Return a real email found in resume text."""
     for raw in EMAIL_RE.findall(text or ""):
         email = raw.strip(".,;:()[]{}<>\"").lower()
         if len(email) <= 254:
             return email
     return ""
-
-
-def extract_emails_from_text(text: str) -> List[str]:
-    """Extract all unique valid-looking email addresses from resume text."""
-    seen = set()
-    result = []
-    for raw in EMAIL_RE.findall(text or ""):
-        email = raw.strip(".,;:()[]{}<>\"").lower()
-        if len(email) <= 254 and email not in seen:
-            seen.add(email)
-            result.append(email)
-    return result
 
 
 def extract_phone_from_text(text: str) -> str:
@@ -143,7 +260,6 @@ def _candidate_identity_key(candidate: Dict[str, Any]) -> str:
 
 
 def dedupe_candidates(candidates: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    """Remove duplicate candidates by email, then name+phone when email is absent."""
     unique = []
     seen = set()
     for candidate in candidates:
@@ -155,9 +271,6 @@ def dedupe_candidates(candidates: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     return unique
 
 
-# ============================================================
-# ACTIVITY LOGGER
-# ============================================================
 def log_event(event_type: str, username: str, rating: str = "N/A", details: str = ""):
     file_exists = os.path.isfile(ANALYTICS_FILE)
     try:
@@ -177,7 +290,7 @@ def log_event(event_type: str, username: str, rating: str = "N/A", details: str 
 
 
 # ============================================================
-# CAREERLENS PREMIUM DESIGN SYSTEM
+# CAREERLENS DESIGN SYSTEM
 # ============================================================
 st.markdown(
     """
@@ -196,23 +309,19 @@ st.markdown(
     p,span,label,div{font-family:'Plus Jakarta Sans',sans-serif}
     h1,h2,h3,h4{color:var(--ink)!important;letter-spacing:-.025em}
 
-    /* Hide Streamlit chrome that makes the product look like a prototype. */
     #MainMenu,footer{visibility:hidden}
     header[data-testid="stHeader"]{background:transparent!important}
 
-    /* Inputs */
     .stTextInput input,.stTextArea textarea,[data-baseweb="select"]{background:#fff!important;color:var(--ink)!important;border:1px solid #dfe5f1!important;border-radius:12px!important}
     .stTextInput input:focus,.stTextArea textarea:focus{border-color:#6d6cf2!important;box-shadow:0 0 0 3px rgba(80,95,235,.12)!important}
     [data-testid="stFileUploader"]{background:#fff!important;border:1px dashed #cbd5e8!important;border-radius:16px!important}
 
-    /* Global buttons: white/outline by default; gradient only for primary actions. */
     .stButton>button{border-radius:11px!important;border:1px solid #dbe2ef!important;background:#fff!important;color:var(--ink)!important;font-weight:700!important;box-shadow:0 4px 14px rgba(35,55,105,.04)!important;transition:.18s ease!important}
     .stButton>button:hover{border-color:#8da4ef!important;color:#315edc!important;transform:translateY(-1px)!important;box-shadow:0 8px 20px rgba(52,83,184,.10)!important}
     .stButton>button[kind="primary"]{background:var(--grad)!important;border-color:transparent!important;color:#fff!important;box-shadow:0 9px 24px rgba(67,84,221,.22)!important}
     .stButton>button[kind="primary"]:hover{color:#fff!important;filter:brightness(1.03)}
     .stButton>button[kind="primary"] *,.stButton>button[kind="secondary"] *{color:inherit!important;-webkit-text-fill-color:inherit!important}
 
-    /* Sidebar: light product-style navigation matching the reference dashboard. */
     [data-testid="stSidebar"]{background:#fff!important;border-right:1px solid #e8edf5!important;box-shadow:8px 0 28px rgba(30,45,80,.035)!important}
     [data-testid="stSidebar"]>div:first-child{padding:18px 14px!important}
     [data-testid="stSidebar"] *{font-family:'Plus Jakarta Sans',sans-serif!important}
@@ -226,7 +335,6 @@ st.markdown(
     .sidebar-section-title{font-size:.61rem!important;font-weight:800!important;letter-spacing:.10em!important;color:#9aa5b8!important;margin:17px 4px 6px!important}
     [data-testid="stSidebar"] hr{border-color:#edf0f6!important}
 
-    /* Shared product components */
     .content-box{background:#fff;border:1px solid var(--line);border-radius:16px;padding:22px;box-shadow:0 7px 24px rgba(30,45,80,.045);margin-bottom:18px}
     .gateway-card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:22px;box-shadow:0 8px 26px rgba(35,55,105,.055);transition:.2s ease;height:100%}
     .gateway-card:hover{border-color:#b9c9f6;box-shadow:0 16px 34px rgba(55,78,170,.10);transform:translateY(-2px)}
@@ -236,16 +344,19 @@ st.markdown(
     .header-title{font-size:1.35rem!important;font-weight:800!important;color:var(--ink)!important}.header-sub{font-size:.78rem!important;color:var(--muted)!important;margin-top:3px}
     .kpi-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:20px}.kpi-card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:15px;display:flex;align-items:center;gap:11px;box-shadow:0 5px 20px rgba(35,55,105,.04)}
     .kpi-icon-badge{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0}.tool-box-card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px 13px 10px;text-align:center;box-shadow:0 5px 20px rgba(35,55,105,.035);min-height:152px}.tool-icon-circle{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:9px}.tool-title{font-size:.84rem;font-weight:800;color:var(--ink);margin-bottom:4px}.tool-desc{font-size:.68rem;color:var(--muted);line-height:1.42}
-    .hero-shell{position:relative;overflow:hidden;background:linear-gradient(135deg,#ffffff 0%,#fbfcff 54%,#f2f3ff 100%);border:1px solid #e7ebf4;border-radius:26px;box-shadow:0 22px 70px rgba(38,57,111,.10);min-height:700px}
+    
+    .hero-shell{position:relative;overflow:hidden;background:linear-gradient(135deg,#ffffff 0%,#fbfcff 54%,#f2f3ff 100%);border:1px solid #e7ebf4;border-radius:26px;box-shadow:0 22px 70px rgba(38,57,111,.10);padding-bottom:20px}
     .hero-shell:before{content:"";position:absolute;width:430px;height:300px;right:-110px;top:90px;background:radial-gradient(circle,rgba(103,89,237,.18),rgba(112,142,255,.06) 48%,transparent 72%);pointer-events:none}
-    .hero-shell:after{content:"";position:absolute;left:-90px;bottom:-145px;width:680px;height:290px;background:linear-gradient(135deg,#8baafc 0%,#8074f4 58%,#a878ed 100%);border-radius:50% 60% 0 0/50% 55% 0 0;opacity:.92;pointer-events:none}
-    .hero-nav{position:relative;z-index:2;display:flex;justify-content:space-between;align-items:center;padding:26px 34px}.brand{font-weight:800;font-size:1.22rem;color:#132044}.brand-accent{color:#6756ed}.hero-nav-links{display:flex;align-items:center;gap:28px;color:#34415f;font-size:.76rem}.hero-signin{border:1px solid #c8d2e6;border-radius:999px;padding:9px 20px;background:#fff;color:#172341;font-size:.76rem;font-weight:700}
-    .hero-grid{position:relative;z-index:2;display:grid;grid-template-columns:1.02fr .98fr;gap:42px;padding:64px 42px 180px;align-items:center}.eyebrow{font-size:.68rem;letter-spacing:.26em;font-weight:800;color:#5971a2;margin-bottom:16px}.hero-title{font-size:3.15rem!important;line-height:1.10!important;margin:0 0 18px!important;font-weight:800!important;max-width:620px}.hero-title .accent{background:linear-gradient(90deg,#2772ed,#6c5aed,#d35fdc);-webkit-background-clip:text;background-clip:text;color:transparent}.hero-copy{font-size:.96rem;color:#61708d;line-height:1.75;max-width:570px}.feature-list{margin-top:28px;display:grid;gap:15px}.feature-item{display:flex;align-items:center;gap:12px}.feature-icon{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:#f0f5ff;color:#2d6aed;font-size:18px}.feature-item b{display:block;font-size:.82rem;color:#182442}.feature-item span{display:block;font-size:.68rem;color:#77839a;margin-top:2px}.access-card{background:rgba(255,255,255,.93);backdrop-filter:blur(16px);border:1px solid #e5e9f4;border-radius:20px;padding:28px;box-shadow:0 20px 55px rgba(45,58,120,.12);max-width:430px;margin:auto}.access-kicker{text-align:center;color:#68789b;font-size:.74rem}.access-title{text-align:center;font-size:1.42rem;font-weight:800;color:#122044;margin:6px 0}.access-title span{color:#5f55eb}.access-sub{text-align:center;font-size:.72rem;color:#7a8499;margin-bottom:18px}.workspace-choice{position:relative;border:1px solid #dce7fb;border-radius:13px;padding:15px 16px;display:flex;align-items:center;gap:13px;background:linear-gradient(135deg,#f4f8ff,#eef3ff);margin-bottom:11px}.workspace-choice.recruiter{background:linear-gradient(135deg,#fbf6ff,#f8f0ff);border-color:#eadffb}.workspace-icon{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:19px;background:#e5efff;color:#2e6dea;flex:0 0 auto}.recruiter .workspace-icon{background:#f0e7ff;color:#8a55df}.workspace-copy{flex:1}.workspace-copy b{font-size:.86rem;color:#182442}.workspace-copy span{display:block;font-size:.64rem;line-height:1.45;color:#71809c;margin-top:3px}.choice-arrow{width:27px;height:27px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:1px solid #c9d6fa;color:#4c66d8;font-weight:800}.popular{position:absolute;right:9px;top:-9px;background:linear-gradient(90deg,#5a6ff0,#8b63ec);color:#fff!important;border-radius:999px;padding:3px 8px;font-size:.55rem;font-weight:800}.access-footer{text-align:center;font-size:.66rem;color:#8490a6;margin-top:14px}.access-footer a{color:#2b63e9;font-weight:800}.guest-link{display:block;text-align:center;margin-top:8px;color:#6b55df;font-size:.66rem;font-weight:700}.hero-stats{position:absolute;z-index:3;left:42px;bottom:24px;display:flex;gap:38px;color:#fff}.hero-stat{display:flex;align-items:center;gap:9px}.hero-stat-icon{width:32px;height:32px;border-radius:10px;background:rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center}.hero-stat b{font-size:.76rem;display:block;color:#fff}.hero-stat span{font-size:.58rem;display:block;color:rgba(255,255,255,.78)}.mission{position:absolute;z-index:3;right:42px;bottom:30px;color:#fff;font-size:1.05rem;font-style:italic;line-height:1.1;text-align:right;transform:rotate(-5deg)}
+    .hero-nav{position:relative;z-index:2;display:flex;justify-content:space-between;align-items:center;padding:26px 34px}.brand{font-weight:800;font-size:1.22rem;color:#132044}.brand-accent{color:#6756ed}.hero-nav-links{display:flex;align-items:center;gap:28px;color:#34415f;font-size:.76rem}
+    .hero-grid{position:relative;z-index:2;display:grid;grid-template-columns:1.05fr .95fr;gap:42px;padding:48px 42px 30px;align-items:center}.eyebrow{font-size:.68rem;letter-spacing:.26em;font-weight:800;color:#5971a2;margin-bottom:16px}.hero-title{font-size:3.15rem!important;line-height:1.10!important;margin:0 0 18px!important;font-weight:800!important;max-width:620px}.hero-title .accent{background:linear-gradient(90deg,#2772ed,#6c5aed,#d35fdc);-webkit-background-clip:text;background-clip:text;color:transparent}.hero-copy{font-size:.96rem;color:#61708d;line-height:1.75;max-width:570px}.feature-list{margin-top:28px;display:grid;gap:15px}.feature-item{display:flex;align-items:center;gap:12px}.feature-icon{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:#f0f5ff;color:#2d6aed;font-size:18px}.feature-item b{display:block;font-size:.82rem;color:#182442}.feature-item span{display:block;font-size:.68rem;color:#77839a;margin-top:2px}
+    
+    .access-card{background:rgba(255,255,255,.95);backdrop-filter:blur(16px);border:1px solid #e5e9f4;border-radius:20px;padding:32px 28px;box-shadow:0 20px 55px rgba(45,58,120,.12);max-width:440px;margin:auto;text-align:center}
+    .access-kicker{color:#68789b;font-size:.74rem;font-weight:700}.access-title{font-size:1.55rem;font-weight:800;color:#122044;margin:6px 0}.access-title span{color:#5f55eb}.access-sub{font-size:.74rem;color:#7a8499;margin-bottom:24px;line-height:1.5}
+    .hero-stats{display:flex;gap:38px;padding:10px 42px 20px}
+    .hero-stat{display:flex;align-items:center;gap:9px}.hero-stat-icon{width:32px;height:32px;border-radius:10px;background:#eef4ff;color:#2563eb;display:flex;align-items:center;justify-content:center;font-weight:bold}.hero-stat b{font-size:.76rem;display:block;color:#122044}.hero-stat span{font-size:.58rem;display:block;color:#68789b}
 
-    @media(max-width:1050px){.hero-grid{grid-template-columns:1fr;gap:26px;padding-top:36px}.access-card{max-width:560px}.hero-title{font-size:2.6rem!important}.hero-shell{min-height:auto}.hero-shell:after{width:100%;height:190px}.hero-stats{position:relative;left:auto;bottom:auto;padding:0 28px 24px;z-index:4;gap:22px}.mission{display:none}.hero-grid{padding-bottom:30px}}
-    @media(max-width:760px){.block-container{padding:10px 10px 30px!important}.hero-shell{border-radius:18px}.hero-nav{padding:18px 17px}.hero-nav-links{display:none}.hero-grid{padding:36px 18px 30px}.hero-title{font-size:2.05rem!important}.hero-copy{font-size:.82rem}.feature-list{margin-top:20px;gap:11px}.access-card{padding:20px 15px}.workspace-choice{padding:13px}.hero-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;padding:0 16px 18px}.hero-stat{gap:6px}.hero-stat-icon{width:28px;height:28px;font-size:13px}.hero-stat b{font-size:.62rem}.hero-stat span{font-size:.48rem}.kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}.header-banner{display:block!important;padding:16px}.header-title{font-size:1.1rem!important}.header-sub{font-size:.68rem!important;margin-bottom:8px}.content-box{padding:16px;border-radius:13px}}
-    @media(max-width:430px){.hero-title{font-size:1.82rem!important}.eyebrow{font-size:.56rem}.hero-copy{font-size:.75rem}.feature-item b{font-size:.74rem}.feature-item span{font-size:.6rem}.kpi-grid{grid-template-columns:1fr!important}.hero-stats{grid-template-columns:1fr;gap:7px}.hero-stat{background:rgba(255,255,255,.10);border-radius:10px;padding:6px}.access-title{font-size:1.22rem}}
-    @media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+    @media(max-width:1050px){.hero-grid{grid-template-columns:1fr;gap:26px;padding-top:36px}.access-card{max-width:560px}.hero-title{font-size:2.6rem!important}}
+    @media(max-width:760px){.block-container{padding:10px 10px 30px!important}.hero-nav-links{display:none}.hero-grid{padding:30px 18px 20px}.hero-title{font-size:2.05rem!important}.hero-copy{font-size:.82rem}.access-card{padding:20px 15px}.kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
     </style>
     """,
     unsafe_allow_html=True,
@@ -383,34 +494,29 @@ def _safe_public_url(url: str) -> bool:
         parsed = urlparse(url.strip())
         if parsed.scheme not in {"http", "https"} or not parsed.hostname:
             return False
-        host = parsed.hostname
-        try:
-            addresses = socket.getaddrinfo(host, None)
-            ips = {item[4][0] for item in addresses}
-            for raw_ip in ips:
-                ip = ipaddress.ip_address(raw_ip)
-                if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved or ip.is_multicast:
-                    return False
-        except socket.gaierror:
-            return False
+        addresses = socket.getaddrinfo(parsed.hostname, None)
+        for item in addresses:
+            ip_obj = ipaddress.ip_address(item[4][0])
+            if ip_obj.is_private or ip_obj.is_loopback or ip_obj.is_link_local or ip_obj.is_reserved or ip_obj.is_multicast:
+                return False
         return True
-    except ValueError:
+    except Exception:
         return False
 
 
 def fetch_public_job_url(url: str) -> str:
     if not _safe_public_url(url):
-        raise ValueError("Please enter a valid public HTTP/HTTPS job URL.")
+        raise ValueError("Please enter a valid, safe public HTTP/HTTPS job URL.")
     response = requests.get(
         url.strip(),
-        timeout=15,
+        timeout=10,
         headers={"User-Agent": "CareerLensAI/2.1 Job Safety Analyzer"},
-        allow_redirects=True,
+        allow_redirects=False,
     )
     response.raise_for_status()
     content_type = response.headers.get("content-type", "").lower()
     if "text/html" not in content_type and "text/plain" not in content_type:
-        raise ValueError("The supplied link did not return a readable web page.")
+        raise ValueError("The supplied link did not return readable HTML/text content.")
     text = re.sub(r"<script[\s\S]*?</script>|<style[\s\S]*?</style>", " ", response.text, flags=re.I)
     text = re.sub(r"<[^>]+>", " ", text)
     return re.sub(r"\s+", " ", text).strip()[:50000]
@@ -478,7 +584,6 @@ def api_chat_assistant(messages: List[Dict], resume_context: str = "") -> str:
 
 
 def api_send_assessment_email(to_email: str, name: str, role: str, test_link: str) -> tuple[bool, str]:
-    """Dispatches assessment invitation via the FastAPI backend endpoint."""
     subject = f"CareerLens AI — Assessment Invitation for {role}"
     html_content = f"""
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 10px;">
@@ -508,109 +613,12 @@ def api_send_assessment_email(to_email: str, name: str, role: str, test_link: st
 
 
 # ============================================================
-# STATE & DATABASE INITIALIZATION
+# STATE INITIALIZATION
 # ============================================================
-def _db_connect():
-    conn = sqlite3.connect(APP_DB_FILE, timeout=20, check_same_thread=False)
-    conn.execute("PRAGMA journal_mode=WAL")
-    conn.execute("PRAGMA foreign_keys=ON")
-    return conn
-
-
-def _init_app_db():
-    with _db_connect() as conn:
-        conn.execute("""CREATE TABLE IF NOT EXISTS users (
-            user_id TEXT PRIMARY KEY,
-            username TEXT UNIQUE NOT NULL,
-            display_name TEXT NOT NULL,
-            password_hash TEXT NOT NULL,
-            created_at TEXT NOT NULL
-        )""")
-        conn.execute("""CREATE TABLE IF NOT EXISTS user_state (
-            user_id TEXT PRIMARY KEY,
-            state_json TEXT NOT NULL,
-            updated_at TEXT NOT NULL,
-            FOREIGN KEY(user_id) REFERENCES users(user_id) ON DELETE CASCADE
-        )""")
-        conn.execute("""CREATE TABLE IF NOT EXISTS recruiter_state (
-            user_id TEXT PRIMARY KEY,
-            state_json TEXT NOT NULL,
-            updated_at TEXT NOT NULL,
-            FOREIGN KEY(user_id) REFERENCES users(user_id) ON DELETE CASCADE
-        )""")
-
-
-def _db_user(username):
-    with _db_connect() as conn:
-        return conn.execute("SELECT user_id, username, display_name, password_hash FROM users WHERE lower(username)=lower(?)", (username.strip(),)).fetchone()
-
-
-def _db_create_user(username, display_name, password_hash):
-    user_id = secrets.token_hex(16)
-    with _db_connect() as conn:
-        conn.execute(
-            "INSERT INTO users(user_id,username,display_name,password_hash,created_at) VALUES(?,?,?,?,?)",
-            (user_id, username.strip(), display_name.strip() or username.split("@")[0], password_hash, datetime.now().isoformat(timespec="seconds")),
-        )
-    return user_id
-
-
-def _db_save_state(user_id, state):
-    if not user_id:
-        return
-    payload = json.dumps(state, ensure_ascii=False)
-    with _db_connect() as conn:
-        conn.execute(
-            "INSERT INTO user_state(user_id,state_json,updated_at) VALUES(?,?,?) ON CONFLICT(user_id) DO UPDATE SET state_json=excluded.state_json, updated_at=excluded.updated_at",
-            (user_id, payload, datetime.now().isoformat(timespec="seconds")),
-        )
-
-
-def _db_load_state(user_id):
-    if not user_id:
-        return {}
-    with _db_connect() as conn:
-        row = conn.execute("SELECT state_json FROM user_state WHERE user_id=?", (user_id,)).fetchone()
-        if not row:
-            return {}
-        try:
-            return json.loads(row[0]) if isinstance(row[0], str) else {}
-        except (TypeError, ValueError):
-            return {}
-
-
-def _db_save_recruiter_state(user_id, data):
-    if not user_id:
-        return
-    payload = json.dumps(data, ensure_ascii=False)
-    with _db_connect() as conn:
-        conn.execute(
-            "INSERT INTO recruiter_state(user_id,state_json,updated_at) VALUES(?,?,?) ON CONFLICT(user_id) DO UPDATE SET state_json=excluded.state_json, updated_at=excluded.updated_at",
-            (user_id, payload, datetime.now().isoformat(timespec="seconds")),
-        )
-
-
-def _db_load_recruiter_state(user_id):
-    if not user_id:
-        return {"campaign": None, "candidates": [], "assessments": [], "submissions": []}
-    with _db_connect() as conn:
-        row = conn.execute("SELECT state_json FROM recruiter_state WHERE user_id=?", (user_id,)).fetchone()
-        if not row:
-            return {"campaign": None, "candidates": [], "assessments": [], "submissions": []}
-        try:
-            data = json.loads(row[0])
-            return data if isinstance(data, dict) else {"campaign": None, "candidates": [], "assessments": [], "submissions": []}
-        except (TypeError, ValueError):
-            return {"campaign": None, "candidates": [], "assessments": [], "submissions": []}
-
-
-_init_app_db()
-
 defaults = {
     "is_logged_in": False,
     "user_id": "",
     "username": "Guest Explorer",
-    "users_db": {},
     "selected_gateway": False,
     "active_workspace": "Job Seeker Workspace",
     "active_tool": "Dashboard",
@@ -660,7 +668,6 @@ RECRUITER_TOOLS = [
 
 
 def recruiter_navigate(tool: str, record_history: bool = True) -> None:
-    """Navigate recruiter pages with desktop-style back/forward history."""
     if tool not in RECRUITER_TOOLS:
         tool = "Dashboard"
     history = list(st.session_state.get("recruiter_nav_history", ["Dashboard"]))
@@ -729,10 +736,6 @@ def _recruiter_score(candidate: Dict[str, Any]) -> float:
         return 0.0
 
 
-def _candidate_id(name: str, email: str) -> str:
-    return hashlib.sha256(f"{name}|{email}".encode("utf-8")).hexdigest()[:16]
-
-
 def _make_assessment_token() -> str:
     return uuid.uuid4().hex + uuid.uuid4().hex
 
@@ -785,13 +788,6 @@ def generate_assessment_questions(role: str, count: int) -> List[Dict]:
             ("What is cross-validation used for?", ["Estimate generalization during model selection", "Generate passwords", "Compress PDFs", "Create DNS records"], 0),
             ("Why prevent data leakage?", ["Avoid training with information unavailable at prediction time", "Increase UI color contrast", "Reduce font size", "Add more labels"], 0),
         ],
-        "Data Analyst": [
-            ("Which SQL operation combines rows from related tables?", ["JOIN", "DROP", "TRUNCATE", "GRANT"], 0),
-            ("What does a KPI represent?", ["A key performance indicator", "A programming language", "A database engine", "A network protocol"], 0),
-            ("Which visualization best shows a trend over time?", ["Line chart", "Pie chart", "Treemap", "Single KPI card"], 0),
-            ("What is data cleaning?", ["Fixing missing, invalid or inconsistent data", "Deleting all data", "Encrypting a dashboard", "Changing passwords"], 0),
-            ("What does GROUP BY do?", ["Groups rows for aggregate analysis", "Deletes duplicates", "Creates a user", "Encrypts columns"], 0),
-        ],
     }
     generic = [
         ("What is the safest default for sensitive user data?", ["Least privilege and encryption", "Public access", "Plaintext storage", "Shared credentials"], 0),
@@ -799,11 +795,6 @@ def generate_assessment_questions(role: str, count: int) -> List[Dict]:
         ("What should happen after detecting a production regression?", ["Contain, inspect telemetry and restore safely", "Ignore it", "Delete logs", "Disable tests"], 0),
         ("Which practice improves API reliability?", ["Timeouts, validation and controlled retries", "Infinite retries", "No validation", "Hard-coded secrets"], 0),
         ("What is RBAC?", ["Role-Based Access Control", "Random Binary API Cache", "Remote Build Allocation Controller", "Runtime Browser Access Code"], 0),
-        ("Which communication style is strongest in technical teams?", ["Clear, evidence-based and respectful", "Vague and undocumented", "Aggressive and private", "No status updates"], 0),
-        ("What does scalability mean?", ["Ability to handle increased load effectively", "Reducing all features", "Removing tests", "Deleting users"], 0),
-        ("What is an SLA?", ["A defined service-level commitment", "A source-code language", "A database index", "A resume section"], 0),
-        ("Why use code review?", ["Improve correctness, maintainability and shared knowledge", "Avoid testing", "Hide changes", "Replace documentation entirely"], 0),
-        ("What should credentials never be committed to?", ["Source-control repositories", "A secret manager", "An encrypted vault", "A protected runtime environment"], 0),
     ]
     bank = role_topics.get(role, []) + generic
     questions = []
@@ -866,9 +857,7 @@ def build_resume_pdf(data: Dict, template: str) -> bytes:
         "Emerald": "#059669",
         "Professional": "#334155",
         "Tech": "#0284c7",
-        "Elegant": "#9a3412",
         "ATS Classic": "#111827",
-        "Compact": "#475569",
     }.get(template, "#2563eb"))
 
     title = ParagraphStyle("ResumeTitle", parent=styles["Title"], fontName="Helvetica-Bold", fontSize=title_size, leading=25, textColor=accent, alignment=TA_CENTER, spaceAfter=4)
@@ -910,25 +899,6 @@ def build_resume_pdf(data: Dict, template: str) -> bytes:
     return buffer.getvalue()
 
 
-def hash_password(password: str) -> str:
-    return hashlib.sha256(password.encode("utf-8")).hexdigest()
-
-
-def password_matches(stored: str, provided: str) -> bool:
-    if not stored:
-        return False
-    digest = hash_password(provided)
-    if stored == digest:
-        return True
-    if stored == provided:
-        st.session_state.users_db = {
-            key: (hash_password(value) if key == u else value)
-            for key, value in st.session_state.users_db.items()
-        }
-        return True
-    return False
-
-
 def _find_recruiter_assessment_by_token(token: str):
     if not token:
         return None, None, None
@@ -948,7 +918,7 @@ def render_public_recruiter_assessment(token: str) -> None:
         st.stop()
 
     st.markdown("## 📝 CareerLens AI Assessment")
-    st.caption(f"Role: {assessment.get('role', 'Professional Assessment')} • {assessment.get('question_count', len(assessment.get('questions', [])))} questions")
+    st.caption(f"Role: {assessment.get('role', 'Professional Assessment')} • {len(assessment.get('questions', []))} questions")
     st.info("Complete the assessment and submit it. Your score and answer key are reviewed directly by the recruiter.")
 
     state_key = f"candidate_exam_{token[:12]}"
@@ -967,42 +937,36 @@ def render_public_recruiter_assessment(token: str) -> None:
         st.info("You can close this page now.")
         st.stop()
 
-    answered = sum(1 for q in questions if st.session_state[answer_key].get(q.get("id")) is not None)
-    st.progress(answered / max(1, len(questions)), text=f"Answered {answered} of {len(questions)}")
+    with st.form("public_candidate_assessment_form"):
+        temp_answers = {}
+        for q in questions:
+            qid = q.get("id")
+            current = st.session_state[answer_key].get(qid)
+            index = q.get("options", []).index(current) if current in q.get("options", []) else None
+            temp_answers[qid] = st.radio(q.get("question", "Question"), q.get("options", []), index=index, key=f"{state_key}_{qid}")
 
-    for q in questions:
-        qid = q.get("id")
-        current = st.session_state[answer_key].get(qid)
-        index = q.get("options", []).index(current) if current in q.get("options", []) else None
-        selected = st.radio(q.get("question", "Question"), q.get("options", []), index=index, key=f"{state_key}_{qid}")
-        st.session_state[answer_key][qid] = selected
-
-    answered = sum(1 for q in questions if st.session_state[answer_key].get(q.get("id")) is not None)
-    st.write(f"**Answered:** {answered} • **Unanswered:** {len(questions) - answered}")
-
-    if st.button("🚀 Submit Assessment", type="primary", use_container_width=True):
-        result = assessment_result(questions, st.session_state[answer_key])
-        result.update({
-            "token": token,
-            "candidate_id": candidate_id,
-            "candidate_name": candidate.get("name", "Candidate"),
-            "candidate_email": candidate.get("email", ""),
-            "role": assessment.get("role", ""),
-            "assessment_id": assessment.get("id", ""),
-        })
-        st.session_state.recruiter_assessment_submissions[token] = result
-        candidate["assessment_status"] = "Completed"
-        candidate["assessment_percentage"] = result["percentage"]
-        candidate["status"] = "Assessment Completed"
-        st.session_state.recruiter_data["candidates"] = st.session_state.recruiter_candidates
-        st.session_state.recruiter_data["submissions"] = list(st.session_state.recruiter_assessment_submissions.values())
-        _save_recruiter_data(st.session_state.recruiter_data)
-        st.session_state[submitted_key] = True
-        st.rerun()
-        st.stop()
+        if st.form_submit_button("🚀 Submit Assessment", type="primary", use_container_width=True):
+            st.session_state[answer_key] = temp_answers
+            result = assessment_result(questions, temp_answers)
+            result.update({
+                "token": token,
+                "candidate_id": candidate_id,
+                "candidate_name": candidate.get("name", "Candidate"),
+                "candidate_email": candidate.get("email", ""),
+                "role": assessment.get("role", ""),
+                "assessment_id": assessment.get("id", ""),
+            })
+            st.session_state.recruiter_assessment_submissions[token] = result
+            candidate["assessment_status"] = "Completed"
+            candidate["assessment_percentage"] = result["percentage"]
+            candidate["status"] = "Assessment Completed"
+            st.session_state.recruiter_data["candidates"] = st.session_state.recruiter_candidates
+            st.session_state.recruiter_data["submissions"] = list(st.session_state.recruiter_assessment_submissions.values())
+            _save_recruiter_data(st.session_state.recruiter_data)
+            st.session_state[submitted_key] = True
+            st.rerun()
 
 
-# URL Query Assessment Handler
 _assessment_query_token = ""
 try:
     _assessment_query_token = str(st.query_params.get("assessment", "") or "").strip()
@@ -1018,12 +982,12 @@ if _assessment_query_token:
 # DIALOGS (SIGN IN & REGISTER)
 # ============================================================
 @st.dialog("🔐 Sign In / Register")
-def dialog_auth():
+def dialog_auth(default_tab: int = 0):
     tab_auth1, tab_auth2 = st.tabs(["Sign In", "Register"])
     with tab_auth1:
         u = st.text_input("Username or Email", key="auth_sign_u")
         p = st.text_input("Password", type="password", key="auth_sign_p")
-        if st.button("Sign In", use_container_width=True, key="btn_confirm_sign"):
+        if st.button("Sign In", use_container_width=True, key="btn_confirm_sign", type="primary"):
             if not u or not p:
                 st.warning("Please fill in both fields.")
             else:
@@ -1053,13 +1017,13 @@ def dialog_auth():
                     st.session_state.active_workspace = "Recruiter Workspace"
                     st.rerun()
                 else:
-                    st.error("Account not found. Please register or continue as Guest.")
+                    st.error("Invalid credentials. Please register or verify your details.")
 
     with tab_auth2:
         reg_n = st.text_input("Full Name", key="auth_reg_n")
         reg_u = st.text_input("Choose Username / Email", key="auth_reg_u")
         reg_p = st.text_input("Create Password", type="password", key="auth_reg_p")
-        if st.button("Create Account", use_container_width=True, key="btn_confirm_reg"):
+        if st.button("Create Account", use_container_width=True, key="btn_confirm_reg", type="primary"):
             if not reg_u or not reg_p:
                 st.warning("Username and password are required.")
             else:
@@ -1083,7 +1047,7 @@ def dialog_auth():
 
 
 # ============================================================
-# 1. LANDING & ACCESS SCREEN
+# 1. LANDING & ACCESS SCREEN (MODIFIED AS REQUESTED)
 # ============================================================
 if not st.session_state.is_logged_in:
     st.markdown(
@@ -1093,7 +1057,6 @@ if not st.session_state.is_logged_in:
             <div class="brand">✦ CareerLens <span class="brand-accent">AI</span></div>
             <div class="hero-nav-links">
               <span>Features</span><span>About</span><span>Help</span>
-              <span class="hero-signin">Sign In</span>
             </div>
           </div>
           <div class="hero-grid">
@@ -1107,20 +1070,13 @@ if not st.session_state.is_logged_in:
                 <div class="feature-item"><div class="feature-icon">♢</div><div><b>Trusted &amp; Secure</b><span>Your data stays safe</span></div></div>
               </div>
             </div>
-            <div class="access-card">
-              <div class="access-kicker">✦ &nbsp; Welcome to</div>
-              <div class="access-title">CareerLens <span>AI</span></div>
-              <div class="access-sub">Choose your workspace to get started</div>
-              <div class="workspace-choice">
-                <div class="popular">Popular</div><div class="workspace-icon">●</div>
-                <div class="workspace-copy"><b>Job Seeker</b><span>Find your next opportunity, build skills, and achieve your career goals.</span></div><div class="choice-arrow">→</div>
+            <div>
+              <div class="access-card">
+                <div class="access-kicker">✦ &nbsp; Welcome to</div>
+                <div class="access-title">CareerLens <span>AI</span></div>
+                <div class="access-sub">Sign in to your account, create a new profile, or explore immediately as a guest.</div>
+                <div id="auth_container_anchor"></div>
               </div>
-              <div class="workspace-choice recruiter">
-                <div class="workspace-icon">▦</div>
-                <div class="workspace-copy"><b>Recruiter</b><span>Find the best talent, streamline hiring, and build great teams.</span></div><div class="choice-arrow">→</div>
-              </div>
-              <div class="access-footer">Already have an account? <span style="color:#2b63e9;font-weight:800">Sign in</span></div>
-              <div class="guest-link">Guest Access · explore without an account</div>
             </div>
           </div>
           <div class="hero-stats">
@@ -1128,36 +1084,24 @@ if not st.session_state.is_logged_in:
             <div class="hero-stat"><div class="hero-stat-icon">★</div><div><b>95%</b><span>Success Rate</span></div></div>
             <div class="hero-stat"><div class="hero-stat-icon">✦</div><div><b>Powered by AI</b><span>For a Better Tomorrow</span></div></div>
           </div>
-          <div class="mission">Your Career<br>Our Mission</div>
         </div>
         """,
         unsafe_allow_html=True,
     )
-    # Real Streamlit actions are placed directly under the visual card so the mockup remains functional.
-    a,b,c,d = st.columns([1.1,1.1,1.1,1.1])
-    with a:
-        if st.button("Continue as Job Seeker →", key="btn_visual_seeker", use_container_width=True, type="primary"):
-            st.session_state.user_id = ""
-            st.session_state.username = "Guest Explorer"
-            st.session_state.is_logged_in = True
-            st.session_state.selected_gateway = True
-            st.session_state.active_workspace = "Job Seeker Workspace"
-            st.session_state.active_tool = "Dashboard"
-            st.rerun()
-    with b:
-        if st.button("Continue as Recruiter →", key="btn_visual_recruiter", use_container_width=True, type="primary"):
-            st.session_state.user_id = ""
-            st.session_state.username = "Guest Explorer"
-            st.session_state.is_logged_in = True
-            st.session_state.selected_gateway = True
-            st.session_state.active_workspace = "Recruiter Workspace"
-            st.session_state.active_tool = "Dashboard"
-            st.rerun()
-    with c:
-        if st.button("Sign In", key="btn_entry_sign_in", use_container_width=True):
-            dialog_auth()
-    with d:
-        if st.button("Guest Access", key="btn_entry_guest", use_container_width=True):
+
+    # Auth Stack buttons directly beneath the Hero Card
+    _, auth_col, _ = st.columns([1, 1.1, 1])
+    with auth_col:
+        st.markdown("<div style='margin-top: -190px; position: relative; z-index: 10; padding: 0 24px 20px;'>", unsafe_allow_html=True)
+        if st.button("🔐 Sign In", key="btn_landing_signin", use_container_width=True, type="primary"):
+            dialog_auth(default_tab=0)
+        
+        if st.button("✨ Register / Create Account", key="btn_landing_register", use_container_width=True):
+            dialog_auth(default_tab=1)
+
+        st.markdown("<div style='text-align:center; color:#94a3b8; font-size:0.75rem; margin:10px 0;'>— OR —</div>", unsafe_allow_html=True)
+
+        if st.button("🚀 Explore as Guest", key="btn_landing_guest", use_container_width=True):
             st.session_state.user_id = ""
             st.session_state.username = "Guest Explorer"
             st.session_state.is_logged_in = True
@@ -1171,7 +1115,8 @@ if not st.session_state.is_logged_in:
             st.session_state.selected_gateway = False
             log_event("GUEST_ACCESS", "Guest", "N/A", "Guest entry")
             st.rerun()
-    st.caption("New here? Use Guest Access to explore CareerLens AI, or sign in to keep your progress.")
+        st.markdown("</div>", unsafe_allow_html=True)
+
     st.stop()
 
 
@@ -1186,26 +1131,31 @@ if not st.session_state.selected_gateway:
           <span class="tag-badge tag-blue">AI CAREER ECOSYSTEM</span>
         </div>
         """, unsafe_allow_html=True)
-    g1,g2=st.columns(2,gap="large")
+    g1, g2 = st.columns(2, gap="large")
     with g1:
         st.markdown("""
         <div class="gateway-card">
-          <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px"><div class="workspace-icon">●</div><div><h3 style="margin:0;font-size:1.1rem">Job Seeker Portal</h3><span class="tag-badge tag-blue">Candidate Intelligence</span></div></div>
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px"><div class="tool-icon-circle" style="background:#eff6ff; color:#2563eb; width:44px; height:44px;">●</div><div><h3 style="margin:0;font-size:1.1rem">Job Seeker Portal</h3><span class="tag-badge tag-blue">Candidate Intelligence</span></div></div>
           <p style="color:#66738f;font-size:.76rem;line-height:1.6">Discover opportunities, improve skills, and accelerate your career with AI guidance.</p>
           <div style="border-top:1px solid #edf0f6;padding-top:12px;color:#596680;font-size:.72rem;line-height:1.7">✦ Resume Intelligence &nbsp; ✦ AI Mock Interview<br>✦ Job Match &nbsp; ✦ Salary Insights &nbsp; ✦ Career Roadmap</div>
-        </div>""",unsafe_allow_html=True)
-        if st.button("Continue as Job Seeker →",key="btn_portal_seeker",use_container_width=True,type="primary"):
-            st.session_state.active_workspace="Job Seeker Workspace";st.session_state.active_tool="Dashboard";st.session_state.selected_gateway=True;st.rerun()
+        </div>""", unsafe_allow_html=True)
+        if st.button("Continue as Job Seeker →", key="btn_portal_seeker", use_container_width=True, type="primary"):
+            st.session_state.active_workspace = "Job Seeker Workspace"
+            st.session_state.active_tool = "Dashboard"
+            st.session_state.selected_gateway = True
+            st.rerun()
     with g2:
         st.markdown("""
         <div class="gateway-card">
-          <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px"><div class="workspace-icon" style="background:#f0e7ff;color:#8a55df">▦</div><div><h3 style="margin:0;font-size:1.1rem">Recruiter Portal</h3><span class="tag-badge tag-purple">Talent Acquisition</span></div></div>
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px"><div class="tool-icon-circle" style="background:#f0e7ff; color:#8a55df; width:44px; height:44px;">▦</div><div><h3 style="margin:0;font-size:1.1rem">Recruiter Portal</h3><span class="tag-badge tag-purple">Talent Acquisition</span></div></div>
           <p style="color:#66738f;font-size:.76rem;line-height:1.6">Streamline hiring, screen smarter, and build high-performing teams faster.</p>
           <div style="border-top:1px solid #edf0f6;padding-top:12px;color:#596680;font-size:.72rem;line-height:1.7">✦ Bulk Resume Screening &nbsp; ✦ Hiring Campaigns<br>✦ Assessments &nbsp; ✦ Candidate Ranking &nbsp; ✦ Interview Pipeline</div>
-        </div>""",unsafe_allow_html=True)
-        if st.button("Continue as Recruiter →",key="btn_portal_recruiter",use_container_width=True,type="primary"):
-            st.session_state.active_workspace="Recruiter Workspace";st.session_state.active_tool="Dashboard";st.session_state.selected_gateway=True;st.rerun()
-    st.markdown('<div style="text-align:center;color:#8792a7;font-size:.68rem;margin-top:24px">Already have an account? Use the Sign In option from the landing page.</div>',unsafe_allow_html=True)
+        </div>""", unsafe_allow_html=True)
+        if st.button("Continue as Recruiter →", key="btn_portal_recruiter", use_container_width=True, type="primary"):
+            st.session_state.active_workspace = "Recruiter Workspace"
+            st.session_state.active_tool = "Dashboard"
+            st.session_state.selected_gateway = True
+            st.rerun()
     st.stop()
 
 
@@ -1238,8 +1188,8 @@ with st.sidebar:
                     👤
                 </div>
                 <div>
-                    <div style="font-size:0.88rem; font-weight:800; color:#ffffff;">{st.session_state.username}</div>
-                    <div style="font-size:0.72rem; color:#4ade80; font-weight:700;">● Active User</div>
+                    <div style="font-size:0.88rem; font-weight:800; color:#1e293b;">{st.session_state.username}</div>
+                    <div style="font-size:0.72rem; color:#16a34a; font-weight:700;">● Active User</div>
                 </div>
             </div>
         </div>
@@ -1297,7 +1247,7 @@ with st.sidebar:
                 recruiter_navigate(key_val)
                 st.rerun()
 
-    st.markdown("<hr style='border-color: rgba(255,255,255,0.1); margin: 20px 0;'>", unsafe_allow_html=True)
+    st.markdown("<hr style='border-color: rgba(0,0,0,0.06); margin: 20px 0;'>", unsafe_allow_html=True)
 
     if st.button("🚪 Logout", key="sb_logout_btn", use_container_width=True):
         uid = st.session_state.get("user_id", "")
@@ -1402,7 +1352,7 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
                 st.session_state.active_tool = "Resume Intelligence"
                 st.rerun()
         with c2:
-            st.markdown("""<div class="tool-box-card"><div class="tool-icon-circle" style="background:#faf5ff; color:#7c3aed;">📝</div><div class="tool-title">Pre-Interview Exam</div><div class="tool-desc">100-mark standardized MCQ domain qualifying test.</div></div>""", unsafe_allow_html=True)
+            st.markdown("""<div class="tool-box-card"><div class="tool-icon-circle" style="background:#faf5ff; color:#7c3aed;">📝</div><div class="tool-title">Pre-Interview Exam</div><div class="tool-desc">Standardized MCQ domain qualifying test.</div></div>""", unsafe_allow_html=True)
             if st.button("Pre-Interview Exam", key="card_c2_btn", use_container_width=True):
                 st.session_state.active_tool = "Pre-Interview Assessment"
                 st.rerun()
@@ -1452,7 +1402,7 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
             st.rerun()
         st.markdown("### 📄 Resume Intelligence")
         uploaded_doc = st.file_uploader("Upload Resume File", type=["pdf", "docx", "txt"], label_visibility="collapsed")
-        if uploaded_doc and st.button("🚀 Analyze Resume", use_container_width=True):
+        if uploaded_doc and st.button("🚀 Analyze Resume", use_container_width=True, type="primary"):
             with st.spinner("Analyzing profile structure & stack..."):
                 res = api_analyze_resume(uploaded_doc)
                 st.session_state.resume_analysis = res
@@ -1465,11 +1415,11 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
                 f"""
                 <div class="content-box">
                     <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <h3 style="margin:0; color:#2563eb;">{r.get('name', 'Candidate Profile')}</h3>
+                        <h3 style="margin:0; color:#2563eb;">{html.escape(r.get('name', 'Candidate Profile'))}</h3>
                         <span class="tag-badge tag-green">Score: {r.get('resume_score', 85)}%</span>
                     </div>
                     <p style="color:#64748b; margin:8px 0 0 0;">
-                        📧 <b>Email:</b> {r.get('email')} &nbsp;|&nbsp; 📱 <b>Phone:</b> {r.get('phone')} &nbsp;|&nbsp; ⏳ <b>Exp:</b> {r.get('experience')}
+                        📧 <b>Email:</b> {html.escape(str(r.get('email', '')))} &nbsp;|&nbsp; 📱 <b>Phone:</b> {html.escape(str(r.get('phone', '')))} &nbsp;|&nbsp; ⏳ <b>Exp:</b> {html.escape(str(r.get('experience', '')))}
                     </p>
                 </div>
                 """,
@@ -1481,7 +1431,7 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
             rr2.metric("Readiness", f"{r.get('readiness', 0)}%")
             rr3.metric("Market Match", f"{r.get('market_match')}%" if r.get('market_match') is not None else "Run AI Job Match")
             st.markdown("#### Detected Skills")
-            skills_html = "".join([f'<span class="tag-badge tag-blue">{_escape(s)}</span>' for s in r.get("skills", [])])
+            skills_html = "".join([f'<span class="tag-badge tag-blue">{_escape(s)}</span> ' for s in r.get("skills", [])])
             st.markdown(skills_html or "No skills detected yet.", unsafe_allow_html=True)
 
     # 2. PRE-INTERVIEW ASSESSMENT
@@ -1498,7 +1448,7 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
             selected_assessment_role = st.selectbox("Select Target Role", roles_list, key="assessment_role_select")
             question_count = st.select_slider("Number of Questions", options=list(range(10, 51, 5)), value=st.session_state.assessment_question_count, key="assessment_count_select")
             st.session_state.assessment_question_count = question_count
-            if st.button("🚀 Start Assessment", use_container_width=True, key="start_assessment_new"):
+            if st.button("🚀 Start Assessment", use_container_width=True, type="primary", key="start_assessment_new"):
                 st.session_state.assessment_questions = generate_assessment_questions(selected_assessment_role, question_count)
                 st.session_state.assessment_role = selected_assessment_role
                 st.session_state.assessment_answers = {}
@@ -1509,17 +1459,17 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
                 st.rerun()
         elif st.session_state.assessment_active and not st.session_state.assessment_review:
             questions = st.session_state.assessment_questions
-            answered = sum(1 for q in questions if st.session_state.assessment_answers.get(q["id"]) is not None)
-            st.progress(answered / len(questions) if questions else 0, text=f"Answered {answered} / {len(questions)}")
-            for q in questions:
-                qid = q["id"]
-                current = st.session_state.assessment_answers.get(qid)
-                current_index = q["options"].index(current) if current in q["options"] else None
-                chosen = st.radio(f"Q{qid}. {q['question']}", q["options"], index=current_index, key=f"q_choice_{qid}")
-                st.session_state.assessment_answers[qid] = chosen
-            if st.button("🔎 Review Answers Before Submit", use_container_width=True, key="review_assessment"):
-                st.session_state.assessment_review = True
-                st.rerun()
+            with st.form("exam_form"):
+                temp_ans = {}
+                for q in questions:
+                    qid = q["id"]
+                    current = st.session_state.assessment_answers.get(qid)
+                    current_index = q["options"].index(current) if current in q["options"] else None
+                    temp_ans[qid] = st.radio(f"Q{qid}. {q['question']}", q["options"], index=current_index, key=f"q_choice_{qid}")
+                if st.form_submit_button("🔎 Review Answers Before Submit", use_container_width=True):
+                    st.session_state.assessment_answers = temp_ans
+                    st.session_state.assessment_review = True
+                    st.rerun()
         elif st.session_state.assessment_review:
             questions = st.session_state.assessment_questions
             for q in questions:
@@ -1556,7 +1506,7 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
         if not st.session_state.interview_active and not st.session_state.interview_completed:
             target_interview_role = st.selectbox("Select Target Role", IT_ROLES + NON_IT_ROLES, key="mock_role_select")
             interview_len = st.select_slider("Interview Questions", options=list(range(1, 11)), value=5, key="mock_count_select")
-            if st.button("🚀 Start Mock Interview", use_container_width=True, key="start_mock_new"):
+            if st.button("🚀 Start Mock Interview", use_container_width=True, type="primary", key="start_mock_new"):
                 q_templates = [
                     f"Tell me about yourself and why you are targeting the {target_interview_role} role.",
                     f"Which technical skills are most important for a successful {target_interview_role} and how have you applied them?",
@@ -1578,7 +1528,7 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
             st.progress((curr_i) / total_i if total_i else 0, text=f"Question {curr_i + 1} of {total_i}")
             st.markdown(f"""<div class="content-box"><span class="tag-badge tag-blue">QUESTION {curr_i + 1} OF {total_i}</span><h3 style="margin-top:10px;color:#0f172a;">{_escape(curr_question_text)}</h3></div>""", unsafe_allow_html=True)
             cand_response = st.text_area("Your response", height=180, key=f"ans_text_{curr_i}")
-            if st.button("Submit & Next ➔", use_container_width=True, key=f"mock_next_{curr_i}"):
+            if st.button("Submit & Next ➔", use_container_width=True, type="primary", key=f"mock_next_{curr_i}"):
                 if not cand_response.strip():
                     st.warning("Please type your response before proceeding.")
                 else:
@@ -1612,7 +1562,7 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
             st.rerun()
         st.markdown("### 🎯 AI Job Match")
         jd_text = st.text_area("Paste Job Description:", height=180)
-        if st.button("Check Match Score", use_container_width=True):
+        if st.button("Check Match Score", use_container_width=True, type="primary"):
             if not st.session_state.resume_text:
                 st.warning("Please upload your resume in Resume Intelligence first.")
             elif not jd_text.strip():
@@ -1634,8 +1584,8 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
         st.markdown("### 💰 Salary Estimation")
         sal_role_in = st.text_input("Role Title:", "Software Engineer")
         sal_exp_in = st.selectbox("Experience Level:", ["Entry Level (0-2 yrs)", "Mid Level (3-5 yrs)", "Senior Level (6+ yrs)"])
-        if st.button("Calculate Compensation Band", use_container_width=True):
-            st.markdown(f"""<div class="content-box" style="margin-top: 20px;"><h2 style="margin: 8px 0; color:#2563eb;">₹9.5 LPA - ₹18.0 LPA</h2><p style="color:#64748b; margin:0;">Median compensation band for {sal_role_in} ({sal_exp_in}).</p></div>""", unsafe_allow_html=True)
+        if st.button("Calculate Compensation Band", use_container_width=True, type="primary"):
+            st.markdown(f"""<div class="content-box" style="margin-top: 20px;"><h2 style="margin: 8px 0; color:#2563eb;">₹9.5 LPA - ₹18.0 LPA</h2><p style="color:#64748b; margin:0;">Median compensation band for {html.escape(sal_role_in)} ({sal_exp_in}).</p></div>""", unsafe_allow_html=True)
 
     # 6. CAREER ROADMAP
     elif st.session_state.active_tool == "Career Roadmap":
@@ -1644,11 +1594,11 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
             st.rerun()
         st.markdown("### 🗺️ Career Roadmap")
         target_goal = st.text_input("Target Dream Role:", "Lead AI Architect")
-        if st.button("Generate Step-by-Step Plan", use_container_width=True):
+        if st.button("Generate Step-by-Step Plan", use_container_width=True, type="primary"):
             with st.spinner("Generating milestones..."):
                 res = api_career_roadmap(st.session_state.resume_text, target_goal)
                 for step in res.get("steps", []):
-                    st.markdown(f'<div class="content-box" style="padding:16px; margin-bottom:12px;">{step}</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="content-box" style="padding:16px; margin-bottom:12px;">{html.escape(step)}</div>', unsafe_allow_html=True)
 
     # 7. REAL-TIME JOB DETECTION
     elif st.session_state.active_tool == "Real-Time Job Detection":
@@ -1659,7 +1609,7 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
         detection_mode = st.radio("Input Method", ["🔗 Paste Job Link", "📝 Paste Description"], horizontal=True, key="fraud_mode")
         job_url = st.text_input("Job / Offer URL", placeholder="https://example.com/jobs/software-engineer", key="fraud_url") if detection_mode == "🔗 Paste Job Link" else ""
         description_input = st.text_area("Job Description", height=220, placeholder="Paste the job description...", key="fraud_description") if detection_mode != "🔗 Paste Job Link" else ""
-        if st.button("🔍 Analyze Job Safety", use_container_width=True, key="analyze_job_safety_new"):
+        if st.button("🔍 Analyze Job Safety", use_container_width=True, type="primary", key="analyze_job_safety_new"):
             try:
                 with st.spinner("Analyzing safety signals..."):
                     analysis_text = fetch_public_job_url(job_url.strip()) if detection_mode.startswith("🔗") else description_input.strip()
@@ -1685,7 +1635,7 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
         rb_summary = st.text_area("Professional Summary", value="")
         rb_experience = st.text_area("Experience", value="")
         resume_data = {"name": rb_name, "email": rb_email, "skills": rb_skills, "summary": rb_summary, "experience": rb_experience}
-        if st.button("⬇️ Generate & Download PDF", use_container_width=True):
+        if st.button("⬇️ Generate & Download PDF", use_container_width=True, type="primary"):
             pdf_bytes = build_resume_pdf(resume_data, st.session_state.resume_template)
             st.download_button("Download Resume PDF", data=pdf_bytes, file_name="CareerLens_Resume.pdf", mime="application/pdf", use_container_width=True)
 
@@ -1696,13 +1646,13 @@ if st.session_state.active_workspace == "Job Seeker Workspace":
             st.rerun()
         st.markdown("### 🤖 AI Career Assistant")
         user_query = st.text_input("Ask any career question:")
-        if st.button("Ask Assistant", use_container_width=True) and user_query:
+        if st.button("Ask Assistant", use_container_width=True, type="primary") and user_query:
             ans = api_chat_assistant([{"role": "user", "content": user_query}], resume_context=st.session_state.resume_text)
-            st.markdown(f'<div class="content-box" style="margin-top:16px;">{ans}</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="content-box" style="margin-top:16px;">{html.escape(ans)}</div>', unsafe_allow_html=True)
 
 
 # ============================================================
-# 🏢 RECRUITER WORKSPACE (API INTEGRATED)
+# 🏢 RECRUITER WORKSPACE
 # ============================================================
 elif st.session_state.active_workspace == "Recruiter Workspace":
     data = st.session_state.recruiter_data
@@ -1739,8 +1689,6 @@ elif st.session_state.active_workspace == "Recruiter Workspace":
         if st.button("🏠 Dashboard", use_container_width=True, key="rec_home_btn"):
             recruiter_navigate("Dashboard")
             st.rerun()
-
-    st.markdown("### Recruiter Command Suite")
 
     if st.session_state.active_tool == "Dashboard":
         st.markdown("### 📊 Recruiter Dashboard")
@@ -1780,7 +1728,7 @@ elif st.session_state.active_workspace == "Recruiter Workspace":
 
     elif st.session_state.active_tool == "Bulk Screening":
         st.markdown("### 📤 Bulk Resume Screening")
-        st.caption("Upload a cohort. CareerLens extracts real contact details, ranks candidates, and removes duplicate candidates.")
+        st.caption("Upload candidates. CareerLens extracts real contact details, ranks candidates, and removes duplicate candidates.")
         files = st.file_uploader(
             "Upload candidate resumes",
             type=["pdf", "docx", "txt"],
@@ -1823,7 +1771,7 @@ elif st.session_state.active_workspace == "Recruiter Workspace":
                 st.session_state.recruiter_candidates = processed
                 st.session_state.recruiter_selected_ids = []
                 persist_recruiter()
-                st.success(f"Screened {len(processed)} unique candidate(s). Duplicate resumes were removed.")
+                st.success(f"Screened {len(processed)} unique candidate(s).")
                 st.rerun()
 
         candidates = st.session_state.recruiter_candidates
@@ -1881,9 +1829,8 @@ elif st.session_state.active_workspace == "Recruiter Workspace":
         st.markdown("### 🏆 Shortlisted Candidates")
         shortlisted = [c for c in candidates if c.get("status") == "Shortlisted"]
         if not shortlisted:
-            st.info("No candidates are shortlisted yet. Go to Bulk Resume Screening and use Select All or select individual candidates.")
+            st.info("No candidates are shortlisted yet. Go to Bulk Resume Screening and select candidates.")
         else:
-            st.caption(f"{len(shortlisted)} shortlisted candidate(s). Only these candidates are eligible for assessment dispatch.")
             table = pd.DataFrame([
                 {
                     "Name": c.get("name"),
@@ -1905,7 +1852,6 @@ elif st.session_state.active_workspace == "Recruiter Workspace":
 
     elif st.session_state.active_tool == "Assessment Builder":
         st.markdown("### 📝 Assessment Dispatcher")
-        st.caption("Only shortlisted candidates with real email addresses are eligible. Duplicate email addresses are removed before dispatch.")
         shortlisted = [c for c in candidates if c.get("status") == "Shortlisted"]
         eligible = []
         seen_emails = set()
@@ -1920,10 +1866,6 @@ elif st.session_state.active_workspace == "Recruiter Workspace":
         st.write(f"Target Role: **{role_target}**")
         st.metric("Shortlisted", len(shortlisted))
         st.metric("Ready to Email", len(eligible))
-
-        missing_email = [c for c in shortlisted if not c.get("email")]
-        if missing_email:
-            st.warning(f"{len(missing_email)} shortlisted candidate(s) have no email address in their resume and will not receive an invitation.")
 
         if eligible:
             st.dataframe(
@@ -1959,10 +1901,10 @@ elif st.session_state.active_workspace == "Recruiter Workspace":
                     "candidate_tokens": {c["id"]: c.get("assessment_token") for c in eligible},
                 })
                 persist_recruiter()
-                st.success("Assessment dispatch completed. Review the delivery table below.")
+                st.success("Assessment dispatch completed.")
                 st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
         else:
-            st.info("No shortlisted candidate with a valid resume email is ready for dispatch.")
+            st.info("No shortlisted candidates with valid emails found.")
 
     elif st.session_state.active_tool == "Score Vault":
         st.markdown("### 📊 Assessment Score Vault")
