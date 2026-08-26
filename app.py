@@ -1,3 +1,7 @@
+"""CareerLens AI - Streamlit Web Application."""
+
+from __future__ import annotations
+
 import csv
 from datetime import datetime
 import hashlib
@@ -29,11 +33,14 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 import streamlit as st
 
-API_BASE_URL = os.getenv("API_URL", "http://localhost:8000").rstrip("/")
+# ============================================================
+# APP CONFIG & CONSTANTS
+# ============================================================
+API_BASE_URL = os.getenv("API_URL", "https://careerlens-ai-9dx8.onrender.com").rstrip("/")
 ANALYTICS_FILE = "analytics.csv"
 APP_DB_FILE = os.getenv("CAREERLENS_DB", "careerlens.db")
 ADMIN_PIN = os.getenv("ADMIN_PIN", "")
-PUBLIC_APP_URL = os.getenv("PUBLIC_APP_URL", "http://localhost:8501")
+PUBLIC_APP_URL = os.getenv("PUBLIC_APP_URL", "http://localhost:8501").rstrip("/")
 
 st.set_page_config(
     page_title="CareerLens AI - Smart Career & Recruiter Intelligence",
@@ -51,7 +58,7 @@ def safe_parse_json(text: str) -> Any:
     try:
         return json.loads(text)
     except Exception:
-        match = re.search(r'(\{.*\}|\[.*\])', text, re.DOTALL)
+        match = re.search(r"(\{.*\}|\[.*\])", text, re.DOTALL)
         if match:
             try:
                 return json.loads(match.group(0))
@@ -60,7 +67,7 @@ def safe_parse_json(text: str) -> Any:
     return None
 
 
-def normalize_job_match(raw_res: Any) -> Dict:
+def normalize_job_match(raw_res: Any) -> Dict[str, Any]:
     if isinstance(raw_res, str):
         parsed = safe_parse_json(raw_res)
         if isinstance(parsed, dict):
@@ -97,11 +104,11 @@ def normalize_job_match(raw_res: Any) -> Dict:
     }
 
 
-EMAIL_RE = re.compile(r"[A-Za-z0-9.!#$%&'*+/=?^_{|}~-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+")
+EMAIL_RE = re.compile(r"[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+")
 
 
 def extract_email_from_text(text: str) -> str:
-    """Return a real email found in resume text; never invent a placeholder."""
+    """Return a real email found in resume text."""
     for raw in EMAIL_RE.findall(text or ""):
         email = raw.strip(".,;:()[]{}<>\"").lower()
         if len(email) <= 254:
@@ -122,7 +129,7 @@ def extract_emails_from_text(text: str) -> List[str]:
 
 
 def extract_phone_from_text(text: str) -> str:
-    match = re.search(r'(?:\+?\d[\d .()\-]{8,}\d)', text or "")
+    match = re.search(r"(?:\+?\d[\d .()\-]{8,}\d)", text or "")
     return re.sub(r"\s+", " ", match.group(0)).strip() if match else ""
 
 
@@ -461,7 +468,7 @@ def _extract_resume_text(file) -> str:
         return ""
 
 
-def _local_resume_analysis(text: str, filename: str) -> Dict:
+def _local_resume_analysis(text: str, filename: str) -> Dict[str, Any]:
     lower = text.lower()
     skill_catalog = [
         "python", "java", "javascript", "typescript", "react", "node.js", "fastapi", "django", "flask",
@@ -496,7 +503,7 @@ def _local_resume_analysis(text: str, filename: str) -> Dict:
     }
 
 
-def api_analyze_resume(file) -> Dict:
+def api_analyze_resume(file) -> Dict[str, Any]:
     try:
         files = {"file": (file.name, file.getvalue(), file.type or "application/octet-stream")}
         res = requests.post(f"{API_BASE_URL}/api/resume/analyze", files=files, timeout=60)
@@ -530,7 +537,7 @@ def _skill_set(text: str) -> set:
     return {x for x in catalog if x in lower}
 
 
-def api_match_job(resume_text: str, job_description: str) -> Dict:
+def api_match_job(resume_text: str, job_description: str) -> Dict[str, Any]:
     if not resume_text.strip() or not job_description.strip():
         return {
             "overall": 0,
@@ -606,7 +613,7 @@ def fetch_public_job_url(url: str) -> str:
     return re.sub(r"\s+", " ", text).strip()[:50000]
 
 
-def api_detect_fraud(job_text: str) -> Dict:
+def api_detect_fraud(job_text: str) -> Dict[str, Any]:
     try:
         payload = {"text": job_text}
         res = requests.post(f"{API_BASE_URL}/api/job/fraud", json=payload, timeout=30)
@@ -638,7 +645,7 @@ def api_detect_fraud(job_text: str) -> Dict:
     }
 
 
-def api_career_roadmap(resume_text: str, target_role: str) -> Dict:
+def api_career_roadmap(resume_text: str, target_role: str) -> Dict[str, Any]:
     try:
         payload = {"resume_text": resume_text, "target_role": target_role}
         res = requests.post(f"{API_BASE_URL}/api/career/roadmap", json=payload, timeout=30)
@@ -740,7 +747,7 @@ def _db_create_user(username, display_name, password_hash):
     with _db_connect() as conn:
         conn.execute(
             "INSERT INTO users(user_id,username,display_name,password_hash,created_at) VALUES(?,?,?,?,?)",
-            (user_id, username.strip(), display_name.strip() or username.split('@')[0], password_hash, datetime.now().isoformat(timespec="seconds")),
+            (user_id, username.strip(), display_name.strip() or username.split("@")[0], password_hash, datetime.now().isoformat(timespec="seconds")),
         )
     return user_id
 
@@ -1012,7 +1019,7 @@ def generate_assessment_questions(role: str, count: int) -> List[Dict]:
     return questions
 
 
-def assessment_result(questions: List[Dict], answers: Dict) -> Dict:
+def assessment_result(questions: List[Dict], answers: Dict) -> Dict[str, Any]:
     correct_items, wrong_items, unanswered_items = [], [], []
     for q in questions:
         selected = answers.get(q["id"])
