@@ -111,7 +111,10 @@ def _init_app_db():
 
 def _db_user(username: str):
     conn = get_db_connection()
-    return conn.execute("SELECT user_id, username, display_name, password_hash FROM users WHERE lower(username)=lower(?)", (username.strip(),)).fetchone()
+    return conn.execute(
+        "SELECT user_id, username, display_name, password_hash FROM users WHERE lower(username)=lower(?)",
+        (username.strip(),),
+    ).fetchone()
 
 
 def _db_create_user(username: str, display_name: str, password_hash: str):
@@ -305,8 +308,6 @@ st.markdown(
       --grad-primary: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
       --grad-primary-hover: linear-gradient(135deg, #1d4ed8 0%, #6d28d9 100%);
       --grad-nav-active: linear-gradient(135deg, #eff6ff 0%, #f5f3ff 100%);
-      --grad-nav-border: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
-      --grad-subtle: linear-gradient(135deg, #f0fdf4 0%, #e0f2fe 100%);
       --grad-badge: linear-gradient(135deg, #3b82f6 0%, #9333ea 100%);
       --shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.04);
       --shadow-md: 0 8px 24px rgba(15, 23, 42, 0.08);
@@ -326,7 +327,7 @@ st.markdown(
     #MainMenu, footer { visibility: hidden; }
     header[data-testid="stHeader"] { background: transparent !important; }
     
-    /* Layout Container Scaling */
+    /* Responsive Block Container */
     .block-container {
       max-width: 1440px !important;
       padding: clamp(12px, 2.5vw, 28px) clamp(10px, 3vw, 36px) clamp(24px, 4vw, 56px) !important;
@@ -394,7 +395,7 @@ st.markdown(
       -webkit-text-fill-color: #ffffff !important;
     }
 
-    /* Sidebar Navigation with Radiant Gradient Accents */
+    /* Sidebar Navigation */
     [data-testid="stSidebar"] {
       background: #ffffff !important;
       border-right: 1px solid #e2e8f0 !important;
@@ -513,7 +514,7 @@ st.markdown(
     .header-title { font-size: clamp(1.15rem, 2vw, 1.45rem) !important; font-weight: 800 !important; color: var(--ink) !important; }
     .header-sub { font-size: clamp(0.74rem, 1vw, 0.84rem) !important; color: var(--muted) !important; margin-top: 3px; }
 
-    /* KPI Grid - Responsive Grid System */
+    /* KPI Grid - Responsive System */
     .kpi-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -682,11 +683,7 @@ st.markdown(
     .hero-stat b { font-size: 0.8rem; display: block; color: #0f172a; }
     .hero-stat span { font-size: 0.62rem; display: block; color: #64748b; }
 
-    /* ========================================================
-       MEDIA QUERIES FOR TABLET & MOBILE RESPONSIVENESS
-       ======================================================== */
-    
-    /* Tablet Views (max-width: 1024px) */
+    /* Media queries for tablet & mobile */
     @media (max-width: 1024px) {
       .hero-grid {
         grid-template-columns: 1fr;
@@ -702,7 +699,6 @@ st.markdown(
       }
     }
 
-    /* Mobile Phones (max-width: 768px) */
     @media (max-width: 768px) {
       .block-container {
         padding: 10px 10px 36px !important;
@@ -743,7 +739,6 @@ st.markdown(
       .kpi-icon-badge { width: 38px; height: 38px; font-size: 17px; }
     }
 
-    /* Ultra-compact screens (max-width: 480px) */
     @media (max-width: 480px) {
       .kpi-grid { grid-template-columns: 1fr; }
       .hero-stats { grid-template-columns: 1fr; }
@@ -1474,7 +1469,6 @@ if not st.session_state.is_logged_in:[span_318](start_span)[span_318](end_span)
         unsafe_allow_html=True,
     )
 
-    # Clean centered button stack overlapping the card seamlessly on desktop/tablet/mobile
     _, auth_col, _ = st.columns([1, 1.15, 1])
     with auth_col:
         st.markdown("<div style='margin-top: -205px; position: relative; z-index: 10; padding: 0 24px 24px;'>", unsafe_allow_html=True)
