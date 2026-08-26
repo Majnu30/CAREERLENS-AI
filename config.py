@@ -13,9 +13,9 @@ def _env(name: str, default: str = "") -> str:
     return os.getenv(name, default).strip()
 
 
-# -----------------------------
-# Application settings
-# -----------------------------
+# =========================
+# APPLICATION CONFIG
+# =========================
 
 API_BASE_URL = _env(
     "API_URL",
@@ -40,13 +40,13 @@ ANALYTICS_FILE = _env(
 )
 
 
-# -----------------------------
-# SendGrid settings
-# -----------------------------
+# =========================
+# SENDGRID EMAIL CONFIG
+# =========================
+
 # IMPORTANT:
-# The actual API key must be stored
-# in Render Environment Variables.
-# DO NOT paste the API key here.
+# The real API key must be added in Render Environment Variables.
+# Do NOT paste the API key here.
 
 SENDGRID_API_KEY = _env("SENDGRID_API_KEY")
 
@@ -56,9 +56,9 @@ SENDGRID_FROM_EMAIL = _env(
 )
 
 
-# -----------------------------
-# CORS settings
-# -----------------------------
+# =========================
+# CORS
+# =========================
 
 CORS_ORIGINS = _env(
     "CORS_ORIGINS",
@@ -66,9 +66,9 @@ CORS_ORIGINS = _env(
 )
 
 
-# -----------------------------
-# Upload / recruiter settings
-# -----------------------------
+# =========================
+# FILE LIMITS
+# =========================
 
 MAX_RESUME_BYTES = _env(
     "MAX_RESUME_BYTES",
@@ -81,9 +81,9 @@ MAX_BULK_FILES = _env(
 )
 
 
-# -----------------------------
-# IT roles
-# -----------------------------
+# =========================
+# IT ROLES
+# =========================
 
 IT_ROLES = [
     "Software Developer",
@@ -96,9 +96,9 @@ IT_ROLES = [
 ]
 
 
-# -----------------------------
-# Non-IT roles
-# -----------------------------
+# =========================
+# NON-IT ROLES
+# =========================
 
 NON_IT_ROLES = [
     "HR Specialist",
