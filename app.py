@@ -376,6 +376,13 @@ st.markdown(
     .landing-title { margin:18px 0 12px; font-size:clamp(2.15rem,5vw,4.5rem); line-height:1.02; font-weight:900; letter-spacing:-.055em; color:#0f172a; }
     .landing-gradient { background:linear-gradient(135deg,#2563eb,#4f46e5,#9333ea);-webkit-background-clip:text;background-clip:text;color:transparent; }
     .landing-copy { max-width:760px; color:#64748b; font-size:clamp(.94rem,1.5vw,1.08rem); line-height:1.75; }
+    .semantic-icon { width:42px;height:42px;display:flex;align-items:center;justify-content:center;border-radius:13px;margin-bottom:12px;background:linear-gradient(135deg,#2563eb,#7c3aed);color:#fff;box-shadow:0 8px 18px rgba(37,99,235,.22);font-size:20px;font-weight:900; }
+    .role-icon { width:50px;height:50px;display:flex;align-items:center;justify-content:center;border-radius:16px;color:#fff;font-size:23px;font-weight:900;box-shadow:0 10px 24px rgba(37,99,235,.20); }
+    .recruiter-command { display:flex;align-items:center;gap:12px;padding:12px 15px;margin:0 0 18px;border:1px solid #e0e7ff;border-radius:16px;background:linear-gradient(135deg,#f8fbff,#faf7ff);box-shadow:0 6px 18px rgba(15,23,42,.04); }
+    .recruiter-command-icon { width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#7c3aed,#2563eb);color:#fff;font-size:19px; }
+    .recruiter-command-title { font-weight:900;color:#0f172a;font-size:.9rem; }
+    .recruiter-command-copy { color:#64748b;font-size:.73rem;margin-top:2px; }
+
     .landing-feature { min-height:128px; padding:18px; border-radius:18px; border:1px solid rgba(148,163,184,.22); background:rgba(255,255,255,.82); box-shadow:0 8px 24px rgba(15,23,42,.05); }
     .landing-icon { width:42px;height:42px;display:flex;align-items:center;justify-content:center;border-radius:13px;margin-bottom:12px;color:white;font-weight:900;background:linear-gradient(135deg,#2563eb,#7c3aed);box-shadow:0 8px 18px rgba(37,99,235,.22); }
     .landing-feature-title { font-weight:900;color:#0f172a; }
@@ -388,9 +395,9 @@ st.markdown(
     /* Gradient UI & Navigation Buttons */
     .stButton>button {
       border-radius: 12px !important;
-      border: 1px solid #e2e8f0 !important;
-      background: #ffffff !important;
-      color: #1e293b !important;
+      border: 0 !important;
+      background: var(--grad-primary) !important;
+      color: #ffffff !important;
       font-weight: 700 !important;
       font-size: clamp(0.8rem, 1.1vw, 0.92rem) !important;
       padding: clamp(8px, 1.5vw, 12px) clamp(14px, 2vw, 20px) !important;
@@ -399,9 +406,9 @@ st.markdown(
       transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
     }
     .stButton>button:hover {
-      border-color: #3b82f6 !important;
-      color: #2563eb !important;
-      background: var(--grad-nav-active) !important;
+      border-color: transparent !important;
+      color: #ffffff !important;
+      background: var(--grad-primary-hover) !important;
       transform: translateY(-1.5px) !important;
       box-shadow: var(--shadow-md) !important;
     }
@@ -434,9 +441,9 @@ st.markdown(
       padding: clamp(14px, 2vw, 22px) clamp(10px, 1.5vw, 16px) !important;
     }
     [data-testid="stSidebar"] .stButton>button {
-      background: transparent !important;
-      color: #475569 !important;
-      border: 1px solid transparent !important;
+      background: linear-gradient(135deg, #2563eb 0%, #6366f1 52%, #7c3aed 100%) !important;
+      color: #ffffff !important;
+      border: 0 !important;
       border-radius: 10px !important;
       text-align: left !important;
       justify-content: flex-start !important;
@@ -447,22 +454,22 @@ st.markdown(
       margin-bottom: 3px !important;
     }
     [data-testid="stSidebar"] .stButton>button:hover {
-      background: var(--grad-nav-active) !important;
-      color: #2563eb !important;
-      border-color: #dbeafe !important;
+      background: linear-gradient(135deg, #1d4ed8 0%, #4f46e5 52%, #6d28d9 100%) !important;
+      color: #ffffff !important;
+      border-color: transparent !important;
       transform: translateX(3px) !important;
     }
     [data-testid="stSidebar"] .stButton>button[kind="primary"] {
-      background: var(--grad-nav-active) !important;
-      color: #2563eb !important;
-      border: 1px solid #bfdbfe !important;
+      background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%) !important;
+      color: #ffffff !important;
+      border: 0 !important;
       font-weight: 800 !important;
-      box-shadow: 0 3px 12px rgba(37, 99, 235, 0.12) !important;
+      box-shadow: 0 8px 22px rgba(37, 99, 235, 0.22) !important;
       position: relative;
     }
     [data-testid="stSidebar"] .stButton>button[kind="primary"] * {
-      color: #1d4ed8 !important;
-      -webkit-text-fill-color: #1d4ed8 !important;
+      color: #ffffff !important;
+      -webkit-text-fill-color: #ffffff !important;
     }
     
     .sidebar-brand-box {
@@ -573,7 +580,7 @@ st.markdown(
 
     /* Tools Matrix */
     .tool-box-card {
-      background: #ffffff;
+      background: linear-gradient(180deg,#ffffff 0%,#fbfdff 100%);
       border: 1px solid var(--line);
       border-radius: 16px;
       padding: 18px 14px;
@@ -1680,11 +1687,11 @@ if not st.session_state.is_logged_in:
 
     f1, f2, f3 = st.columns(3, gap="medium")
     with f1:
-        st.markdown('<div class="landing-feature"><div class="landing-icon">✦</div><div class="landing-feature-title">AI-Powered Insights</div><div class="landing-feature-text">Smarter career decisions</div></div>', unsafe_allow_html=True)
+        st.markdown('<div class="landing-feature"><div class="landing-icon">🧠</div><div class="landing-feature-title">AI-Powered Insights</div><div class="landing-feature-text">Smarter career decisions</div></div>', unsafe_allow_html=True)
     with f2:
-        st.markdown('<div class="landing-feature"><div class="landing-icon">◎</div><div class="landing-feature-title">Personalized Roadmaps</div><div class="landing-feature-text">Your goals, our guidance</div></div>', unsafe_allow_html=True)
+        st.markdown('<div class="landing-feature"><div class="landing-icon">🧭</div><div class="landing-feature-title">Personalized Roadmaps</div><div class="landing-feature-text">Your goals, our guidance</div></div>', unsafe_allow_html=True)
     with f3:
-        st.markdown('<div class="landing-feature"><div class="landing-icon">♢</div><div class="landing-feature-title">Trusted &amp; Secure</div><div class="landing-feature-text">Your data stays safe</div></div>', unsafe_allow_html=True)
+        st.markdown('<div class="landing-feature"><div class="landing-icon">🛡️</div><div class="landing-feature-title">Trusted &amp; Secure</div><div class="landing-feature-text">Your data stays safe</div></div>', unsafe_allow_html=True)
 
     st.markdown('<div class="landing-access"><div class="landing-access-title">✦ Welcome to CareerLens AI</div><div class="landing-access-copy">Sign in, create an account, or explore instantly as a guest.</div><div class="landing-divider"></div></div>', unsafe_allow_html=True)
     a1, a2, a3 = st.columns(3, gap="small")
@@ -1732,7 +1739,7 @@ if not st.session_state.selected_gateway:
         st.markdown("""
         <div class="gateway-card">
           <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px">
-            <div class="tool-icon-circle" style="background:#eff6ff; color:#2563eb; width:46px; height:46px;">●</div>
+            <div class="role-icon" style="background:linear-gradient(135deg,#2563eb,#06b6d4);">💼</div>
             <div><h3 style="margin:0;font-size:1.15rem">Job Seeker Portal</h3><span class="tag-badge tag-blue">Candidate Intelligence</span></div>
           </div>
           <p style="color:#64748b;font-size:.8rem;line-height:1.65">Discover opportunities, improve skills, and accelerate your career with deep AI guidance.</p>
@@ -1749,7 +1756,7 @@ if not st.session_state.selected_gateway:
         st.markdown("""
         <div class="gateway-card">
           <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px">
-            <div class="tool-icon-circle" style="background:#faf5ff; color:#8b5cf6; width:46px; height:46px;">▦</div>
+            <div class="role-icon" style="background:linear-gradient(135deg,#7c3aed,#ec4899);">👥</div>
             <div><h3 style="margin:0;font-size:1.15rem">Recruiter Portal</h3><span class="tag-badge tag-purple">Talent Acquisition</span></div>
           </div>
           <p style="color:#64748b;font-size:.8rem;line-height:1.65">Streamline hiring, screen cohorts at scale, and build high-performing teams with automated assessments.</p>
@@ -2299,7 +2306,8 @@ elif st.session_state.active_workspace == "Recruiter Workspace":
             st.rerun()
 
     if st.session_state.active_tool == "Dashboard":
-        st.markdown("### 📊 Recruiter Dashboard")
+        st.markdown("### 🏢 Recruiter Dashboard")
+        st.markdown("""<div class="recruiter-command"><div class="recruiter-command-icon">👥</div><div><div class="recruiter-command-title">Talent Command Center</div><div class="recruiter-command-copy">Screen, shortlist, assess, and move candidates through your hiring pipeline.</div></div></div>""", unsafe_allow_html=True)
         k1, k2, k3, k4 = st.columns(4)
         k1.metric("Candidates Screened", len(candidates))
         k2.metric("Shortlisted", sum(1 for c in candidates if c.get("status") == "Shortlisted"))
