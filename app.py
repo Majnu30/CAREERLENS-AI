@@ -45,7 +45,7 @@ PUBLIC_APP_URL = os.getenv("PUBLIC_APP_URL", "http://localhost:8501").rstrip("/"
 
 st.set_page_config(
     page_title="CareerLens AI - Smart Career & Recruiter Intelligence",
-    page_icon="✨",
+    page_icon="🧬",
     layout="wide",
     initial_sidebar_state="expanded",
 )
