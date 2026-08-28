@@ -9,3 +9,8 @@ PyPDF2>=3.0.0
 python-docx>=1.0.0
 sendgrid>=6.10.0
 pydantic>=2.0.0
+streamlit>=1.40
+pandas
+requests
+scikit-learn
+reportlab
