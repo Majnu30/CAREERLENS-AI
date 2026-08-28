@@ -1,9 +1,11 @@
-"""CareerLens AI - Streamlit Web Application."""
+"""CareerLens AI - Streamlit Web Application (Recruiter Workflow v6)."""
 
 from __future__ import annotations
 
+import base64
+import binascii
 import csv
-from datetime import datetime
+from datetime import datetime, timedelta
 import hashlib
 import hmac
 import html
@@ -41,7 +43,7 @@ API_BASE_URL = os.getenv("API_URL", "https://careerlens-ai-9dx8.onrender.com").r
 ANALYTICS_FILE = "analytics.csv"
 APP_DB_FILE = os.getenv("CAREERLENS_DB", "careerlens.db")
 ADMIN_PIN = os.getenv("ADMIN_PIN", "")
-PUBLIC_APP_URL = os.getenv("PUBLIC_APP_URL", "http://localhost:8501").rstrip("/")
+PUBLIC_APP_URL = "https://career-lens-ai.streamlit.app"
 
 st.set_page_config(
     page_title="CareerLens AI - Smart Career & Recruiter Intelligence",
@@ -107,6 +109,16 @@ def _init_app_db():
             updated_at TEXT NOT NULL,
             FOREIGN KEY(user_id) REFERENCES users(user_id) ON DELETE CASCADE
         )""")
+        conn.execute("""CREATE TABLE IF NOT EXISTS public_assessments (
+            token TEXT PRIMARY KEY,
+            owner_user_id TEXT NOT NULL,
+            candidate_id TEXT NOT NULL,
+            assessment_json TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            expires_at TEXT,
+            used INTEGER NOT NULL DEFAULT 0
+        )""")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_public_assessments_owner ON public_assessments(owner_user_id)")
 
 
 def _db_user(username: str):
@@ -1290,18 +1302,24 @@ def api_chat_assistant(messages: List[Dict], resume_context: str = "") -> str:
     return "Focus on quantifiable business outcomes, active GitHub portfolio proof, and modern architecture patterns for the best results."
 
 
-def api_send_assessment_email(to_email: str, name: str, role: str, test_link: str) -> tuple[bool, str]:
-    subject = f"CareerLens AI — Assessment Invitation for {role}"
+def api_send_assessment_email(to_email: str, name: str, role: str, test_link: str, company: str = "", recruiter_name: str = "", recruiter_email: str = "") -> tuple[bool, str]:
+    subject = f"{company or 'CareerLens AI'} — Assessment Invitation for {role}"
+    recruiter_line = html.escape(recruiter_name or "Recruiting Team")
+    company_line = html.escape(company or "CareerLens AI")
+    recruiter_email_line = f"<div style=\"font-size:12px;color:#64748b;margin-top:4px;\">Contact: {html.escape(recruiter_email)}</div>" if recruiter_email else ""
     html_content = f"""
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 10px;">
-        <h2 style="color: #2563eb;">CareerLens AI Assessment</h2>
+    <div style="font-family: Arial, sans-serif; max-width: 620px; margin: auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 14px; background:#ffffff;">
+        <div style="font-size:12px;color:#64748b;font-weight:bold;letter-spacing:.08em;text-transform:uppercase;">Assessment Invitation</div>
+        <h2 style="color: #2563eb; margin-bottom:6px;">{company_line}</h2>
+        <div style="font-size:13px;color:#475569;margin-bottom:20px;">Recruiter: <b>{recruiter_line}</b>{recruiter_email_line}</div>
         <p>Hi <b>{html.escape(name)}</b>,</p>
-        <p>You have been invited to complete a qualifying pre-interview assessment for the <b>{html.escape(role)}</b> role.</p>
-        <div style="margin: 24px 0; text-align: center;">
-            <a href="{test_link}" style="background-color: #2563eb; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Start Assessment</a>
+        <p>You have been invited to complete a qualifying assessment for the <b>{html.escape(role)}</b> position.</p>
+        <div style="margin: 26px 0; text-align: center;">
+            <a href="{test_link}" style="background-color: #2563eb; color: #ffffff; padding: 13px 26px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Start Assessment</a>
         </div>
-        <p style="color: #64748b; font-size: 0.9em;">If the button above does not work, copy and paste this URL into your browser:</p>
+        <p style="color: #64748b; font-size: 0.9em;">Assessment link:</p>
         <p style="word-break: break-all; color: #2563eb; font-size: 0.85em;">{test_link}</p>
+        <div style="margin-top:22px;padding-top:14px;border-top:1px solid #e2e8f0;color:#64748b;font-size:12px;">Please contact the recruiter above if you have questions about this assessment.</div>
     </div>
     """
     payload = {
@@ -1440,15 +1458,107 @@ def _save_recruiter_data(data: Dict[str, Any]) -> None:
             pass
 
 
-def _make_assessment_token() -> str:
-    return uuid.uuid4().hex + uuid.uuid4().hex
+def _assessment_signing_secret() -> bytes:
+    """Stable signing secret for public assessment links."""
+    secret = os.getenv("ASSESSMENT_SIGNING_SECRET", "").strip()
+    if not secret:
+        try:
+            secret = str(st.secrets.get("ASSESSMENT_SIGNING_SECRET", "") or "").strip()
+        except Exception:
+            secret = ""
+    # A stable fallback keeps links functional even when the optional secret is not configured.
+    if not secret:
+        secret = "CareerLensAI-public-assessment-v1-2026"
+    return secret.encode("utf-8")
+
+
+def _make_assessment_token(payload: Optional[Dict[str, Any]] = None) -> str:
+    """Create a compact, signed token so a public assessment does not depend on a browser session."""
+    data = dict(payload or {})
+    data.setdefault("v", 1)
+    data.setdefault("id", uuid.uuid4().hex)
+    data.setdefault("iat", int(datetime.now().timestamp()))
+    raw = json.dumps(data, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+    encoded = base64.urlsafe_b64encode(raw).decode("ascii").rstrip("=")
+    signature = hmac.new(_assessment_signing_secret(), encoded.encode("ascii"), hashlib.sha256).digest()
+    sig = base64.urlsafe_b64encode(signature).decode("ascii").rstrip("=")
+    return f"{encoded}.{sig}"
+
+
+def _decode_assessment_token(token: str) -> Optional[Dict[str, Any]]:
+    """Verify and decode a signed public assessment token."""
+    try:
+        encoded, sig = str(token or "").split(".", 1)
+        expected = hmac.new(_assessment_signing_secret(), encoded.encode("ascii"), hashlib.sha256).digest()
+        supplied = base64.urlsafe_b64decode(sig + "=" * (-len(sig) % 4))
+        if not hmac.compare_digest(expected, supplied):
+            return None
+        raw = base64.urlsafe_b64decode(encoded + "=" * (-len(encoded) % 4))
+        payload = json.loads(raw.decode("utf-8"))
+        if not isinstance(payload, dict):
+            return None
+        issued = int(payload.get("iat", 0) or 0)
+        # Public assessment links remain valid for 30 days.
+        if issued and datetime.now().timestamp() - issued > 30 * 24 * 60 * 60:
+            return None
+        return payload
+    except (ValueError, TypeError, json.JSONDecodeError, UnicodeDecodeError, binascii.Error):
+        return None
 
 
 def _assessment_public_url(token: str) -> str:
-    base = os.getenv("PUBLIC_APP_URL", PUBLIC_APP_URL).strip().rstrip("/")
-    if not base:
-        base = "http://localhost:8501"
-    return f"{base}/?assessment={quote(token)}"
+    """Return the only public URL used for recruiter assessments."""
+    token = str(token or "").strip()
+    if not token:
+        raise ValueError("Assessment token is required.")
+    return f"https://career-lens-ai.streamlit.app/?assessment={quote(token, safe="")}"
+
+
+def _save_public_assessment_record(owner_user_id: str, candidate_id: str, assessment: Dict[str, Any], token: str) -> None:
+    """Persist each public assessment independently of recruiter browser session state."""
+    if not owner_user_id or not candidate_id or not token:
+        return
+    conn = get_db_connection()
+    payload = json.dumps(assessment, ensure_ascii=False)
+    expires_at = (datetime.now() + timedelta(days=30)).isoformat(timespec="seconds")
+    with conn:
+        conn.execute(
+            """INSERT INTO public_assessments(token, owner_user_id, candidate_id, assessment_json, created_at, expires_at, used)
+               VALUES(?,?,?,?,?,?,0)
+               ON CONFLICT(token) DO UPDATE SET owner_user_id=excluded.owner_user_id, candidate_id=excluded.candidate_id, assessment_json=excluded.assessment_json, created_at=excluded.created_at, expires_at=excluded.expires_at""",
+            (token, owner_user_id, candidate_id, payload, datetime.now().isoformat(timespec="seconds"), expires_at),
+        )
+
+
+def _load_public_assessment_record(token: str):
+    token = str(token or "").strip()
+    if not token:
+        return None, None, None, None
+    try:
+        conn = get_db_connection()
+        row = conn.execute(
+            "SELECT owner_user_id, candidate_id, assessment_json, expires_at, used FROM public_assessments WHERE token=?",
+            (token,),
+        ).fetchone()
+        if not row:
+            return None, None, None, None
+        owner_user_id, candidate_id, assessment_json, expires_at, used = row
+        if expires_at:
+            try:
+                if datetime.fromisoformat(expires_at) < datetime.now():
+                    return None, None, None, None
+            except ValueError:
+                pass
+        assessment = json.loads(assessment_json) if isinstance(assessment_json, str) else {}
+        if not isinstance(assessment, dict):
+            return None, None, None, None
+        data = _db_load_recruiter_state(owner_user_id)
+        candidate = next((c for c in data.get("candidates", []) if c.get("id") == candidate_id), None)
+        if candidate is None:
+            return None, None, None, None
+        return assessment, candidate, candidate_id, owner_user_id
+    except (sqlite3.Error, TypeError, ValueError, json.JSONDecodeError):
+        return None, None, None, None
 
 
 if "recruiter_data" not in st.session_state:
@@ -1770,28 +1880,142 @@ def build_resume_pdf(data: Dict, template: str) -> bytes:
     return buffer.getvalue()
 
 def _find_recruiter_assessment_by_token(token: str):
+    """Resolve a public assessment without requiring recruiter authentication or session state."""
+    token = str(token or "").strip()
     if not token:
-        return None, None, None
-    for assessment in st.session_state.recruiter_data.get("assessments", []):
-        tokens = assessment.get("candidate_tokens", {}) if isinstance(assessment, dict) else {}
-        for candidate_id, candidate_token in tokens.items():
-            if candidate_token == token:
-                candidate = next((c for c in st.session_state.recruiter_candidates if c.get("id") == candidate_id), None)
-                return assessment, candidate, candidate_id
-    return None, None, None
+        return None, None, None, None
+
+    # New links are self-contained and cryptographically signed. This means a redeploy,
+    # another browser, or another device cannot turn a valid assessment into a localhost/session error.
+    payload = _decode_assessment_token(token)
+    if payload:
+        owner_user_id = str(payload.get("owner_user_id", ""))
+        candidate_id = str(payload.get("candidate_id", ""))
+        role = str(payload.get("role", "Professional Assessment"))
+        company = str(payload.get("company", "Company"))
+        recruiter_name = str(payload.get("recruiter_name", "Recruiting Team"))
+        recruiter_email = str(payload.get("recruiter_email", ""))
+        candidate_snapshot = payload.get("candidate", {}) if isinstance(payload.get("candidate"), dict) else {}
+        candidate = dict(candidate_snapshot)
+
+        # Refresh from recruiter state when available so the latest candidate details are used.
+        if owner_user_id:
+            try:
+                owner_data = _db_load_recruiter_state(owner_user_id)
+                stored = next((c for c in owner_data.get("candidates", []) if c.get("id") == candidate_id), None)
+                if stored:
+                    candidate = stored
+            except Exception:
+                pass
+
+        assessment = {
+            "id": str(payload.get("assessment_id", payload.get("id", ""))),
+            "role": role,
+            "company": company,
+            "recruiter_name": recruiter_name,
+            "recruiter_email": recruiter_email,
+            "questions": generate_assessment_questions(role, int(payload.get("question_count", 20) or 20)),
+            "created_at": datetime.fromtimestamp(int(payload.get("iat", datetime.now().timestamp()))).isoformat(timespec="seconds"),
+            "candidate_tokens": {candidate_id: token},
+        }
+        if candidate.get("id") or candidate_id:
+            candidate.setdefault("id", candidate_id)
+        candidate.setdefault("name", "Candidate")
+        candidate.setdefault("email", "")
+        candidate.setdefault("assessment_status", "Sent")
+        if candidate:
+            return assessment, candidate, candidate_id, owner_user_id
+
+    # Backward compatibility for links created by the previous database-backed implementation.
+    try:
+        found = _load_public_assessment_record(token)
+        if found[0] is not None:
+            return found
+    except Exception:
+        pass
+
+    try:
+        conn = get_db_connection()
+        rows = conn.execute("SELECT user_id, state_json FROM recruiter_state").fetchall()
+        for owner_user_id, state_json in rows:
+            try:
+                owner_data = json.loads(state_json) if isinstance(state_json, str) else {}
+            except (TypeError, ValueError):
+                continue
+            if not isinstance(owner_data, dict):
+                continue
+            owner_candidates = owner_data.get("candidates", []) or []
+            for assessment in owner_data.get("assessments", []) or []:
+                tokens = assessment.get("candidate_tokens", {}) if isinstance(assessment, dict) else {}
+                for candidate_id, candidate_token in tokens.items():
+                    if str(candidate_token) == token:
+                        candidate = next((c for c in owner_candidates if c.get("id") == candidate_id), None)
+                        if candidate:
+                            _save_public_assessment_record(owner_user_id, candidate_id, assessment, token)
+                            return assessment, candidate, candidate_id, owner_user_id
+    except sqlite3.Error:
+        pass
+    return None, None, None, None
+
+
+def _save_public_assessment_result(owner_user_id: str, assessment: Dict[str, Any], candidate_id: str, result: Dict[str, Any]) -> None:
+    """Persist candidate assessment results back to the recruiter workspace."""
+    if not owner_user_id:
+        return
+    data = _db_load_recruiter_state(owner_user_id)
+    owner_candidates = data.get("candidates", []) or []
+    candidate = next((c for c in owner_candidates if c.get("id") == candidate_id), None)
+    if candidate is None:
+        candidate = {
+            "id": candidate_id,
+            "name": result.get("candidate_name", "Candidate"),
+            "email": result.get("candidate_email", ""),
+            "role_match": 0,
+            "resume_score": 0,
+            "status": "Assessment Completed",
+            "assessment_status": "Completed",
+            "assessment_company": result.get("company", assessment.get("company", "")),
+            "assessment_recruiter": result.get("recruiter_name", assessment.get("recruiter_name", "")),
+        }
+        owner_candidates.append(candidate)
+    candidate["assessment_status"] = "Completed"
+    candidate["assessment_percentage"] = result.get("percentage", 0)
+    candidate["assessment_score"] = result.get("score", 0)
+    candidate["assessment_total"] = result.get("total", 0)
+    candidate["assessment_completed_at"] = result.get("submitted_at", datetime.now().strftime("%Y-%m-%d %H:%M"))
+    candidate["status"] = "Assessment Completed"
+    submissions = [x for x in (data.get("submissions", []) or []) if isinstance(x, dict) and x.get("token") != result.get("token")]
+    submissions.append(result)
+    data["candidates"] = owner_candidates
+    data["submissions"] = submissions
+    _db_save_recruiter_state(owner_user_id, data)
+
+    # Also mark the independent public record as used when it exists.
+    try:
+        conn = get_db_connection()
+        with conn:
+            conn.execute("UPDATE public_assessments SET used=1 WHERE token=?", (result.get("token", ""),))
+    except sqlite3.Error:
+        pass
 
 
 def render_public_recruiter_assessment(token: str) -> None:
-    assessment, candidate, candidate_id = _find_recruiter_assessment_by_token(token)
+    assessment, candidate, candidate_id, owner_user_id = _find_recruiter_assessment_by_token(token)
     if not assessment or not candidate:
         st.error("This assessment link is invalid, expired, or no longer available.")
         st.stop()
 
-    st.markdown("## 📝 CareerLens AI Assessment")
-    st.caption(f"Role: {assessment.get('role', 'Professional Assessment')} • {len(assessment.get('questions', []))} questions")
-    st.info("Complete the assessment and submit it. Your score and answer key are reviewed directly by the recruiter.")
+    company = assessment.get("company") or "Company"
+    recruiter_name = assessment.get("recruiter_name") or "Recruiting Team"
+    recruiter_email = assessment.get("recruiter_email") or ""
+    role = assessment.get("role", "Professional Assessment")
 
-    state_key = f"candidate_exam_{token[:12]}"
+    st.markdown("## 📝 Role-Based Pre-Employment Assessment")
+    st.markdown(f"**{_escape(company)}**  ·  {_escape(role)}")
+    st.caption(f"Invited by {_escape(recruiter_name)}" + (f" · {_escape(recruiter_email)}" if recruiter_email else ""))
+    st.info(f"This assessment is for the **{_escape(role)}** role at **{_escape(company)}**. It contains {len(assessment.get('questions', []))} role-based questions. Your result will be returned to the recruiting workspace.")
+
+    state_key = f"candidate_exam_{token[:16]}"
     answer_key = f"{state_key}_answers"
     submitted_key = f"{state_key}_submitted"
 
@@ -1801,10 +2025,12 @@ def render_public_recruiter_assessment(token: str) -> None:
         st.session_state[submitted_key] = False
 
     questions = assessment.get("questions", [])
+    if not questions:
+        st.error("This assessment currently has no questions.")
+        st.stop()
 
     if st.session_state[submitted_key]:
-        st.success("Assessment submitted successfully. Your recruiter will review your assessment.")
-        st.info("You can close this page now.")
+        st.success("Assessment submitted successfully. Your recruiter will review your result.")
         st.stop()
 
     with st.form("public_candidate_assessment_form"):
@@ -1823,16 +2049,18 @@ def render_public_recruiter_assessment(token: str) -> None:
                 "candidate_id": candidate_id,
                 "candidate_name": candidate.get("name", "Candidate"),
                 "candidate_email": candidate.get("email", ""),
-                "role": assessment.get("role", ""),
+                "role": role,
+                "company": company,
+                "recruiter_name": recruiter_name,
+                "recruiter_email": recruiter_email,
                 "assessment_id": assessment.get("id", ""),
             })
-            st.session_state.recruiter_assessment_submissions[token] = result
-            candidate["assessment_status"] = "Completed"
-            candidate["assessment_percentage"] = result["percentage"]
-            candidate["status"] = "Assessment Completed"
-            st.session_state.recruiter_data["candidates"] = st.session_state.recruiter_candidates
-            st.session_state.recruiter_data["submissions"] = list(st.session_state.recruiter_assessment_submissions.values())
-            _save_recruiter_data(st.session_state.recruiter_data)
+            _save_public_assessment_result(owner_user_id, assessment, candidate_id, result)
+            # Keep the current session in sync when the recruiter is the same browser.
+            if owner_user_id == st.session_state.get("user_id"):
+                st.session_state.recruiter_assessment_submissions[token] = result
+                st.session_state.recruiter_data = _db_load_recruiter_state(owner_user_id)
+                st.session_state.recruiter_candidates = st.session_state.recruiter_data.get("candidates", [])
             st.session_state[submitted_key] = True
             st.rerun()
 
@@ -2844,7 +3072,11 @@ elif st.session_state.active_workspace == "Recruiter Workspace":
 
     if st.session_state.active_tool == "Dashboard":
         st.markdown("### 🏢 Recruiter Dashboard")
-        st.markdown("""<div class="recruiter-command"><div class="recruiter-command-icon">👥</div><div><div class="recruiter-command-title">Talent Command Center</div><div class="recruiter-command-copy">Screen, shortlist, assess, and move candidates through your hiring pipeline.</div></div></div>""", unsafe_allow_html=True)
+        company_dash = campaign.get("company") or "Company not configured"
+        recruiter_dash = campaign.get("recruiter_name") or st.session_state.get("username", "Recruiter")
+        recruiter_email_dash = campaign.get("recruiter_email") or "Contact email not configured"
+        role_dash = campaign.get("role") or "Role not configured"
+        st.markdown(f"""<div class="recruiter-command"><div class="recruiter-command-icon">🏢</div><div><div class="recruiter-command-title">{html.escape(company_dash)}</div><div class="recruiter-command-copy"><b>Recruiter:</b> {html.escape(recruiter_dash)} &nbsp; · &nbsp; <b>Contact:</b> {html.escape(recruiter_email_dash)} &nbsp; · &nbsp; <b>Hiring:</b> {html.escape(role_dash)}</div></div></div>""", unsafe_allow_html=True)
         k1, k2, k3, k4 = st.columns(4)
         k1.metric("Candidates Screened", len(candidates))
         k2.metric("Shortlisted", sum(1 for c in candidates if c.get("status") == "Shortlisted"))
@@ -2864,20 +3096,65 @@ elif st.session_state.active_workspace == "Recruiter Workspace":
 
     elif st.session_state.active_tool == "Hiring Campaign":
         st.markdown("### 🎯 Hiring Campaign")
+        st.markdown("#### 🏢 Employer & Recruiter Details")
+        st.caption("These details are required. They identify who is hiring and are shown to the candidate before the assessment starts.")
+
+        c1, c2 = st.columns(2)
+        with c1:
+            company_name = st.text_input(
+                "Company / Organization *",
+                value=str(campaign.get("company", "")),
+                placeholder="e.g. Microsoft, TCS, Deloitte",
+                key="campaign_company_v6",
+            )
+        with c2:
+            recruiter_name = st.text_input(
+                "Recruiter / Hiring Manager *",
+                value=str(campaign.get("recruiter_name", "")),
+                placeholder="e.g. Priya Sharma",
+                key="campaign_recruiter_name_v6",
+            )
+        recruiter_email = st.text_input(
+            "Recruiter Contact Email *",
+            value=str(campaign.get("recruiter_email", "")),
+            placeholder="recruiter@company.com",
+            key="campaign_recruiter_email_v6",
+        )
+
+        st.markdown("#### 🎯 Job & Assessment Details")
         role_options = IT_ROLES + NON_IT_ROLES
         saved_role = campaign.get("role", role_options[0])
         role_index = role_options.index(saved_role) if saved_role in role_options else 0
-        role = st.selectbox("Target Role", role_options, index=role_index, key="campaign_role")
+        role = st.selectbox("Target Role *", role_options, index=role_index, key="campaign_role_v6")
         job_description = st.text_area(
-            "Job Description / Assessment Context",
-            value=campaign.get("job_description", ""),
-            height=160,
-            key="campaign_job_description",
+            "Job Description / Assessment Context *",
+            value=str(campaign.get("job_description", "")),
+            height=190,
+            key="campaign_job_description_v6",
+            placeholder="Responsibilities, required skills, experience, qualifications, and other hiring context…",
         )
-        if st.button("💾 Save Campaign", type="primary", use_container_width=True, key="save_campaign"):
-            data["campaign"] = {"role": role, "job_description": job_description.strip()}
-            persist_recruiter()
-            st.success("Campaign configured successfully.")
+
+        missing = []
+        if not company_name.strip(): missing.append("Company / Organization")
+        if not recruiter_name.strip(): missing.append("Recruiter / Hiring Manager")
+        if not recruiter_email.strip(): missing.append("Recruiter Contact Email")
+        if not job_description.strip(): missing.append("Job Description")
+
+        if st.button("💾 Save Hiring Campaign", type="primary", use_container_width=True, key="save_campaign_v6"):
+            if missing:
+                st.error("Please complete: " + ", ".join(missing) + ".")
+            elif not EMAIL_RE.fullmatch(recruiter_email.strip()):
+                st.error("Please enter a valid recruiter contact email.")
+            else:
+                data["campaign"] = {
+                    "role": role,
+                    "company": company_name.strip(),
+                    "recruiter_name": recruiter_name.strip(),
+                    "recruiter_email": recruiter_email.strip().lower(),
+                    "job_description": job_description.strip(),
+                }
+                persist_recruiter()
+                st.success(f"Campaign saved: {company_name.strip()} • {role}")
 
     elif st.session_state.active_tool == "Bulk Screening":
         st.markdown("### 📤 Bulk Resume Screening")
@@ -2938,7 +3215,7 @@ elif st.session_state.active_workspace == "Recruiter Workspace":
             if a2.button("☐ Clear Selection", use_container_width=True, key="clear_candidate_selection"):
                 st.session_state.recruiter_selected_ids = []
                 st.rerun()
-            if a3.button("🏆 Shortlist Selected", type="primary", use_container_width=True, key="shortlist_selected"):
+            if a3.button("🏆 Shortlist Selected Candidates", type="primary", use_container_width=True, key="shortlist_selected"):
                 if not selected_ids:
                     st.warning("Select at least one candidate first.")
                 else:
@@ -2948,7 +3225,7 @@ elif st.session_state.active_workspace == "Recruiter Workspace":
                     persist_recruiter()
                     st.success(f"Shortlisted {len(selected_ids)} candidate(s).")
                     st.rerun()
-            if a4.button("➡️ Shortlist Page", use_container_width=True, key="go_shortlist"):
+            if a4.button("➡️ Open Shortlist", use_container_width=True, key="go_shortlist"):
                 recruiter_navigate("Shortlisted Candidates")
                 st.rerun()
 
@@ -2965,7 +3242,7 @@ elif st.session_state.active_workspace == "Recruiter Workspace":
                     selected_ids.add(cid)
                 else:
                     selected_ids.discard(cid)
-                badge = "Shortlisted" if candidate.get("status") == "Shortlisted" else "Screened"
+                badge = "Selected for Shortlist" if candidate.get("status") == "Shortlisted" else "Screened"
                 email_label = candidate.get("email") or "Email Missing"
                 st.markdown(
                     f"<div class='content-box' style='padding:12px 16px;margin-bottom:8px;'>"
@@ -3016,28 +3293,67 @@ elif st.session_state.active_workspace == "Recruiter Workspace":
             eligible.append(candidate)
 
         role_target = campaign.get("role", "Software Developer")
+        company_target = campaign.get("company", "") or "Company"
+        recruiter_target = campaign.get("recruiter_name", st.session_state.get("username", "Recruiter"))
+        recruiter_email_target = campaign.get("recruiter_email", "")
+        if not company_target or not campaign.get("recruiter_name") or not recruiter_email_target:
+            st.error("Recruiter identity is incomplete. Go to Hiring Campaign and enter Company, Recruiter / Hiring Manager, and Recruiter Contact Email before sending an assessment.")
+        st.markdown(f"**Company:** {html.escape(company_target or 'Not configured')}  ·  **Recruiter:** {html.escape(recruiter_target or 'Not configured')}" + (f"  ·  **Contact:** {html.escape(recruiter_email_target)}" if recruiter_email_target else ""), unsafe_allow_html=True)
         st.write(f"Target Role: **{role_target}**")
-        st.metric("Shortlisted", len(shortlisted))
-        st.metric("Ready to Email", len(eligible))
+        q_count = st.select_slider(
+            "Assessment question count",
+            options=list(range(10, 51, 5)),
+            value=20,
+            key="recruiter_assessment_question_count",
+            help="The assessment is generated from the selected hiring role. Choose 10–50 questions.",
+        )
+        st.caption(f"Role-based assessment: {q_count} questions · candidates will see the company, recruiter and role before starting.")
+        m1, m2, m3 = st.columns(3)
+        m1.metric("Shortlisted", len(shortlisted))
+        m2.metric("Ready to Email", len(eligible))
+        m3.metric("Questions", q_count)
 
-        if eligible:
+        if eligible and company_target and campaign.get("recruiter_name") and recruiter_email_target:
             st.dataframe(
                 pd.DataFrame([{"Candidate": c.get("name"), "Email": c.get("email"), "Match": c.get("role_match", 0)} for c in eligible]),
                 use_container_width=True,
                 hide_index=True,
             )
+            st.info("🔗 Public assessment links are generated from: https://career-lens-ai.streamlit.app/")
             if st.button("✉️ Send Assessment Invitations", type="primary", use_container_width=True, key="send_assessment_invitations"):
                 progress = st.progress(0, text="Dispatching assessment emails…")
                 rows = []
                 for idx, candidate in enumerate(eligible):
-                    token = _make_assessment_token()
+                    token = _make_assessment_token({
+                        "owner_user_id": st.session_state.get("user_id", ""),
+                        "candidate_id": candidate.get("id", ""),
+                        "assessment_id": uuid.uuid4().hex,
+                        "candidate": {
+                            "id": candidate.get("id", ""),
+                            "name": candidate.get("name", "Candidate"),
+                            "email": candidate.get("email", ""),
+                            "phone": candidate.get("phone", ""),
+                            "resume_score": candidate.get("resume_score", 0),
+                            "role_match": candidate.get("role_match", 0),
+                            "skills": candidate.get("skills", []),
+                        },
+                        "role": role_target,
+                        "company": company_target,
+                        "recruiter_name": recruiter_target,
+                        "recruiter_email": recruiter_email_target,
+                        "question_count": q_count,
+                    })
                     test_link = _assessment_public_url(token)
-                    sent, msg = api_send_assessment_email(candidate["email"], candidate.get("name", "Candidate"), role_target, test_link)
+                    sent, msg = api_send_assessment_email(candidate["email"], candidate.get("name", "Candidate"), role_target, test_link, company_target, recruiter_target, recruiter_email_target)
                     candidate["assessment_token"] = token
                     candidate["assessment_link"] = test_link
                     candidate["assessment_status"] = "Sent" if sent else "Failed"
+                    candidate["assessment_company"] = company_target
+                    candidate["assessment_recruiter"] = recruiter_target
                     if sent:
-                        candidate["status"] = "Assessment Sent"
+                        # Keep the candidate on the shortlist after dispatch so the recruiter
+                        # can still see and manage the candidate in the shortlist pipeline.
+                        candidate["status"] = "Shortlisted"
                     rows.append({
                         "Candidate": candidate.get("name"),
                         "Email": candidate.get("email"),
@@ -3046,13 +3362,22 @@ elif st.session_state.active_workspace == "Recruiter Workspace":
                     })
                     progress.progress((idx + 1) / max(1, len(eligible)))
 
-                data.setdefault("assessments", []).append({
+                assessment_record = {
                     "id": uuid.uuid4().hex,
                     "role": role_target,
-                    "questions": generate_assessment_questions(role_target, 20),
+                    "company": company_target,
+                    "recruiter_name": recruiter_target,
+                    "recruiter_email": recruiter_email_target,
+                    "questions": generate_assessment_questions(role_target, q_count),
                     "created_at": datetime.now().isoformat(timespec="seconds"),
                     "candidate_tokens": {c["id"]: c.get("assessment_token") for c in eligible},
-                })
+                }
+                data.setdefault("assessments", []).append(assessment_record)
+                # Save one independent public record for every candidate token before sending control back to Streamlit.
+                for candidate in eligible:
+                    token = str(candidate.get("assessment_token") or "").strip()
+                    if token:
+                        _save_public_assessment_record(st.session_state.get("user_id", ""), candidate.get("id", ""), assessment_record, token)
                 persist_recruiter()
                 st.success("Assessment dispatch completed.")
                 st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
