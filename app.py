@@ -1020,21 +1020,23 @@ st.markdown(
        changing business logic or backend contracts.
        ======================================================== */
     :root{
-      --cl-primary:#4f46e5;
-      --cl-primary-2:#2563eb;
-      --cl-violet:#7c3aed;
-      --cl-bg:#f6f8fc;
-      --cl-surface:#ffffff;
-      --cl-surface-soft:#f8fafc;
-      --cl-border:#e6eaf0;
-      --cl-text:#0b1220;
-      --cl-muted:#667085;
-      --cl-success:#0f9f6e;
-      --cl-warning:#b7791f;
-      --cl-danger:#dc3d4b;
-      --cl-radius:18px;
-      --cl-shadow:0 10px 30px rgba(15,23,42,.055);
-      --cl-shadow-hover:0 18px 45px rgba(15,23,42,.10);
+      --cl-primary:#4F46E5;
+      --cl-primary-hover:#4338CA;
+      --cl-secondary:#475569;
+      --cl-secondary-hover:#334155;
+      --cl-bg:#F8FAFC;
+      --cl-surface:#FFFFFF;
+      --cl-surface-soft:#F8FAFC;
+      --cl-border:#E2E8F0;
+      --cl-text:#0F172A;
+      --cl-muted:#64748B;
+      --cl-success:#059669;
+      --cl-warning:#D97706;
+      --cl-danger:#DC2626;
+      --cl-info:#2563EB;
+      --cl-radius:12px;
+      --cl-shadow:0 4px 16px rgba(15,23,42,.045);
+      --cl-shadow-hover:0 8px 24px rgba(15,23,42,.08);
     }
 
     .stApp{
@@ -1092,28 +1094,57 @@ st.markdown(
     }
     .stButton>button[kind="secondary"],
     .stDownloadButton>button[kind="secondary"]{
-      background:#fff !important;
-      color:#344054 !important;
-      border:1px solid #d9dee8 !important;
+      background:#FFFFFF !important;
+      color:#334155 !important;
+      border:1px solid #CBD5E1 !important;
       box-shadow:0 1px 2px rgba(16,24,40,.03) !important;
     }
     .stButton>button[kind="secondary"]:hover,
     .stDownloadButton>button[kind="secondary"]:hover{
-      background:#f8fafc !important;
-      color:#111827 !important;
-      border-color:#bfc7d5 !important;
+      background:#F1F5F9 !important;
+      color:#0F172A !important;
+      border-color:#94A3B8 !important;
       transform:translateY(-1px) !important;
       box-shadow:0 5px 14px rgba(15,23,42,.07) !important;
     }
-    .stButton>button[kind="primary"],.stFormSubmitButton>button[kind="primary"]{
-      background:linear-gradient(135deg,var(--cl-primary-2),var(--cl-violet)) !important;
-      border:1px solid transparent !important;
-      box-shadow:0 8px 20px rgba(79,70,229,.20) !important;
+    .stButton>button[kind="primary"],
+    .stDownloadButton>button[kind="primary"],
+    .stFormSubmitButton>button[kind="primary"]{
+      background:#4F46E5 !important;
+      color:#FFFFFF !important;
+      border:1px solid #4F46E5 !important;
+      box-shadow:0 2px 6px rgba(15,23,42,.10) !important;
     }
-    .stButton>button[kind="primary"]:hover,.stFormSubmitButton>button[kind="primary"]:hover{
+    .stButton>button[kind="primary"]:hover,
+    .stDownloadButton>button[kind="primary"]:hover,
+    .stFormSubmitButton>button[kind="primary"]:hover{
+      background:#4338CA !important;
+      border-color:#4338CA !important;
       transform:translateY(-1px) !important;
-      box-shadow:0 12px 26px rgba(79,70,229,.27) !important;
+      box-shadow:0 4px 10px rgba(15,23,42,.14) !important;
     }
+    .stButton>button[kind="secondary"],
+    .stDownloadButton>button[kind="secondary"]{
+      background:#FFFFFF !important;
+      color:#334155 !important;
+      border-color:#CBD5E1 !important;
+    }
+    .stButton>button[kind="secondary"]:hover,
+    .stDownloadButton>button[kind="secondary"]:hover{
+      background:#F1F5F9 !important;
+      color:#0F172A !important;
+      border-color:#94A3B8 !important;
+    }
+    /* Semantic button variants used by the application. */
+    .cl-success-button,.cl-warning-button,.cl-danger-button{
+      color:#FFFFFF !important; border-radius:10px !important; font-weight:750 !important;
+    }
+    .cl-success-button{background:#059669 !important;border:1px solid #059669 !important;}
+    .cl-success-button:hover{background:#047857 !important;border-color:#047857 !important;}
+    .cl-warning-button{background:#D97706 !important;border:1px solid #D97706 !important;}
+    .cl-warning-button:hover{background:#B45309 !important;border-color:#B45309 !important;}
+    .cl-danger-button{background:#DC2626 !important;border:1px solid #DC2626 !important;}
+    .cl-danger-button:hover{background:#B91C1C !important;border-color:#B91C1C !important;}
     .stButton>button:disabled,.stDownloadButton>button:disabled{
       opacity:.48 !important; transform:none !important; cursor:not-allowed !important;
     }
@@ -1158,7 +1189,7 @@ st.markdown(
       font-weight:650 !important;
     }
     [data-testid="stSidebar"] .stButton>button[kind="primary"]{
-      background:linear-gradient(90deg,#eef2ff,#f5f3ff) !important;
+      background:#EEF2FF !important;
       color:#4338ca !important;
       border-color:#e0e7ff !important;
       box-shadow:none !important;
@@ -1170,7 +1201,7 @@ st.markdown(
       transform:none !important;
     }
     [data-testid="stSidebar"] .stButton>button[kind="primary"]:hover{
-      background:linear-gradient(90deg,#e8edff,#f1edff) !important;
+      background:#E0E7FF !important;
       color:#3730a3 !important;
       transform:none !important;
     }
@@ -1226,7 +1257,7 @@ st.markdown(
     /* Progress indicators */
     [data-testid="stProgressBar"] > div > div{ border-radius:999px !important; }
     [data-testid="stProgressBar"] > div > div > div{
-      background:linear-gradient(90deg,#2563eb,#7c3aed) !important;
+      background:#4F46E5 !important;
     }
 
     /* Reduce accidental motion for users who request it. */
