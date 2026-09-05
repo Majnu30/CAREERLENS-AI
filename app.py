@@ -1020,9 +1020,9 @@ st.markdown(
        changing business logic or backend contracts.
        ======================================================== */
     :root{
-      --cl-primary:#4F46E5;
-      --cl-primary-hover:#4338CA;
-      --cl-primary-soft:#EEF2FF;
+      --cl-primary:var(--cl-primary);
+      --cl-primary-hover:var(--cl-primary-dark);
+      --cl-primary-soft:var(--cl-primary-soft);
       --cl-primary-border:#C7D2FE;
       --cl-secondary:#475569;
       --cl-secondary-hover:#334155;
@@ -1055,25 +1055,25 @@ st.markdown(
     }
     .cl-hero:before{
       content:""; position:absolute; width:420px; height:420px; right:-160px; top:-210px;
-      border-radius:50%; background:#EEF2FF; opacity:.75; pointer-events:none;
+      border-radius:50%; background:var(--cl-primary-soft); opacity:.75; pointer-events:none;
     }
-    .cl-hero-kicker{font-size:.72rem; font-weight:850; letter-spacing:.14em; color:#4F46E5; margin-bottom:12px}
+    .cl-hero-kicker{font-size:.72rem; font-weight:850; letter-spacing:.14em; color:var(--cl-primary); margin-bottom:12px}
     .cl-hero-title{position:relative; z-index:1; font-size:clamp(2.1rem,5vw,4.1rem); line-height:1.04; letter-spacing:-.055em; font-weight:900; color:#0F172A; margin:0}
-    .cl-hero-title .accent{color:#4F46E5}
+    .cl-hero-title .accent{color:var(--cl-primary)}
     .cl-hero-copy{position:relative; z-index:1; max-width:760px; margin:16px 0 24px; color:#64748B; font-size:1rem; line-height:1.7}
-    .cl-rolling{display:inline-block; min-width:11ch; height:1.15em; vertical-align:-.12em; overflow:hidden; color:#4F46E5}
+    .cl-rolling{display:inline-block; min-width:11ch; height:1.15em; vertical-align:-.12em; overflow:hidden; color:var(--cl-primary)}
     .cl-rolling span{display:block; animation:clRoll 9s infinite; white-space:nowrap}
     @keyframes clRoll{0%,25%{transform:translateY(0)} 33%,58%{transform:translateY(-100%)} 66%,91%{transform:translateY(-200%)} 100%{transform:translateY(-300%)}}
     .cl-hero-stats{display:flex; flex-wrap:wrap; gap:10px; position:relative; z-index:1}
     .cl-hero-chip{display:inline-flex;align-items:center;gap:7px;padding:8px 11px;border:1px solid #E2E8F0;border-radius:999px;background:#F8FAFC;color:#475569;font-size:.73rem;font-weight:750}
-    .cl-hero-chip .material-symbols-outlined{font-size:17px;color:#4F46E5}
+    .cl-hero-chip .material-symbols-outlined{font-size:17px;color:var(--cl-primary)}
 
     /* Colored information cards without visual noise */
-    .kpi-grid .kpi-card:nth-child(1){border-top:3px solid #4F46E5!important}
+    .kpi-grid .kpi-card:nth-child(1){border-top:3px solid var(--cl-primary)!important}
     .kpi-grid .kpi-card:nth-child(2){border-top:3px solid #059669!important}
     .kpi-grid .kpi-card:nth-child(3){border-top:3px solid #2563EB!important}
     .kpi-grid .kpi-card:nth-child(4){border-top:3px solid #D97706!important}
-    .tag-blue{background:#EEF2FF!important;color:#4338CA!important;border-color:#C7D2FE!important}
+    .tag-blue{background:var(--cl-primary-soft)!important;color:var(--cl-primary-dark)!important;border-color:#C7D2FE!important}
     .tag-purple{background:#F5F3FF!important;color:#6D28D9!important;border-color:#DDD6FE!important}
     .tag-green{background:#ECFDF3!important;color:#047857!important;border-color:#A7F3D0!important}
     .tag-orange{background:#FFFBEB!important;color:#B45309!important;border-color:#FDE68A!important}
@@ -1156,16 +1156,16 @@ st.markdown(
     .stButton>button[kind="primary"],
     .stDownloadButton>button[kind="primary"],
     .stFormSubmitButton>button[kind="primary"]{
-      background:#4F46E5 !important;
+      background:var(--cl-primary) !important;
       color:#FFFFFF !important;
-      border:1px solid #4F46E5 !important;
+      border:1px solid var(--cl-primary) !important;
       box-shadow:0 2px 6px rgba(15,23,42,.10) !important;
     }
     .stButton>button[kind="primary"]:hover,
     .stDownloadButton>button[kind="primary"]:hover,
     .stFormSubmitButton>button[kind="primary"]:hover{
-      background:#4338CA !important;
-      border-color:#4338CA !important;
+      background:var(--cl-primary-dark) !important;
+      border-color:var(--cl-primary-dark) !important;
       transform:translateY(-1px) !important;
       box-shadow:0 4px 10px rgba(15,23,42,.14) !important;
     }
@@ -1235,7 +1235,7 @@ st.markdown(
       font-weight:650 !important;
     }
     [data-testid="stSidebar"] .stButton>button[kind="primary"]{
-      background:#EEF2FF !important;
+      background:var(--cl-primary-soft) !important;
       color:#4338ca !important;
       border-color:#e0e7ff !important;
       box-shadow:none !important;
@@ -1247,8 +1247,8 @@ st.markdown(
       transform:none !important;
     }
     [data-testid="stSidebar"] .stButton>button[kind="primary"]:hover{
-      background:#E0E7FF !important;
-      color:#3730a3 !important;
+      background:var(--cl-primary-soft) !important;
+      color:var(--cl-primary-dark) !important;
       transform:none !important;
     }
     .sidebar-brand-box{ border-bottom:1px solid #eef1f5 !important; }
@@ -1303,7 +1303,7 @@ st.markdown(
     /* Progress indicators */
     [data-testid="stProgressBar"] > div > div{ border-radius:999px !important; }
     [data-testid="stProgressBar"] > div > div > div{
-      background:#4F46E5 !important;
+      background:var(--cl-primary) !important;
     }
 
     /* Reduce accidental motion for users who request it. */
@@ -1323,6 +1323,69 @@ st.markdown(
       .content-box{ border-radius:15px !important; }
       [data-testid="stMetric"]{ padding:12px; }
     }
+
+    /* ========================================================
+       CAREERLENS AI — V4 SKY TEAL PRODUCT DESIGN SYSTEM
+       UI-only layer: preserves existing backend/API/business logic.
+       ======================================================== */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+    :root{
+      --cl-primary:#0D9488; --cl-primary-dark:#0F766E; --cl-primary-soft:#CCFBF1;
+      --cl-primary-pale:#F0FDFA; --cl-navy:#0F172A; --cl-text:#1E293B; --cl-muted:#64748B;
+      --cl-line:#E2E8F0; --cl-bg:#F8FAFC; --cl-shadow:0 12px 34px rgba(15,23,42,.07);
+    }
+    html,body,[class*="css"],button,input,textarea,select{font-family:'Inter',system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif!important}
+    body{color:var(--cl-text)!important;background:var(--cl-bg)!important}
+    .material-symbols-outlined{font-family:'Material Symbols Outlined'!important;font-weight:normal!important;font-style:normal!important}
+    .cl-brand-mark{width:36px;height:36px;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto}
+    .cl-brand-mark svg{width:36px;height:36px;display:block}
+    .cl-brand-wordmark{font-weight:900;letter-spacing:-.035em;color:#fff}
+    .cl-brand-wordmark .brand-ai{color:#2DD4BF}
+
+    /* Full-line hero rolling headline */
+    .cl-hero-title-rotator{position:relative;height:clamp(4.7rem,10vw,8.3rem);overflow:hidden;margin:0}
+    .cl-hero-title-rotator .cl-hero-line{position:absolute;inset:0;display:flex;align-items:flex-start;opacity:0;transform:translateY(24px);animation:clHeroLine 16s infinite;line-height:1.05;letter-spacing:-.055em;font-size:clamp(2.05rem,5vw,4.25rem);font-weight:900;color:var(--cl-navy)}
+    .cl-hero-title-rotator .cl-hero-line:nth-child(1){animation-delay:0s}.cl-hero-title-rotator .cl-hero-line:nth-child(2){animation-delay:4s}.cl-hero-title-rotator .cl-hero-line:nth-child(3){animation-delay:8s}.cl-hero-title-rotator .cl-hero-line:nth-child(4){animation-delay:12s}
+    @keyframes clHeroLine{0%,20%{opacity:1;transform:translateY(0)}25%,100%{opacity:0;transform:translateY(-24px)}}
+    .cl-hero-kicker{color:var(--cl-primary)!important}.cl-hero:before{background:var(--cl-primary-soft)!important;opacity:.7!important}
+    .cl-hero-chip{background:var(--cl-primary-pale)!important;border-color:#BFEDE5!important}.cl-hero-chip .material-symbols-outlined{color:var(--cl-primary)!important}
+
+    /* Equal gateway portals + rolling portal messages */
+    .gateway-card{min-height:330px!important;height:330px!important;display:flex!important;flex-direction:column!important;box-sizing:border-box!important;box-shadow:var(--cl-shadow)!important}
+    .gateway-card .cl-portal-rotator{position:relative;height:2.9rem;overflow:hidden;margin-top:auto;margin-bottom:14px;color:var(--cl-primary-dark);font-size:.78rem;font-weight:700;line-height:1.45}
+    .gateway-card .cl-portal-line{position:absolute;inset:0;opacity:0;transform:translateY(14px);animation:clPortal 12s infinite}
+    .gateway-card .cl-portal-line:nth-child(1){animation-delay:0s}.gateway-card .cl-portal-line:nth-child(2){animation-delay:3s}.gateway-card .cl-portal-line:nth-child(3){animation-delay:6s}.gateway-card .cl-portal-line:nth-child(4){animation-delay:9s}
+    @keyframes clPortal{0%,22%{opacity:1;transform:translateY(0)}28%,100%{opacity:0;transform:translateY(-14px)}}
+
+    /* Consistent button system */
+    .stButton>button,.stFormSubmitButton>button,.stDownloadButton>button{border-radius:10px!important;min-height:44px!important;font-family:'Inter',sans-serif!important;font-weight:750!important;transition:all .18s ease!important}
+    .stButton>button[kind="primary"],.stFormSubmitButton>button[kind="primary"]{background:var(--cl-primary)!important;border-color:var(--cl-primary)!important;color:#fff!important;box-shadow:0 7px 18px rgba(13,148,136,.18)!important}
+    .stButton>button[kind="primary"]:hover,.stFormSubmitButton>button[kind="primary"]:hover{background:var(--cl-primary-dark)!important;border-color:var(--cl-primary-dark)!important;transform:translateY(-1px)!important}
+    .stButton>button[kind="secondary"]:hover{border-color:var(--cl-primary)!important;color:var(--cl-primary-dark)!important;background:var(--cl-primary-pale)!important}
+
+    /* Sky-teal sidebar */
+    [data-testid="stSidebar"],[data-testid="stSidebar"]>div:first-child{background:#0F2F35!important;border-right-color:#174A52!important}
+    [data-testid="stSidebar"] .sidebar-brand-box{border-bottom-color:rgba(255,255,255,.10)!important}
+    [data-testid="stSidebar"] .sidebar-user-box{background:rgba(255,255,255,.07)!important;border-color:rgba(255,255,255,.10)!important}
+    [data-testid="stSidebar"] .sidebar-section-title{color:#8FB9BE!important}
+    [data-testid="stSidebar"] .stButton>button{background:transparent!important;color:#DCEEEF!important;border:1px solid transparent!important;box-shadow:none!important}
+    [data-testid="stSidebar"] .stButton>button:hover{background:rgba(204,251,241,.09)!important;color:#fff!important;transform:translateX(2px)!important}
+    [data-testid="stSidebar"] .stButton>button[kind="primary"]{background:#0D9488!important;color:#fff!important;border-color:#0D9488!important;box-shadow:0 7px 18px rgba(13,148,136,.22)!important}
+    [data-testid="stSidebar"] .stButton>button[kind="primary"]:hover{background:#0F766E!important;color:#fff!important}
+
+    /* App header rolling capabilities */
+    .cl-app-header{padding:16px 20px!important;background:#fff!important;border-color:var(--cl-line)!important}
+    .cl-app-header-main{min-width:0;flex:1}.cl-app-header-title{font-size:1.08rem!important;font-weight:900!important}.cl-app-header-sub{font-size:.72rem!important;color:var(--cl-muted)!important}
+    .cl-workspace-rotator{position:relative;height:2.15rem;overflow:hidden;margin-top:7px;max-width:650px}
+    .cl-workspace-line{position:absolute;inset:0;display:flex;align-items:center;opacity:0;transform:translateY(12px);animation:clWorkspace 12s infinite;font-size:1.02rem;font-weight:850;color:var(--cl-primary-dark);letter-spacing:-.02em}
+    .cl-workspace-line:nth-child(1){animation-delay:0s}.cl-workspace-line:nth-child(2){animation-delay:3s}.cl-workspace-line:nth-child(3){animation-delay:6s}.cl-workspace-line:nth-child(4){animation-delay:9s}
+    @keyframes clWorkspace{0%,22%{opacity:1;transform:translateY(0)}28%,100%{opacity:0;transform:translateY(-12px)}}
+    .cl-status-pill{background:var(--cl-primary-pale)!important;border-color:#BFEDE5!important;color:var(--cl-primary-dark)!important}
+    .cl-status-dot{background:#10B981!important;box-shadow:0 0 0 3px #D1FAE5!important}
+    .kpi-grid .kpi-card:nth-child(1){border-top-color:var(--cl-primary)!important}.tag-blue{background:var(--cl-primary-soft)!important;color:var(--cl-primary-dark)!important;border-color:#99E6DC!important}
+    @media (prefers-reduced-motion:reduce){.cl-hero-title-rotator .cl-hero-line,.cl-portal-line,.cl-workspace-line{animation:none!important;opacity:1!important;transform:none!important}.cl-hero-title-rotator .cl-hero-line:not(:first-child),.cl-portal-line:not(:first-child),.cl-workspace-line:not(:first-child){display:none!important}}
+    @media (max-width:700px){.cl-hero{padding:34px 22px 28px!important}.cl-hero-title-rotator{height:7.4rem!important}.cl-hero-title-rotator .cl-hero-line{font-size:clamp(2rem,9.5vw,3rem)!important}.gateway-card{height:330px!important;min-height:330px!important}.cl-workspace-rotator{height:2.7rem!important}.cl-workspace-line{font-size:.9rem!important;line-height:1.35!important}}
+
 </style>
     """,
     unsafe_allow_html=True,
@@ -2946,11 +3009,15 @@ if not st.session_state.is_logged_in:
 
     st.markdown("""
     <div class="cl-hero" role="banner" aria-label="CareerLens AI introduction">
-      <div class="cl-hero-kicker">CAREER INTELLIGENCE PLATFORM</div>
-      <h1 class="cl-hero-title">Understand your career.<br>Build a <span class="accent">stronger future.</span></h1>
+      <div class="cl-hero-kicker">THE AI-POWERED CAREER OPERATING SYSTEM</div>
+      <div class="cl-hero-title-rotator" aria-label="CareerLens AI value proposition">
+        <div class="cl-hero-line">Understand your career. Build a strong future.</div>
+        <div class="cl-hero-line">Turn your skills into career opportunities.</div>
+        <div class="cl-hero-line">Learn smarter, grow faster, get hired.</div>
+        <div class="cl-hero-line">Your career journey starts with AI.</div>
+      </div>
       <div class="cl-hero-copy">
-        One intelligent workspace to <span class="cl-rolling"><span>understand your skills</span><span>find better-fit jobs</span><span>close your skill gaps</span><span>prepare with confidence</span></span>.
-        From your first resume scan to recruiter assessment, CareerLens AI keeps every step connected.
+        One intelligent workspace for resume intelligence, job matching, skill-gap discovery, career roadmaps, interview practice, and recruiter intelligence — connected from first scan to hiring.
       </div>
       <div class="cl-hero-stats">
         <span class="cl-hero-chip"><span class="material-symbols-outlined">description</span>Resume Intelligence</span>
@@ -3006,9 +3073,9 @@ if not st.session_state.selected_gateway:
         <div class="header-banner">
           <div>
             <div class="header-title">Welcome, {html.escape(st.session_state.username)}! </div>
-            <div class="header-sub">Choose your workspace to get started.</div>
+            <div class="header-sub">Choose Your Career Journey.</div>
           </div>
-          <span class="tag-badge tag-blue">AI CAREER ECOSYSTEM</span>
+          <span class="tag-badge tag-blue">CAREER INTELLIGENCE, REIMAGINED</span>
         </div>
         """, unsafe_allow_html=True)
     g1, g2 = st.columns(2, gap="large")
@@ -3016,10 +3083,16 @@ if not st.session_state.selected_gateway:
         st.markdown("""
         <div class="gateway-card">
           <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px">
-            <div class="role-icon" style="background:#EEF2FF;color:#4338CA;"><span class="material-symbols-outlined">work</span></div>
+            <div class="role-icon" style="background:#CCFBF1;color:#0F766E;"><span class="material-symbols-outlined">work</span></div>
             <div><h3 style="margin:0;font-size:1.15rem">Job Seeker Portal</h3><span class="tag-badge tag-blue">Candidate Intelligence</span></div>
           </div>
           <p style="color:#64748b;font-size:.8rem;line-height:1.65">Discover opportunities, improve skills, and accelerate your career with deep AI guidance.</p>
+          <div class="cl-portal-rotator">
+            <div class="cl-portal-line">Build your career with AI-powered guidance.</div>
+            <div class="cl-portal-line">Analyze your resume and discover skill gaps.</div>
+            <div class="cl-portal-line">Find better-fit jobs with intelligent matching.</div>
+            <div class="cl-portal-line">Practice interviews and become job ready.</div>
+          </div>
           <div style="border-top:1px solid #f1f5f9;padding-top:14px;color:#475569;font-size:.76rem;line-height:1.8">
              <span class="material-symbols-outlined">description</span> Resume Intelligence &nbsp; <span class="material-symbols-outlined">mic</span> AI Mock Interview<br><span class="material-symbols-outlined">target</span> Job Match &nbsp; <span class="material-symbols-outlined">payments</span> Salary Insights &nbsp; <span class="material-symbols-outlined">route</span> Career Roadmap
           </div>
@@ -3033,10 +3106,16 @@ if not st.session_state.selected_gateway:
         st.markdown("""
         <div class="gateway-card">
           <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px">
-            <div class="role-icon" style="background:#F5F3FF;color:#6D28D9;"><span class="material-symbols-outlined">groups</span></div>
+            <div class="role-icon" style="background:#CCFBF1;color:#0F766E;"><span class="material-symbols-outlined">groups</span></div>
             <div><h3 style="margin:0;font-size:1.15rem">Recruiter Portal</h3><span class="tag-badge tag-purple">Talent Acquisition</span></div>
           </div>
           <p style="color:#64748b;font-size:.8rem;line-height:1.65">Streamline hiring, screen cohorts at scale, and build high-performing teams with automated assessments.</p>
+          <div class="cl-portal-rotator">
+            <div class="cl-portal-line">Hire smarter with AI-powered candidate insights.</div>
+            <div class="cl-portal-line">Screen resumes faster and rank top talent.</div>
+            <div class="cl-portal-line">Manage hiring from assessment to offer.</div>
+            <div class="cl-portal-line">Build high-performing teams with confidence.</div>
+          </div>
           <div style="border-top:1px solid #f1f5f9;padding-top:14px;color:#475569;font-size:.76rem;line-height:1.8">
              <span class="material-symbols-outlined">upload_file</span> Bulk Resume Screening &nbsp; <span class="material-symbols-outlined">campaign</span> Hiring Campaigns<br><span class="material-symbols-outlined">assignment</span> Assessment Dispatcher &nbsp; <span class="material-symbols-outlined">leaderboard</span> Candidate Ranking &nbsp; <span class="material-symbols-outlined">mic</span> Interview Pipeline
           </div>
@@ -3056,14 +3135,17 @@ with st.sidebar:
     st.markdown(
         """
         <div class="sidebar-brand-box">
-            <div style="font-size: 26px; color: #2563eb;"><span class="material-symbols-outlined">work</span></div>
+            <div class="cl-brand-mark" aria-hidden="true">
+              <svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="20" cy="20" r="12.5" stroke="#2DD4BF" stroke-width="3.2"/>
+                <path d="M29.5 29.5L37 37" stroke="#2DD4BF" stroke-width="3.2" stroke-linecap="round"/>
+                <path d="M14 24L18.5 19.5L22 22.5L29.5 14.5" stroke="#99F6E4" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M25.5 14.5H29.5V18.5" stroke="#99F6E4" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
             <div>
-                <div style="font-size: 1.15rem; font-weight: 900; color: #091224; line-height: 1.1;">
-                    Career<span style="color: #2563eb;">lens</span> <span style="color: #7c3aed;">AI</span>
-                </div>
-                <div style="font-size: 0.68rem; color: #64748b; font-weight: 700;">
-                    Your Career, Our Intelligence
-                </div>
+                <div class="cl-brand-wordmark" style="font-size:1.15rem;line-height:1.1;">CareerLens <span class="brand-ai">AI</span></div>
+                <div style="font-size:.68rem;color:#A8C9CD;font-weight:700;">Career Intelligence, Reimagined.</div>
             </div>
         </div>
         """,
@@ -3074,12 +3156,12 @@ with st.sidebar:
         f"""
         <div class="sidebar-user-box">
             <div style="display:flex; align-items:center; gap:10px;">
-                <div style="width:36px; height:36px; border-radius:50%; background:linear-gradient(135deg, #2563eb, #7c3aed); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800;">
+                <div style="width:36px; height:36px; border-radius:50%; background:#0D9488; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800;">
                     <span class="material-symbols-outlined">person</span>
                 </div>
                 <div>
                     <div style="font-size:0.88rem; font-weight:800; color:#1e293b;">{html.escape(st.session_state.username)}</div>
-                    <div style="font-size:0.72rem; color:#16a34a; font-weight:700;">● Active User</div>
+                    <div style="font-size:0.72rem; color:#99F6E4; font-weight:700;">Active User</div>
                 </div>
             </div>
         </div>
@@ -3177,9 +3259,15 @@ workspace_label = "Job Seeker" if st.session_state.active_workspace == "Job Seek
 st.markdown(
     f"""
     <div class="cl-app-header" role="banner" aria-label="CareerLens AI application header">
-      <div>
-        <div class="cl-app-header-title">CareerLens <span style="color:#4F46E5;">AI</span></div>
+      <div class="cl-app-header-main">
+        <div class="cl-app-header-title">CareerLens <span style="color:#0D9488;">AI</span></div>
         <div class="cl-app-header-sub">{workspace_label} Workspace · Intelligent career decisions</div>
+        <div class="cl-workspace-rotator" aria-label="Workspace capabilities">
+          <div class="cl-workspace-line">AI Resume Intelligence</div>
+          <div class="cl-workspace-line">Smart Job Matching</div>
+          <div class="cl-workspace-line">Personalized Career Roadmaps</div>
+          <div class="cl-workspace-line">AI Mock Interviews</div>
+        </div>
       </div>
       <div style="display:flex;align-items:center;gap:10px;">
         <span class="cl-status-pill"><span class="cl-status-dot" aria-hidden="true"></span> Workspace active</span>
@@ -4316,7 +4404,7 @@ _persist_current_user_state()
 st.markdown(
     """
     <div style="text-align: center; color: #94a3b8; font-size: 0.82rem; padding: 40px 0 10px;">
-        © 2026 CareerLens AI. All rights reserved.
+        CareerLens AI · Career Intelligence, Reimagined · © 2026
     </div>
     """,
     unsafe_allow_html=True,
