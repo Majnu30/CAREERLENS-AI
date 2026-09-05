@@ -1330,7 +1330,7 @@ st.markdown(
        ======================================================== */
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
     :root{
-      --cl-primary:#0D47A1; --cl-primary-dark:#0D47A1; --cl-primary-soft:#F5F9FF;
+      --cl-primary:#1D4ED8; --cl-primary-dark:#1D4ED8; --cl-primary-soft:#F5F9FF;
       --cl-primary-pale:#F0FDFA; --cl-navy:#0F172A; --cl-text:#1E293B; --cl-muted:#64748B;
       --cl-line:#E2E8F0; --cl-bg:#F8FAFC; --cl-shadow:0 12px 34px rgba(15,23,42,.07);
     }
@@ -1340,7 +1340,7 @@ st.markdown(
     .cl-brand-mark{width:36px;height:36px;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto}
     .cl-brand-mark svg{width:36px;height:36px;display:block}
     .cl-brand-wordmark{font-weight:900;letter-spacing:-.035em;color:#fff}
-    .cl-brand-wordmark .brand-ai{color:#42A5F5}
+    .cl-brand-wordmark .brand-ai{color:#3B82F6}
 
     /* Full-line hero rolling headline */
     .cl-hero-title-rotator{position:relative;height:clamp(4.7rem,10vw,8.3rem);overflow:hidden;margin:0}
@@ -1370,8 +1370,8 @@ st.markdown(
     [data-testid="stSidebar"] .sidebar-section-title{color:#8FB9BE!important}
     [data-testid="stSidebar"] .stButton>button{background:transparent!important;color:#DCEEEF!important;border:1px solid transparent!important;box-shadow:none!important}
     [data-testid="stSidebar"] .stButton>button:hover{background:rgba(204,251,241,.09)!important;color:#fff!important;transform:translateX(2px)!important}
-    [data-testid="stSidebar"] .stButton>button[kind="primary"]{background:#0D47A1!important;color:#fff!important;border-color:#0D47A1!important;box-shadow:0 7px 18px rgba(13,148,136,.22)!important}
-    [data-testid="stSidebar"] .stButton>button[kind="primary"]:hover{background:#0D47A1!important;color:#fff!important}
+    [data-testid="stSidebar"] .stButton>button[kind="primary"]{background:#1D4ED8!important;color:#fff!important;border-color:#1D4ED8!important;box-shadow:0 7px 18px rgba(13,148,136,.22)!important}
+    [data-testid="stSidebar"] .stButton>button[kind="primary"]:hover{background:#1D4ED8!important;color:#fff!important}
 
     /* App header rolling capabilities */
     .cl-app-header{padding:16px 20px!important;background:#fff!important;border-color:var(--cl-line)!important}
@@ -1386,6 +1386,16 @@ st.markdown(
     @media (prefers-reduced-motion:reduce){.cl-hero-title-rotator .cl-hero-line,.cl-portal-line,.cl-workspace-line{animation:none!important;opacity:1!important;transform:none!important}.cl-hero-title-rotator .cl-hero-line:not(:first-child),.cl-portal-line:not(:first-child),.cl-workspace-line:not(:first-child){display:none!important}}
     @media (max-width:700px){.cl-hero{padding:34px 22px 28px!important}.cl-hero-title-rotator{height:7.4rem!important}.cl-hero-title-rotator .cl-hero-line{font-size:clamp(2rem,9.5vw,3rem)!important}.gateway-card{height:330px!important;min-height:330px!important}.cl-workspace-rotator{height:2.7rem!important}.cl-workspace-line{font-size:.9rem!important;line-height:1.35!important}}
 
+</style><style>
+/* FINAL: Deep Ocean gradient + white sidebar */
+section[data-testid="stSidebar"], section[data-testid="stSidebar"] > div { background:#FFFFFF !important; }
+section[data-testid="stSidebar"] { border-right:1px solid #E5E7EB !important; }
+section[data-testid="stSidebar"] .stButton > button { background:#FFFFFF !important; color:#334155 !important; border:1px solid transparent !important; box-shadow:none !important; }
+section[data-testid="stSidebar"] .stButton > button:hover { background:#F1F5F9 !important; color:#1D4ED8 !important; border-color:#E2E8F0 !important; }
+.cl-active-nav, .active-nav, .sidebar-active { background:linear-gradient(135deg,#1D4ED8 0%,#2563EB 55%,#3B82F6 100%) !important; color:#FFFFFF !important; border-radius:10px !important; }
+.stButton > button[kind="primary"], button[data-testid="baseButton-primary"] { background:linear-gradient(135deg,#1D4ED8 0%,#2563EB 55%,#3B82F6 100%) !important; color:#FFFFFF !important; border:0 !important; box-shadow:0 6px 18px rgba(13,71,161,.16) !important; }
+.stButton > button[kind="primary"]:hover, button[data-testid="baseButton-primary"]:hover { filter:brightness(1.05); transform:translateY(-1px); }
+.stProgress > div > div > div { background:linear-gradient(90deg,#1D4ED8,#2563EB,#3B82F6) !important; }
 </style>
     """,
     unsafe_allow_html=True,
@@ -3083,7 +3093,7 @@ if not st.session_state.selected_gateway:
         st.markdown("""
         <div class="gateway-card">
           <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px">
-            <div class="role-icon" style="background:#F5F9FF;color:#0D47A1;"><span class="material-symbols-outlined">work</span></div>
+            <div class="role-icon" style="background:#F5F9FF;color:#1D4ED8;"><span class="material-symbols-outlined">work</span></div>
             <div><h3 style="margin:0;font-size:1.15rem">Job Seeker Portal</h3><span class="tag-badge tag-blue">Candidate Intelligence</span></div>
           </div>
           <p style="color:#64748b;font-size:.8rem;line-height:1.65">Discover opportunities, improve skills, and accelerate your career with deep AI guidance.</p>
@@ -3106,7 +3116,7 @@ if not st.session_state.selected_gateway:
         st.markdown("""
         <div class="gateway-card">
           <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px">
-            <div class="role-icon" style="background:#F5F9FF;color:#0D47A1;"><span class="material-symbols-outlined">groups</span></div>
+            <div class="role-icon" style="background:#F5F9FF;color:#1D4ED8;"><span class="material-symbols-outlined">groups</span></div>
             <div><h3 style="margin:0;font-size:1.15rem">Recruiter Portal</h3><span class="tag-badge tag-purple">Talent Acquisition</span></div>
           </div>
           <p style="color:#64748b;font-size:.8rem;line-height:1.65">Streamline hiring, screen cohorts at scale, and build high-performing teams with automated assessments.</p>
@@ -3137,10 +3147,10 @@ with st.sidebar:
         <div class="sidebar-brand-box">
             <div class="cl-brand-mark" aria-hidden="true">
               <svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="20" cy="20" r="12.5" stroke="#42A5F5" stroke-width="3.2"/>
-                <path d="M29.5 29.5L37 37" stroke="#42A5F5" stroke-width="3.2" stroke-linecap="round"/>
-                <path d="M14 24L18.5 19.5L22 22.5L29.5 14.5" stroke="#E3F2FD" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M25.5 14.5H29.5V18.5" stroke="#E3F2FD" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="20" cy="20" r="12.5" stroke="#3B82F6" stroke-width="3.2"/>
+                <path d="M29.5 29.5L37 37" stroke="#3B82F6" stroke-width="3.2" stroke-linecap="round"/>
+                <path d="M14 24L18.5 19.5L22 22.5L29.5 14.5" stroke="#EFF6FF" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M25.5 14.5H29.5V18.5" stroke="#EFF6FF" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
             </div>
             <div>
@@ -3156,12 +3166,12 @@ with st.sidebar:
         f"""
         <div class="sidebar-user-box">
             <div style="display:flex; align-items:center; gap:10px;">
-                <div style="width:36px; height:36px; border-radius:50%; background:#0D47A1; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800;">
+                <div style="width:36px; height:36px; border-radius:50%; background:#1D4ED8; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800;">
                     <span class="material-symbols-outlined">person</span>
                 </div>
                 <div>
                     <div style="font-size:0.88rem; font-weight:800; color:#1e293b;">{html.escape(st.session_state.username)}</div>
-                    <div style="font-size:0.72rem; color:#E3F2FD; font-weight:700;">Active User</div>
+                    <div style="font-size:0.72rem; color:#EFF6FF; font-weight:700;">Active User</div>
                 </div>
             </div>
         </div>
@@ -3260,7 +3270,7 @@ st.markdown(
     f"""
     <div class="cl-app-header" role="banner" aria-label="CareerLens AI application header">
       <div class="cl-app-header-main">
-        <div class="cl-app-header-title">CareerLens <span style="color:#0D47A1;">AI</span></div>
+        <div class="cl-app-header-title">CareerLens <span style="color:#1D4ED8;">AI</span></div>
         <div class="cl-app-header-sub">{workspace_label} Workspace · Intelligent career decisions</div>
         <div class="cl-workspace-rotator" aria-label="Workspace capabilities">
           <div class="cl-workspace-line">AI Resume Intelligence</div>
