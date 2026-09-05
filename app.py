@@ -1022,6 +1022,8 @@ st.markdown(
     :root{
       --cl-primary:#4F46E5;
       --cl-primary-hover:#4338CA;
+      --cl-primary-soft:#EEF2FF;
+      --cl-primary-border:#C7D2FE;
       --cl-secondary:#475569;
       --cl-secondary-hover:#334155;
       --cl-bg:#F8FAFC;
@@ -1038,6 +1040,50 @@ st.markdown(
       --cl-shadow:0 4px 16px rgba(15,23,42,.045);
       --cl-shadow-hover:0 8px 24px rgba(15,23,42,.08);
     }
+
+    /* CareerLens AI semantic color system */
+    .cl-color-indigo{color:var(--cl-primary)!important}
+    .cl-color-success{color:var(--cl-success)!important}
+    .cl-color-warning{color:var(--cl-warning)!important}
+    .cl-color-danger{color:var(--cl-danger)!important}
+    .cl-color-info{color:var(--cl-info)!important}
+    .cl-hero{
+      position:relative; overflow:hidden; padding:48px 42px 42px;
+      border:1px solid #E2E8F0; border-radius:24px; background:#fff;
+      box-shadow:0 14px 40px rgba(15,23,42,.06);
+      margin-bottom:20px;
+    }
+    .cl-hero:before{
+      content:""; position:absolute; width:420px; height:420px; right:-160px; top:-210px;
+      border-radius:50%; background:#EEF2FF; opacity:.75; pointer-events:none;
+    }
+    .cl-hero-kicker{font-size:.72rem; font-weight:850; letter-spacing:.14em; color:#4F46E5; margin-bottom:12px}
+    .cl-hero-title{position:relative; z-index:1; font-size:clamp(2.1rem,5vw,4.1rem); line-height:1.04; letter-spacing:-.055em; font-weight:900; color:#0F172A; margin:0}
+    .cl-hero-title .accent{color:#4F46E5}
+    .cl-hero-copy{position:relative; z-index:1; max-width:760px; margin:16px 0 24px; color:#64748B; font-size:1rem; line-height:1.7}
+    .cl-rolling{display:inline-block; min-width:11ch; height:1.15em; vertical-align:-.12em; overflow:hidden; color:#4F46E5}
+    .cl-rolling span{display:block; animation:clRoll 9s infinite; white-space:nowrap}
+    @keyframes clRoll{0%,25%{transform:translateY(0)} 33%,58%{transform:translateY(-100%)} 66%,91%{transform:translateY(-200%)} 100%{transform:translateY(-300%)}}
+    .cl-hero-stats{display:flex; flex-wrap:wrap; gap:10px; position:relative; z-index:1}
+    .cl-hero-chip{display:inline-flex;align-items:center;gap:7px;padding:8px 11px;border:1px solid #E2E8F0;border-radius:999px;background:#F8FAFC;color:#475569;font-size:.73rem;font-weight:750}
+    .cl-hero-chip .material-symbols-outlined{font-size:17px;color:#4F46E5}
+
+    /* Colored information cards without visual noise */
+    .kpi-grid .kpi-card:nth-child(1){border-top:3px solid #4F46E5!important}
+    .kpi-grid .kpi-card:nth-child(2){border-top:3px solid #059669!important}
+    .kpi-grid .kpi-card:nth-child(3){border-top:3px solid #2563EB!important}
+    .kpi-grid .kpi-card:nth-child(4){border-top:3px solid #D97706!important}
+    .tag-blue{background:#EEF2FF!important;color:#4338CA!important;border-color:#C7D2FE!important}
+    .tag-purple{background:#F5F3FF!important;color:#6D28D9!important;border-color:#DDD6FE!important}
+    .tag-green{background:#ECFDF3!important;color:#047857!important;border-color:#A7F3D0!important}
+    .tag-orange{background:#FFFBEB!important;color:#B45309!important;border-color:#FDE68A!important}
+
+    /* Colored progress bars: indigo is primary, semantic states stay semantic. */
+    .cl-progress-success .stProgress > div > div > div{background:#059669!important}
+    .cl-progress-warning .stProgress > div > div > div{background:#D97706!important}
+    .cl-progress-danger .stProgress > div > div > div{background:#DC2626!important}
+    .cl-progress-info .stProgress > div > div > div{background:#2563EB!important}
+
 
     .stApp{
       background:
@@ -2899,15 +2945,19 @@ if not st.session_state.is_logged_in:
             st.rerun()
 
     st.markdown("""
-    <div class="landing-frame">
-      <div class="landing-content">
-        <div class="landing-nav">
-          <div class="landing-brand"> CareerLens <span>AI</span></div>
-          <div class="landing-links"><span class="landing-link">Features</span><span class="landing-link">Intelligence</span><span class="landing-link">Recruiting</span></div>
-        </div>
-        <div class="landing-kicker"> AI POWERED CAREER PLATFORM</div>
-        <div class="landing-title">Understand Your Career.<br>Build Your <span class="landing-gradient">Future.</span></div>
-        <div class="landing-copy">Get personalized insights, intelligent recommendations, and enterprise screening tools all in one unified ecosystem.</div>
+    <div class="cl-hero" role="banner" aria-label="CareerLens AI introduction">
+      <div class="cl-hero-kicker">CAREER INTELLIGENCE PLATFORM</div>
+      <h1 class="cl-hero-title">Understand your career.<br>Build a <span class="accent">stronger future.</span></h1>
+      <div class="cl-hero-copy">
+        One intelligent workspace to <span class="cl-rolling"><span>understand your skills</span><span>find better-fit jobs</span><span>close your skill gaps</span><span>prepare with confidence</span></span>.
+        From your first resume scan to recruiter assessment, CareerLens AI keeps every step connected.
+      </div>
+      <div class="cl-hero-stats">
+        <span class="cl-hero-chip"><span class="material-symbols-outlined">description</span>Resume Intelligence</span>
+        <span class="cl-hero-chip"><span class="material-symbols-outlined">target</span>Job Matching</span>
+        <span class="cl-hero-chip"><span class="material-symbols-outlined">route</span>Career Roadmaps</span>
+        <span class="cl-hero-chip"><span class="material-symbols-outlined">record_voice_over</span>Interview Practice</span>
+        <span class="cl-hero-chip"><span class="material-symbols-outlined">groups</span>Recruiter Intelligence</span>
       </div>
     </div>
     """, unsafe_allow_html=True)
@@ -2918,9 +2968,9 @@ if not st.session_state.is_logged_in:
     with f2:
         st.markdown('<div class="landing-feature"><div class="landing-icon"><span class="material-symbols-outlined">route</span></div><div class="landing-feature-title">Personalized Roadmaps</div><div class="landing-feature-text">Your goals, our guidance</div></div>', unsafe_allow_html=True)
     with f3:
-        st.markdown('<div class="landing-feature"><div class="landing-icon"></div><div class="landing-feature-title">Trusted &amp; Secure</div><div class="landing-feature-text">Your data stays safe</div></div>', unsafe_allow_html=True)
+        st.markdown('<div class="landing-feature"><div class="landing-icon"><span class="material-symbols-outlined">verified_user</span></div><div class="landing-feature-title">Trusted &amp; Secure</div><div class="landing-feature-text">Your data stays safe</div></div>', unsafe_allow_html=True)
 
-    st.markdown('<div class="landing-access"><div class="landing-access-title"> Welcome to CareerLens AI</div><div class="landing-access-copy">Sign in, create an account, or explore instantly as a guest.</div><div class="landing-divider"></div></div>', unsafe_allow_html=True)
+    st.markdown('<div class="landing-access"><div class="landing-access-title">Welcome to CareerLens AI</div><div class="landing-access-copy">Sign in, create an account, or explore instantly as a guest.</div><div class="landing-divider"></div></div>', unsafe_allow_html=True)
     a1, a2, a3 = st.columns(3, gap="small")
     with a1:
         if st.button("Sign In", icon=":material/lock:", use_container_width=True, type="primary", key="landing_signin"):
@@ -2966,7 +3016,7 @@ if not st.session_state.selected_gateway:
         st.markdown("""
         <div class="gateway-card">
           <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px">
-            <div class="role-icon" style="background:linear-gradient(135deg,#2563eb,#06b6d4);"><span class="material-symbols-outlined">work</span></div>
+            <div class="role-icon" style="background:#EEF2FF;color:#4338CA;"><span class="material-symbols-outlined">work</span></div>
             <div><h3 style="margin:0;font-size:1.15rem">Job Seeker Portal</h3><span class="tag-badge tag-blue">Candidate Intelligence</span></div>
           </div>
           <p style="color:#64748b;font-size:.8rem;line-height:1.65">Discover opportunities, improve skills, and accelerate your career with deep AI guidance.</p>
@@ -2983,7 +3033,7 @@ if not st.session_state.selected_gateway:
         st.markdown("""
         <div class="gateway-card">
           <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px">
-            <div class="role-icon" style="background:linear-gradient(135deg,#7c3aed,#ec4899);"><span class="material-symbols-outlined">groups</span></div>
+            <div class="role-icon" style="background:#F5F3FF;color:#6D28D9;"><span class="material-symbols-outlined">groups</span></div>
             <div><h3 style="margin:0;font-size:1.15rem">Recruiter Portal</h3><span class="tag-badge tag-purple">Talent Acquisition</span></div>
           </div>
           <p style="color:#64748b;font-size:.8rem;line-height:1.65">Streamline hiring, screen cohorts at scale, and build high-performing teams with automated assessments.</p>
@@ -3128,7 +3178,7 @@ st.markdown(
     f"""
     <div class="cl-app-header" role="banner" aria-label="CareerLens AI application header">
       <div>
-        <div class="cl-app-header-title">CareerLens <span style="background:linear-gradient(135deg,#2563eb,#7c3aed);-webkit-background-clip:text;background-clip:text;color:transparent;">AI</span></div>
+        <div class="cl-app-header-title">CareerLens <span style="color:#4F46E5;">AI</span></div>
         <div class="cl-app-header-sub">{workspace_label} Workspace · Intelligent career decisions</div>
       </div>
       <div style="display:flex;align-items:center;gap:10px;">
